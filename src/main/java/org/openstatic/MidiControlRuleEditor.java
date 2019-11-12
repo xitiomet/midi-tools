@@ -7,6 +7,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JCheckBox;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JTextField;
@@ -27,6 +28,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.border.TitledBorder;
 import javax.swing.border.EtchedBorder;
 import javax.swing.ImageIcon;
+import javax.swing.WindowConstants;
 
 import javax.imageio.ImageIO;
 import java.awt.BorderLayout;
@@ -54,7 +56,7 @@ import java.io.File;
 
 import javax.sound.midi.*;
 
-public class MidiControlRuleEditor extends JFrame implements ActionListener
+public class MidiControlRuleEditor extends JDialog implements ActionListener
 {
     private MidiControlRule rule;
     private JComboBox eventSelector;
@@ -199,7 +201,7 @@ public class MidiControlRuleEditor extends JFrame implements ActionListener
     
     public MidiControlRuleEditor(MidiControlRule rule, boolean newRule)
     {
-        super("Rule Editor");
+        super(MidiTools.instance, "Rule Editor", true);
         this.setLayout(new BorderLayout());
         this.rule = rule;
 
@@ -339,7 +341,6 @@ public class MidiControlRuleEditor extends JFrame implements ActionListener
         this.changeActionSelector(avi);
         
         centerWindow();
-        this.setVisible(true);
     }
 
     public void refreshDevices()
@@ -382,15 +383,11 @@ public class MidiControlRuleEditor extends JFrame implements ActionListener
         final float HEIGHT = screenSize.height;
         int wWidth = 400;
         int wHeight = 450;
-        Dimension d = new Dimension(wWidth, wHeight);
-        this.setSize(d);
-        this.setMaximumSize(d);
-        this.setMinimumSize(d);
-        //this.setResizable(false);
         int x = (int) ((WIDTH/2f) - ( ((float)wWidth) /2f ));
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
-        this.setLocation(x, y);
+        this.setBounds(x, y, wWidth, wHeight);
         this.setResizable(false);
-        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        this.setVisible(true);
     }
 }

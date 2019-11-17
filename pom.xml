@@ -45,15 +45,11 @@
         <artifactId>websocket-server</artifactId>
         <version>9.4.0.RC3</version>
     </dependency>
-        <dependency>
-        <groupId>com.google.zxing</groupId>
-        <artifactId>core</artifactId>
-        <version>3.3.0</version>
-    </dependency>
+    <!-- https://mvnrepository.com/artifact/net.glxn/qrgen -->
     <dependency>
-        <groupId>com.google.zxing</groupId>
-        <artifactId>javase</artifactId>
-        <version>3.3.0</version>
+        <groupId>net.glxn</groupId>
+        <artifactId>qrgen</artifactId>
+        <version>1.4</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/io.github.leovr/rtp-midi-javax-sound-midi -->
     <dependency>

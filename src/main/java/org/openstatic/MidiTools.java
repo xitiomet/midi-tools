@@ -10,11 +10,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
 import java.util.Arrays;
 
+import net.glxn.qrgen.QRCode;
+import net.glxn.qrgen.image.ImageType;
+
 import java.net.URI;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 
 import java.io.PrintStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 
 import javax.swing.JFrame;
@@ -25,6 +32,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JDialog;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.JTextArea;
@@ -49,6 +57,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JOptionPane;
+import javax.swing.ImageIcon;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -90,6 +99,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenu fileMenu;
     private JMenu apiMenu;
     private JCheckBoxMenuItem apiServerEnable;
+    private JMenuItem showQrItem;
     private JMenuItem aboutMenuItem;
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
@@ -139,6 +149,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createRuleMenuItem.setMnemonic(KeyEvent.VK_C);
         this.createRuleMenuItem.addActionListener(this);
         this.createRuleMenuItem.setActionCommand("create_rule");
+        
+        this.showQrItem = new JMenuItem("Show QR Code");
+        this.showQrItem.setEnabled(false);
+        this.showQrItem.setMnemonic(KeyEvent.VK_Q);
+        this.showQrItem.addActionListener(this);
+        this.showQrItem.setActionCommand("show_qr");
         
         this.controlMenu.add(this.renameControlMenuItem);
         this.controlMenu.add(this.deleteControlMenuItem);
@@ -191,6 +207,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.apiServerEnable = new JCheckBoxMenuItem("Enable Internal Web Server");
         this.apiServerEnable.addActionListener(this);
         this.apiMenu.add(this.apiServerEnable);
+        this.apiMenu.add(this.showQrItem);
         
         this.menuBar.add(this.fileMenu);
         this.menuBar.add(this.apiMenu);
@@ -364,6 +381,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             boolean state = this.apiServerEnable.getState();
             this.options.put("apiServer", state);
             this.apiServer.setState(state);
+            this.showQrItem.setEnabled(state);
             return;
         }
         String cmd = e.getActionCommand();
@@ -397,6 +415,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 File fileToSave = fileChooser.getSelectedFile();
                 saveConfigAs(fileToSave);
             }
+        } else if (cmd.equals("show_qr")) {
+            JDialog dialog = new JDialog();     
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setTitle("QR Code");
+            String url = "http://" + MidiTools.getLocalIP() + ":6123/";
+            dialog.add(new JLabel(new ImageIcon(MidiTools.QRCode(url))));
+            dialog.pack();
+            dialog.setLocationByPlatform(true);
+            dialog.setVisible(true);
         } else if (cmd.equals("import")) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Specify a file to open");   
@@ -793,5 +820,38 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         } catch (Exception dt_ex) {
             return false;
         }
+    }
+    
+    public static BufferedImage QRCode(String url)
+    {
+        try
+        {
+            ByteArrayOutputStream stream = QRCode.from(url).withSize(300, 300).to(ImageType.PNG).stream();
+            return ImageIO.read(new ByteArrayInputStream(stream.toByteArray()));
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+            return null;
+        }
+    }
+    
+    public static String getLocalIP()
+    {
+        String return_ip = "";
+        try
+        {
+            for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
+            {
+                NetworkInterface ni = n.nextElement();
+                for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();)
+                {
+                    InetAddress ia = e.nextElement();
+                    String this_ip = ia.getHostAddress();
+                    if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
+                        return_ip = this_ip;
+                }
+            }
+
+        } catch (Exception e) {}
+        return return_ip;
     }
 }

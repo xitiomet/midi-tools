@@ -1,11 +1,15 @@
 package org.openstatic;
 
+import org.openstatic.midi.*;
+
 import org.json.*;
 
 import java.io.IOException;
 import java.io.BufferedReader;
 
 import java.net.InetAddress;
+import java.net.URL;
+import java.net.URI;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -16,6 +20,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.util.resource.JarResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -36,7 +44,8 @@ public class APIWebServer implements MidiControlListener
     private Server httpServer;
     protected ArrayList<Session> wsSessions;
     protected static APIWebServer instance;
-
+    private String staticRoot;
+    
     public APIWebServer()
     {
         APIWebServer.instance = this;
@@ -46,6 +55,17 @@ public class APIWebServer implements MidiControlListener
         context.setContextPath("/");
         context.addServlet(ApiServlet.class, "/api/*");
         context.addServlet(EventsWebSocketServlet.class, "/events/*");
+        try
+        {
+            URL url = MidiTools.class.getResource("/index.html");
+            this.staticRoot = url.toString().replaceAll("index.html","");
+            DefaultServlet defaultServlet = new DefaultServlet();
+            ServletHolder holderPwd = new ServletHolder("default", defaultServlet);
+            holderPwd.setInitParameter("resourceBase", this.staticRoot);
+            context.addServlet(holderPwd, "/*");
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
         httpServer.setHandler(context);
     }
     
@@ -132,6 +152,14 @@ public class APIWebServer implements MidiControlListener
         {
             System.out.println(session.getRemoteAddress().getHostString() + " connected!");
             APIWebServer.instance.wsSessions.add(session);
+            for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
+            {
+                MidiControl mc = cenum.nextElement();
+                JSONObject event = new JSONObject();
+                event.put("event", "controlAdded");
+                event.put("control", mc.toJSONObject());
+                session.getRemote().sendStringByFuture(event.toString());
+            }
         }
      
         @OnWebSocketClose
@@ -208,6 +236,8 @@ public class APIWebServer implements MidiControlListener
                     response.put("rules", MidiTools.instance.rulesAsJSONArray());
                 } else if ("/controls/".equals(target)) {
                     response.put("controls", MidiTools.instance.controlsAsJSONArray());
+                } else if ("/info/".equals(target)) {
+                    response.put("staticRoot", APIWebServer.instance.staticRoot);
                 }
             } catch (Exception x) {
                 x.printStackTrace(System.err);

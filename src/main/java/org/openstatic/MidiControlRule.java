@@ -1,5 +1,6 @@
 package org.openstatic;
 
+import org.openstatic.midi.*;
 import org.json.*;
 import javax.sound.midi.*;
 import java.util.concurrent.TimeUnit;
@@ -16,9 +17,6 @@ public class MidiControlRule implements MidiControlListener
     
     private SoundFile sound;
     
-    private MidiDevice transmit_device;
-    private Receiver receiver;
-
     public static final int ACTION_URL = 0;
     public static final int ACTION_PROC = 1;
     public static final int ACTION_SOUND = 2;
@@ -93,6 +91,7 @@ public class MidiControlRule implements MidiControlListener
     
     public void executeAction(MidiControl control, int old_value, int new_value)
     {
+        //System.err.println(this.toString() + " Recieved From " + control.toString());
         final String avparsed = this.action_value
                           .replaceAll("\\{\\{value\\}\\}", String.valueOf(new_value))
                           .replaceAll("\\{\\{value.inv\\}\\}", String.valueOf((127-new_value)))
@@ -136,8 +135,19 @@ public class MidiControlRule implements MidiControlListener
                     int cc = Integer.valueOf(st.nextToken()).intValue();
                     int v = Integer.valueOf(st.nextToken()).intValue();
                     ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, v);
-                    System.err.println("Transmitting ShortMessage [" + String.valueOf(channel) + "," + String.valueOf(cc) + "," + String.valueOf(v) + "]");
-                    this.receiver.send(sm, this.transmit_device.getMicrosecondPosition());
+                    MidiPort output = MidiPortManager.findReceivingPortByName(devName);
+                    if (output != null)
+                    {
+                        if (output.isOpened())
+                        {
+                            //System.err.println("Transmitting ShortMessage " + MidiPortManager.shortMessageToString(sm) + " to " + output.getName());
+                            output.send(sm, output.getMicrosecondPosition());
+                        } else {
+                            //System.err.println("Output device is closed.." + output.getName());
+                        }
+                    } else {
+                        //System.err.println("Couldn't find output device " + devName);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
@@ -235,21 +245,6 @@ public class MidiControlRule implements MidiControlListener
     
     public void updateRule()
     {
-        if (this.getActionType() != MidiControlRule.ACTION_TRANSMIT)
-        {
-            // Make sure we clean up old transmit devices
-            if (this.receiver != null)
-            {
-                this.receiver.close();
-                this.receiver = null;
-            }
-            if (this.transmit_device != null)
-            {
-                this.transmit_device.close();
-                this.transmit_device = null;
-            }
-        }
-        
         if (this.getActionType() == MidiControlRule.ACTION_SOUND && this.action_value != null)
         {
             if (this.sound == null)
@@ -259,55 +254,7 @@ public class MidiControlRule implements MidiControlListener
                 this.sound = new SoundFile(this.action_value);
             }
         } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT && this.action_value != null) {
-            StringTokenizer st = new StringTokenizer(this.action_value, ",");
-            if (st.countTokens() == 4)
-            {
-                String devName = st.nextToken();
-                boolean rebuild_device = false;
-                if (this.transmit_device != null)
-                {
-                    if (!devName.equals(this.transmit_device.getDeviceInfo().getName()))
-                    {
-                        try
-                        {
-                            this.receiver.close();
-                            this.transmit_device.close();
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
-                        }
-                        rebuild_device = true;
-                    }
-                } else {
-                    rebuild_device = true;
-                }
-                
-                if (rebuild_device)
-                {
-                    try
-                    {
-                        MidiDevice device = MidiTools.findMidiDeviceReceiverByName(devName);
-                        if (device != null)
-                        {
-                            if (device.getMaxReceivers() != 0)
-                            {
-                                System.err.println("Device setup for xmit");
-                                this.transmit_device = device;
-                                this.receiver = device.getReceiver();
-                                if (!transmit_device.isOpen())
-                                    transmit_device.open();
-                            } else {
-                                System.err.println("Device has no receivers");
-                            }
-                        } else {
-                            System.err.println("Couldn't find a device named " + devName);
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace(System.err);
-                    }
-        
-                }
-            }
-
+            
         }
         MidiTools.removeListenerFromControls(this);
         if (this.control != null)

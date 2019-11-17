@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.midi;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -22,12 +22,12 @@ import javax.sound.midi.*;
 
 import javax.swing.border.Border;
 
-public class MidiSourceCellRenderer extends JCheckBox implements ListCellRenderer<MidiSource>
+public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<MidiPort>
 {
    private Border selectedBorder;
    private Border regularBorder;
 
-   public MidiSourceCellRenderer()
+   public MidiPortCellRenderer()
    {
        super();
        this.setOpaque(false);
@@ -37,13 +37,22 @@ public class MidiSourceCellRenderer extends JCheckBox implements ListCellRendere
    }
 
    @Override
-   public Component getListCellRendererComponent(JList<? extends MidiSource> list,
-                                                 MidiSource device,
+   public Component getListCellRendererComponent(JList<? extends MidiPort> list,
+                                                 MidiPort device,
                                                  int index,
                                                  boolean isSelected,
                                                  boolean cellHasFocus)
    {
-      this.setText(device.getName());
+      String direction = "[]";
+      if (device.canTransmitMessages() && device.canReceiveMessages())
+      {
+          direction = "&#10094;&#10095;";
+      } else if (device.canTransmitMessages()) {
+          direction = "&#10095;&#10095;";
+      } else if (device.canReceiveMessages()) {
+          direction = "&#10094;&#10094;";
+      }
+      this.setText("<html>" + direction + " " + device.getName() + "</html>");
       this.setSelected(device.isOpened());
       if (isSelected)
       {

@@ -1,5 +1,6 @@
 package org.openstatic;
 
+import org.openstatic.midi.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -79,8 +80,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JList rulesList;
     private JPopupMenu controlMenu;
     protected MidiControlCellRenderer midiControlCellRenderer;
-    private MidiSourceCellRenderer midiRenderer;
-    private MidiSourceListModel midiListModel;
+    private MidiPortCellRenderer midiRenderer;
+    private MidiPortListModel midiListModel;
     private Thread mainThread;
     protected DefaultListModel<MidiControl> controls;
     protected DefaultListModel<MidiControlRule> rules;
@@ -187,7 +188,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.fileMenu.add(this.exitMenuItem);
         
         this.apiMenu = new JMenu("API");
-        this.apiServerEnable = new JCheckBoxMenuItem("Enable API Web Server");
+        this.apiServerEnable = new JCheckBoxMenuItem("Enable Internal Web Server");
         this.apiServerEnable.addActionListener(this);
         this.apiMenu.add(this.apiServerEnable);
         
@@ -251,9 +252,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         
         this.add(toysAndPower, BorderLayout.CENTER);
 
-        this.midiListModel = new MidiSourceListModel();
-        this.midiRenderer = new MidiSourceCellRenderer();
-        MidiSourceManager.addMidiSourceListener(this.midiListModel);
+        this.midiListModel = new MidiPortListModel();
+        this.midiRenderer = new MidiPortCellRenderer();
+        MidiPortManager.addMidiPortListener(this.midiListModel);
+        MidiPortManager.init();
         this.midiList = new JList(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
         {
@@ -263,13 +265,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
                if (index != -1)
                {
-                  MidiSource source = (MidiSource) MidiTools.this.midiListModel.getElementAt(index);
+                  MidiPort source = (MidiPort) MidiTools.this.midiListModel.getElementAt(index);
                   if (source.isOpened())
                   {
                       source.close();
                   } else {
                       source.open();
-                      source.setReceiver(MidiTools.this);
+                      source.addReceiver(MidiTools.this);
                   }
                   repaint();
                }
@@ -277,7 +279,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         });
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane2.setBorder(new TitledBorder("MIDI Input Devices"));
+        scrollPane2.setBorder(new TitledBorder("MIDI Devices"));
         this.add(scrollPane2, BorderLayout.WEST);
         this.add(ruleScrollPane, BorderLayout.PAGE_END);
 
@@ -302,14 +304,21 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public void resetConfiguration()
     {
-        for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
-        {
-            MidiControl mc = mce.nextElement();
-            mc.removeAllListeners();
-        }
-        this.controls.clear();
-        this.rules.clear();
-        this.setLastSavedFile(null);
+        addTask(() -> {
+            for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
+            {
+                MidiControl mc = mce.nextElement();
+                mc.removeAllListeners();
+            }
+            try
+            {
+                SwingUtilities.invokeAndWait(() -> {
+                    MidiTools.this.controls.clear();
+                    MidiTools.this.rules.clear();
+                });
+            } catch (Exception e) {}
+            this.setLastSavedFile(null);
+        });
     }
     
     public void setLastSavedFile(File f)
@@ -347,11 +356,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
     }
 
-    protected static String noteNumberToString(int i)
-    {
-        String[] noteString = new String[]{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        return noteString[i%12] + String.valueOf( ((int)Math.floor(((float)i)/12f)) - 2);
-    }
     
     public void actionPerformed(ActionEvent e)
     {
@@ -401,8 +405,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             int userSelection = fileChooser.showOpenDialog(this);
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
-                File fileToLoad = fileChooser.getSelectedFile();
-                loadConfigFrom(fileToLoad);
+                final File fileToLoad = fileChooser.getSelectedFile();
+                addTask(() -> {
+                    loadConfigFrom(fileToLoad);
+                });
             }
         } else if (cmd.equals("create_rule")) {
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
@@ -419,7 +425,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             if (t != null)
             {
-                removeMidiControl(t);
+                addTask(() -> {
+                    removeMidiControl(t);
+                });
             }
         }
     }
@@ -444,7 +452,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     if (!taskName.contains("Lambda"))
                         System.err.println("TaskComplete> " + taskName);
                 }
-                MidiSourceManager.refresh();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -481,31 +488,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         mlb.setVisible(true);
     }
     
-    private static String shortMessageToString(ShortMessage msg)
-    {
-        String channelText = "[CH=" + String.valueOf(msg.getChannel()+1) + "]";
-        String commandText = "";
-        String data1Name = "?";
-        String data1Value = "?";
-        
-        if (msg.getCommand() == ShortMessage.CONTROL_CHANGE)
-        {
-            data1Name = "CC";
-            data1Value = String.valueOf(msg.getData1());
-            commandText = "CONTROL CHANGE";
-        } else if (msg.getCommand() == ShortMessage.NOTE_ON) {
-            data1Name = "NOTE";
-            data1Value = MidiTools.noteNumberToString(msg.getData1());
-            commandText = "NOTE ON";
-        } else if (msg.getCommand() == ShortMessage.NOTE_OFF) {
-            data1Name = "NOTE";
-            data1Value = MidiTools.noteNumberToString(msg.getData1());
-            commandText = "NOTE OFF";
-        }
-        String data1Text = "(" + data1Name + "=" + data1Value + ")";;
-        return commandText + " " + channelText + " " + data1Text + " value=" + String.valueOf(msg.getData2());
-    }
-    
     public static MidiControl getMidiControlByChannelCC(int channel, int cc)
     {
         for (Enumeration<MidiControl> mce = MidiTools.instance.controls.elements(); mce.hasMoreElements();)
@@ -534,99 +516,95 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void removeMidiControl(MidiControl mc)
     {
-        mc.removeAllListeners();
-        MidiTools.instance.controls.removeElement(mc);
-        for (Enumeration<MidiControlRule> re = MidiTools.instance.rules.elements(); re.hasMoreElements();)
+        try
         {
-            MidiControlRule rule = re.nextElement();
-            if (rule.getMidiControl() == mc)
-                rule.setMidiControl(null);
+            mc.removeAllListeners();
+            SwingUtilities.invokeAndWait(() -> {
+                MidiTools.instance.controls.removeElement(mc);
+            });
+            for (Enumeration<MidiControlRule> re = MidiTools.instance.rules.elements(); re.hasMoreElements();)
+            {
+                MidiControlRule rule = re.nextElement();
+                if (rule.getMidiControl() == mc)
+                    rule.setMidiControl(null);
+            }
+            JSONObject event = new JSONObject();
+            event.put("event", "controlRemoved");
+            event.put("control", mc.toJSONObject());
+            MidiTools.instance.apiServer.broadcastJSONObject(event);
+            MidiTools.instance.controlList.repaint();
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
         }
-        JSONObject event = new JSONObject();
-        event.put("event", "controlRemoved");
-        event.put("control", mc.toJSONObject());
-        MidiTools.instance.apiServer.broadcastJSONObject(event);
     }
     
-    public static void handleNewMidiControl(MidiControl mc)
+    public static void handleNewMidiControl(final MidiControl mc)
     {
-        mc.addMidiControlListener(MidiTools.instance.apiServer);
-        MidiTools.instance.controls.addElement(mc);
-        JSONObject event = new JSONObject();
-        event.put("event", "controlAdded");
-        event.put("control", mc.toJSONObject());
-        MidiTools.instance.apiServer.broadcastJSONObject(event);
+        try
+        {
+            SwingUtilities.invokeAndWait(() -> {
+                MidiTools.instance.controls.insertElementAt(mc,0);
+            });
+            mc.addMidiControlListener(MidiTools.instance.apiServer);
+            JSONObject event = new JSONObject();
+            event.put("event", "controlAdded");
+            event.put("control", mc.toJSONObject());
+            MidiTools.instance.apiServer.broadcastJSONObject(event);
+            MidiTools.instance.controlList.repaint();
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
     }
 
     // Receiver Method
     public void send(MidiMessage msg, long timeStamp)
     {
-        boolean should_repaint = false;
         if(msg instanceof ShortMessage)
         {
-            ShortMessage sm = (ShortMessage) msg;
-            //System.err.println("Recieved Short Message Channel=" + String.valueOf(sm.getChannel()) + " CC=" + String.valueOf(sm.getData1()) + " value=" + String.valueOf(sm.getData2()));
+            final ShortMessage sm = (ShortMessage) msg;
+            /*
+            if (sm.getData1() > 0)
+                System.err.println("Recieved Short Message " + MidiPortManager.shortMessageToString(sm));
+                */
             if (sm.getCommand() == ShortMessage.CONTROL_CHANGE)
             {
-                boolean found_control = false;
-                for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
-                {
-                    MidiControl mc = mce.nextElement();
-                    if (mc.messageMatches(sm))
+                addTask(() -> {
+                    boolean should_repaint = false;
+                    boolean found_control = false;
+                    for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
                     {
-                        //System.err.println(shortMessageToString(sm) + " = " + String.valueOf(sm.getData2()));
-                        try
+                        MidiControl mc = mce.nextElement();
+                        if (mc.messageMatches(sm))
                         {
-                            mc.processMessage(sm);
-                            found_control = true;
-                            should_repaint = true;
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
+                            //System.err.println(shortMessageToString(sm) + " = " + String.valueOf(sm.getData2()));
+                            try
+                            {
+                                mc.processMessage(sm);
+                                found_control = true;
+                                should_repaint = true;
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
                         }
                     }
-                }
-                if (!found_control)
-                {
-                    MidiControl mc = new MidiControl(sm.getChannel()+1, sm.getData1());
-                    handleNewMidiControl(mc);
-                }
+                    if (!found_control)
+                    {
+                        MidiControl mc = new MidiControl(sm.getChannel()+1, sm.getData1());
+                        handleNewMidiControl(mc);
+                    }
+                    if (should_repaint)
+                    {
+                        this.controlList.repaint();
+                    }
+                });
             }
         } else {
             System.err.println("Unknown non-short message " + msg.toString());
-        }
-        if (should_repaint)
-        {
-            this.controlList.repaint();
         }
     }
 
     public void close() {}
     
-
-    public static MidiDevice findMidiDeviceReceiverByName(String devName)
-    {
-        try
-        {
-            MidiDevice.Info[] infos = MidiSystem.getMidiDeviceInfo();
-            Vector<MidiDevice.Info> newLocalDevices = new Vector<MidiDevice.Info>(Arrays.asList(infos));
-
-            // Check for new devices added
-            for(Iterator<MidiDevice.Info> newLocalDevicesIterator = newLocalDevices.iterator(); newLocalDevicesIterator.hasNext();)
-            {
-                MidiDevice.Info di = newLocalDevicesIterator.next();
-                MidiDevice device = MidiSystem.getMidiDevice(di);
-                String dName = di.toString();
-                if (dName.equals(devName) && device.getMaxReceivers() != 0)
-                {
-                    //System.err.println("Found Device By Name: " + devName);
-                    return device;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
-        return null;
-    }
     
     public void loadConfig()
     {
@@ -665,6 +643,36 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 this.options = configJson.getJSONObject("options");
             if (remember)
                 this.setLastSavedFile(file);
+            if (configJson.has("openReceivingPorts"))
+            {
+                JSONArray portsArray = configJson.getJSONArray("openReceivingPorts");
+                for (int m = 0; m < portsArray.length(); m++)
+                {
+                    String portName = portsArray.getString(m);
+                    MidiPort p = MidiPortManager.findReceivingPortByName(portName);
+                    if (p != null)
+                    {
+                        System.err.println("Found Receiving Port " + p.getName());
+                        p.open();
+                        p.addReceiver(MidiTools.this);
+                    }
+                }
+            }
+            if (configJson.has("openTransmittingPorts"))
+            {
+                JSONArray portsArray = configJson.getJSONArray("openTransmittingPorts");
+                for (int m = 0; m < portsArray.length(); m++)
+                {
+                    String portName = portsArray.getString(m);
+                    MidiPort p = MidiPortManager.findTransmittingPortByName(portName);
+                    if (p != null)
+                    {
+                        System.err.println("Found Transmitting Port " + p.getName());
+                        p.open();
+                        p.addReceiver(MidiTools.this);
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -701,6 +709,30 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
         return controlsArray;
     }
+    
+    public JSONArray openReceivingPortsAsJSONArray()
+    {
+        JSONArray portsArray = new JSONArray();
+        for(Iterator<MidiPort> portsIterator = MidiPortManager.getReceivingPorts().iterator(); portsIterator.hasNext();)
+        {
+            MidiPort t = portsIterator.next();
+            if (t.isOpened())
+                portsArray.put(t.getName());
+        }
+        return portsArray;
+    }
+    
+    public JSONArray openTransmittingPortsAsJSONArray()
+    {
+        JSONArray portsArray = new JSONArray();
+        for(Iterator<MidiPort> portsIterator = MidiPortManager.getTransmittingPorts().iterator(); portsIterator.hasNext();)
+        {
+            MidiPort t = portsIterator.next();
+            if (t.isOpened())
+                portsArray.put(t.getName());
+        }
+        return portsArray;
+    }
 
     public void saveConfigAs(File file, boolean remember)
     {
@@ -710,6 +742,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             configJson.put("controls", this.controlsAsJSONArray());
             configJson.put("rules", this.rulesAsJSONArray());
             configJson.put("options", this.options);
+            configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
+            configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);

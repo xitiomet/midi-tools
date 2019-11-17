@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.midi;
 
 public interface MidiControlListener
 {

@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.midi;
 
 import javax.sound.midi.*;
 import org.json.*;
@@ -41,6 +41,7 @@ public class MidiControl
     {
         if (!listeners.contains(mcl))
         {
+            //System.err.println ("Added MidiControlListener - " + mcl.toString());
             listeners.add(mcl);
         }
     }
@@ -49,6 +50,7 @@ public class MidiControl
     {
         if (listeners.contains(mcl))
         {
+            //System.err.println ("Removed MidiControlListener - " + mcl.toString());
             listeners.remove(mcl);
         }
     }
@@ -79,19 +81,13 @@ public class MidiControl
             this.value = new_value;
             this.lastChangeAt = System.currentTimeMillis();
             this.settled = false;
-            Runnable r = () -> {
-                for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
-                {
-                    try
-                    {
-                        MidiControlListener mcl = mcle.nextElement();
-                        mcl.controlValueChanged(MidiControl.this, old_value, new_value);
-                    } catch (Exception mlex) {
-                        
-                    }
-                }
-            };
-            MidiTools.addTask(r);
+            for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
+            {
+                final MidiControlListener mcl = mcle.nextElement();
+                MidiPortManager.addTask(() -> {
+                    mcl.controlValueChanged(MidiControl.this, old_value, new_value);
+                });
+            }
         }
     }
 
@@ -133,20 +129,14 @@ public class MidiControl
             final int old_value = this.settled_value;
             this.settled_value = this.value;
             final int final_value = this.value;
-            Runnable r = () -> {
-                //System.err.println(MidiControl.this.toString() + " settled at " + String.valueOf(final_value));
-                for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
-                {
-                    try
-                    {
-                        MidiControlListener mcl = mcle.nextElement();
-                        mcl.controlValueSettled(MidiControl.this, old_value, final_value);
-                    } catch (Exception mlex) {
-                        
-                    }
-                }
-            };
-            MidiTools.addTask(r);
+            //System.err.println(MidiControl.this.toString() + " settled at " + String.valueOf(final_value));
+            for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
+            {
+                final MidiControlListener mcl = mcle.nextElement();
+                MidiPortManager.addTask(() -> {
+                    mcl.controlValueSettled(MidiControl.this, old_value, final_value);
+                });
+            }
         }
     }
     

@@ -1,5 +1,6 @@
 package org.openstatic;
 
+import org.openstatic.midi.*;
 import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JComboBox;
@@ -114,8 +115,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.changeActionSelector(avi);
         }
         
-        if (e.getSource() == this.deviceSelectAVF || e.getSource() == this.channelSelectAVF
-            || e.getSource() == this.ccAVF || e.getSource() == this.valueAVF)
+        if (e.getSource() == this.deviceSelectAVF || e.getSource() == this.channelSelectAVF)
         {
             this.actionValueField.setText(this.deviceSelectAVF.getSelectedItem() + "," + this.channelSelectAVF.getSelectedItem() + 
                                           "," + this.ccAVF.getText() + "," + this.valueAVF.getText());
@@ -276,12 +276,46 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         Vector<String> midiChannels = new Vector<String>();
         for(int i = 1; i < 17; i++)
             midiChannels.add(String.valueOf(i));
+            
+        DocumentListener xmitDL = new DocumentListener()
+        {
+            @Override
+            public void removeUpdate(DocumentEvent e)
+            {
+                //System.err.println("Remove update");
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.deviceSelectAVF.getSelectedItem() + "," + 
+                                                                    MidiControlRuleEditor.this.channelSelectAVF.getSelectedItem() + "," +
+                                                                    MidiControlRuleEditor.this.ccAVF.getText() + "," +
+                                                                    MidiControlRuleEditor.this.valueAVF.getText());
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) 
+            {
+                //System.err.println("Insert update");
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.deviceSelectAVF.getSelectedItem() + "," + 
+                                                                    MidiControlRuleEditor.this.channelSelectAVF.getSelectedItem() + "," +
+                                                                    MidiControlRuleEditor.this.ccAVF.getText() + "," +
+                                                                    MidiControlRuleEditor.this.valueAVF.getText());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent arg0)
+            {
+                //System.err.println("Change update");
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.deviceSelectAVF.getSelectedItem() + "," + 
+                                                                    MidiControlRuleEditor.this.channelSelectAVF.getSelectedItem() + "," +
+                                                                    MidiControlRuleEditor.this.ccAVF.getText() + "," +
+                                                                    MidiControlRuleEditor.this.valueAVF.getText());
+            }
+        };
         this.channelSelectAVF = new JComboBox(midiChannels);
         this.channelSelectAVF.addActionListener(this);
         this.ccAVF = new JTextField("{{cc}}");
-        this.ccAVF.addActionListener(this);
+        this.ccAVF.getDocument().addDocumentListener(xmitDL);
         this.valueAVF = new JTextField("{{value}}");
-        this.valueAVF.addActionListener(this);
+        this.valueAVF.getDocument().addDocumentListener(xmitDL);
+        
         transmitMidiPanel.add(new JLabel("Device", SwingConstants.LEFT));
         transmitMidiPanel.add(this.deviceSelectAVF);
         transmitMidiPanel.add(new JLabel("Channel", SwingConstants.LEFT));
@@ -348,18 +382,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         try
         {
             DefaultComboBoxModel<String> deviceModel = new DefaultComboBoxModel<String>();
-            MidiDevice.Info[] infos = MidiSystem.getMidiDeviceInfo();
-            Vector<MidiDevice.Info> newLocalDevices = new Vector<MidiDevice.Info>(Arrays.asList(infos));
-
             // Check for new devices added
-            for(Iterator<MidiDevice.Info> newLocalDevicesIterator = newLocalDevices.iterator(); newLocalDevicesIterator.hasNext();)
+            for(Iterator<MidiPort> newLocalDevicesIterator = MidiPortManager.getReceivingPorts().iterator(); newLocalDevicesIterator.hasNext();)
             {
-                MidiDevice.Info di = newLocalDevicesIterator.next();
-                MidiDevice device = MidiSystem.getMidiDevice(di);
-                if (device.getMaxReceivers() != 0)
-                {
-                    deviceModel.addElement(di.toString());
-                }
+                MidiPort p = newLocalDevicesIterator.next();
+                deviceModel.addElement(p.getName());
             }
             this.deviceSelectAVF.setModel(deviceModel);
         } catch (Exception e) {

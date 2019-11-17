@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.midi;
 
 import javax.sound.midi.*;
 import javax.swing.ListModel;
@@ -11,36 +11,36 @@ import java.util.List;
 import java.util.Iterator;
 import java.io.*;
 
-public class MidiSourceListModel implements ListModel<MidiSource>, MidiSourceListener
+public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
 {
     private Vector<ListDataListener> listeners = new Vector<ListDataListener>();
 
-    public MidiSourceListModel()
+    public MidiPortListModel()
     {
     }
 
-    public void sourceAdded(int idx, MidiSource source)
+    public void portAdded(int idx, MidiPort port)
     {
         for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
         {
             try
             {
                 ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(source, ListDataEvent.INTERVAL_ADDED, idx, idx);
+                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_ADDED, idx, idx);
                 ldl.intervalAdded(lde);
             } catch (Exception mlex) {
             }
         }
     }
 
-    public void sourceRemoved(int idx, MidiSource source)
+    public void portRemoved(int idx, MidiPort port)
     {
         for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
         {
             try
             {
                 ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(source, ListDataEvent.INTERVAL_REMOVED, idx, idx);
+                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_REMOVED, idx, idx);
                 ldl.intervalRemoved(lde);
             } catch (Exception mlex) {
             }
@@ -51,17 +51,17 @@ public class MidiSourceListModel implements ListModel<MidiSource>, MidiSourceLis
     {
         try
         {
-            return MidiSourceManager.getSources().size();
+            return MidiPortManager.getPorts().size();
         } catch (Exception e) {
             return 0;
         }
     }
 
-    public MidiSource getElementAt(int index)
+    public MidiPort getElementAt(int index)
     {
         try
         {
-            MidiSource[] sources = MidiSourceManager.getSources().toArray(new MidiSource[0]);
+            MidiPort[] sources = MidiPortManager.getPorts().toArray(new MidiPort[0]);
             return sources[index];
         } catch (Exception e) {
             return null;

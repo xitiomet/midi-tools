@@ -13,6 +13,7 @@ import javax.swing.JCheckBox;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JTextField;
 import javax.swing.JTextArea;
+import javax.swing.BorderFactory;
 import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
 import javax.swing.JScrollPane;
@@ -34,6 +35,8 @@ import javax.swing.WindowConstants;
 import javax.imageio.ImageIO;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 import java.awt.Toolkit;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -64,11 +67,13 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox controlSelector;
     private JComboBox actionSelector;
     private JTextField nicknameField;
+    private JComboBox ruleGroupField;
     private JTextArea actionValueField;
     
     private TitledBorder selectFileBorder;
     private JComboBox deviceSelectAVF;
     private JComboBox channelSelectAVF;
+    private JComboBox<String> selectRuleGroupDropdown;
     private JTextField ccAVF;
     private JTextField valueAVF;
     private JPanel transmitMidiPanel;
@@ -121,6 +126,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                                           "," + this.ccAVF.getText() + "," + this.valueAVF.getText());
         }
         
+        if (e.getSource() == this.selectRuleGroupDropdown)
+        {
+            this.actionValueField.setText(this.selectRuleGroupDropdown.getSelectedItem().toString());
+        }
+        
         if (e.getSource() == this.deleteButton)
         {
             if (MidiTools.instance.rules.contains(this.rule))
@@ -135,6 +145,10 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.rule.setNickname(this.nicknameField.getText());
             else
                 this.rule.setNickname(null);
+            if (!"".equals(this.ruleGroupField.getSelectedItem()))
+                this.rule.setRuleGroup(this.ruleGroupField.getSelectedItem().toString());
+            else
+                this.rule.setRuleGroup("all");
             if (!"".equals(this.actionValueField.getText()))
                 this.rule.setActionValue(this.actionValueField.getText());
             else
@@ -189,6 +203,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.valueAVF.setText("{{value}}");                
             }
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
+        } else if (i >= 4 && i <= 6) {
+            this.actionValueLabel.setText("Rule Group");
+            this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
+            this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
+            this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
         }
         this.actionValuePanel.revalidate();
         this.actionValuePanel.repaint();
@@ -206,7 +225,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 4; i++)
+        for(int i = 0; i < 7; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }
@@ -231,9 +250,19 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.actionSelector = new JComboBox(actionList);
         this.actionSelector.setEditable(false);
         this.actionSelector.addActionListener(this);
+        
+        
+        this.selectRuleGroupDropdown = new JComboBox(actionList);
+        this.selectRuleGroupDropdown.setEditable(true);
+        this.selectRuleGroupDropdown.addActionListener(this);
     
         this.nicknameField = new JTextField("");
-        this.nicknameField.setHorizontalAlignment(SwingConstants.CENTER);
+        //this.nicknameField.setHorizontalAlignment(SwingConstants.CENTER);
+
+        this.ruleGroupField = new JComboBox();
+        this.ruleGroupField.setEditable(true);
+        this.ruleGroupField.setModel(getRuleGroupModel());
+        //this.ruleGroupField.setHorizontalAlignment(SwingConstants.CENTER);
 
         this.actionValueField = new JTextArea("");
         this.actionValueField.setLineWrap(true);
@@ -270,7 +299,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.selectFilePanel.add(this.selectFileField, BorderLayout.CENTER);
         this.selectFilePanel.add(this.selectFileButton, BorderLayout.EAST);
 
-        this.transmitMidiPanel = new JPanel(new GridLayout(4,2));
+        this.transmitMidiPanel = new JPanel(new GridBagLayout());
         this.deviceSelectAVF = new JComboBox();
         this.deviceSelectAVF.addActionListener(this);
         Vector<String> midiChannels = new Vector<String>();
@@ -316,34 +345,37 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.valueAVF = new JTextField("{{value}}");
         this.valueAVF.getDocument().addDocumentListener(xmitDL);
         
-        transmitMidiPanel.add(new JLabel("Device", SwingConstants.LEFT));
-        transmitMidiPanel.add(this.deviceSelectAVF);
-        transmitMidiPanel.add(new JLabel("Channel", SwingConstants.LEFT));
-        transmitMidiPanel.add(this.channelSelectAVF);
-        transmitMidiPanel.add(new JLabel("CC", SwingConstants.LEFT));
-        transmitMidiPanel.add(this.ccAVF);
-        transmitMidiPanel.add(new JLabel("Value", SwingConstants.LEFT));
-        transmitMidiPanel.add(this.valueAVF);
+        transmitMidiPanel.add(new JLabel("Device", SwingConstants.LEFT), gbc(1, 1, .4d));
+        transmitMidiPanel.add(this.deviceSelectAVF, gbc(2, 1, .6d));
+        transmitMidiPanel.add(new JLabel("Channel", SwingConstants.LEFT), gbc(1, 2, .4d));
+        transmitMidiPanel.add(this.channelSelectAVF, gbc(2, 2, .6d));
+        transmitMidiPanel.add(new JLabel("CC", SwingConstants.LEFT), gbc(1, 3, .4d));
+        transmitMidiPanel.add(this.ccAVF, gbc(2, 3, .6d));
+        transmitMidiPanel.add(new JLabel("Value", SwingConstants.LEFT), gbc(1, 4, .4d));
+        transmitMidiPanel.add(this.valueAVF, gbc(2, 4, .6d));
         
         this.actionValuePanel = new JPanel(new BorderLayout());
 
-        JPanel formPanel = new JPanel(new GridLayout(6,2));
+        JPanel formPanel = new JPanel(new GridBagLayout());
         
-        formPanel.add(new JLabel("Rule Name", SwingConstants.CENTER));
-        formPanel.add(this.nicknameField);
+        formPanel.add(new JLabel("Rule Name", SwingConstants.LEFT), gbc(1, 1, .4d));
+        formPanel.add(this.nicknameField, gbc(2, 1, .6d));
 
-        formPanel.add(new JLabel("Select Control", SwingConstants.CENTER));
-        formPanel.add(this.controlSelector);
+        formPanel.add(new JLabel("Rule Group", SwingConstants.LEFT), gbc(1, 2, .4d));
+        formPanel.add(this.ruleGroupField, gbc(2, 2, .6d));
 
-        formPanel.add(new JLabel("Select Event", SwingConstants.CENTER));
-        formPanel.add(this.eventSelector);
+        formPanel.add(new JLabel("Select Control", SwingConstants.LEFT), gbc(1, 3, .4d));
+        formPanel.add(this.controlSelector, gbc(2, 3, .6d));
 
-        formPanel.add(new JLabel("Action Type", SwingConstants.CENTER));
-        formPanel.add(this.actionSelector);
+        formPanel.add(new JLabel("Select Event", SwingConstants.LEFT), gbc(1, 4, .4d));
+        formPanel.add(this.eventSelector, gbc(2, 4, .6d));
+
+        formPanel.add(new JLabel("Action Type", SwingConstants.LEFT), gbc(1, 5, .4d));
+        formPanel.add(this.actionSelector, gbc(2, 5, .6d));
         
-        this.actionValueLabel = new JLabel("Action Value", SwingConstants.CENTER);
-        formPanel.add(this.actionValueLabel);
-        formPanel.add(this.actionValuePanel);
+        this.actionValueLabel = new JLabel("Action Value", SwingConstants.LEFT);
+        formPanel.add(this.actionValueLabel, gbc(1, 6, .4d));
+        formPanel.add(this.actionValuePanel, gbc(2, 6, .6d));
         
         
         
@@ -358,15 +390,21 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.saveButton.addActionListener(this);
         this.deleteButton.addActionListener(this);
         
-        formPanel.add(deleteButton);
-        formPanel.add(saveButton);
+        JPanel buttonPanel = new JPanel(new GridLayout(1,2));
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(saveButton);
+        
+        formPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        this.add(formPanel, BorderLayout.CENTER);
+        this.add(formPanel, BorderLayout.PAGE_START);
+        this.add(buttonPanel, BorderLayout.PAGE_END);
         this.eventSelector.setSelectedIndex(this.rule.getEventMode());
         this.controlSelector.setSelectedIndex(MidiTools.getIndexForMidiControl(this.rule.getMidiControl()));
         
         if (this.rule.getNickname() != null)
             this.nicknameField.setText(this.rule.getNickname());
+        if (this.rule.getRuleGroup() != null)
+            this.ruleGroupField.setSelectedItem(this.rule.getRuleGroup());
         if (this.rule.getActionValue() != null)
             this.actionValueField.setText(this.rule.getActionValue());
         
@@ -375,6 +413,18 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.changeActionSelector(avi);
         
         centerWindow();
+    }
+    
+    private GridBagConstraints gbc(int x, int y, double weightx)
+    {
+        GridBagConstraints g = new GridBagConstraints();
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.weightx = weightx;
+        g.gridx = x;
+        g.gridy = y;
+        g.ipady = 2;
+        g.ipadx = 5;
+        return g;
     }
 
     public void refreshDevices()
@@ -393,6 +443,29 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             e.printStackTrace(System.err);
         }
     }
+    
+    public DefaultComboBoxModel<String> getRuleGroupModel()
+    {
+        try
+        {
+            Vector<String> ruleGroups = new Vector<String>();
+            // Check for new devices added
+            for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.rules.elements(); newRuleEnum.hasMoreElements();)
+            {
+                MidiControlRule mcr = newRuleEnum.nextElement();
+                String groupName = mcr.getRuleGroup();
+                if (!ruleGroups.contains(groupName))
+                    ruleGroups.add(groupName);
+            }
+            DefaultComboBoxModel<String> ruleGroupModel = new DefaultComboBoxModel<String>(ruleGroups);
+            return ruleGroupModel;
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
+    }
+    
+    
 
     public JPanel labelComponent(String label, Component c)
     {
@@ -409,7 +482,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
         int wWidth = 400;
-        int wHeight = 450;
+        int wHeight = 350;
         int x = (int) ((WIDTH/2f) - ( ((float)wWidth) /2f ));
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
         this.setBounds(x, y, wWidth, wHeight);

@@ -89,6 +89,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JList rulesList;
     private JPopupMenu controlMenu;
     protected MidiControlCellRenderer midiControlCellRenderer;
+    protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
     private MidiPortListModel midiListModel;
     private Thread mainThread;
@@ -100,6 +101,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenu apiMenu;
     private JCheckBoxMenuItem apiServerEnable;
     private JMenuItem showQrItem;
+    private JMenuItem openInBrowserItem;
+
     private JMenuItem aboutMenuItem;
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
@@ -113,12 +116,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     public static MidiTools instance;
     private boolean keep_running;
     private long lastControlClick;
+    private long lastRuleClick;
     private APIWebServer apiServer;
     private JSONObject options;
 
     public MidiTools()
     {
-        super("MIDI Control Change Tool");
+        super("MIDI Control Change Tool v1.0");
         this.options = new JSONObject();
         this.taskQueue = new LinkedBlockingQueue<Runnable>();
         this.keep_running = true;
@@ -155,6 +159,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.showQrItem.setMnemonic(KeyEvent.VK_Q);
         this.showQrItem.addActionListener(this);
         this.showQrItem.setActionCommand("show_qr");
+        
+        
+        this.openInBrowserItem = new JMenuItem("Open in Browser");
+        this.openInBrowserItem.setEnabled(false);
+        this.openInBrowserItem.setMnemonic(KeyEvent.VK_B);
+        this.openInBrowserItem.addActionListener(this);
+        this.openInBrowserItem.setActionCommand("open_api");
         
         this.controlMenu.add(this.renameControlMenuItem);
         this.controlMenu.add(this.deleteControlMenuItem);
@@ -208,6 +219,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.apiServerEnable.addActionListener(this);
         this.apiMenu.add(this.apiServerEnable);
         this.apiMenu.add(this.showQrItem);
+        this.apiMenu.add(this.openInBrowserItem);
         
         this.menuBar.add(this.fileMenu);
         this.menuBar.add(this.apiMenu);
@@ -218,6 +230,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.rules = new DefaultListModel<MidiControlRule>();
 
         this.midiControlCellRenderer = new MidiControlCellRenderer();
+        this.midiControlRuleCellRenderer = new MidiControlRuleCellRenderer();
 
         // Setup toy list
         this.controlList = new JList(this.controls);
@@ -229,8 +242,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 int index = MidiTools.this.controlList.locationToIndex(e.getPoint());
                 if (index != -1)
                 {
-                    if (e.getButton() == MouseEvent.BUTTON1)
-                    {
+                   if (e.getButton() == MouseEvent.BUTTON1)
+                   {
                        long cms = System.currentTimeMillis();
                        if (cms - MidiTools.this.lastControlClick < 500 && MidiTools.this.lastControlClick > 0)
                        {
@@ -251,8 +264,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         // Setup rule list
         this.rulesList = new JList(this.rules);
+        this.rulesList.setCellRenderer(this.midiControlRuleCellRenderer);
         JScrollPane ruleScrollPane = new JScrollPane(this.rulesList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming MIDI Messages (click to edit)"));
+        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming MIDI Messages (right-click or double-click to edit)"));
         this.rulesList.addMouseListener(new MouseAdapter()
         {
             public void mouseClicked(MouseEvent e)
@@ -261,8 +275,20 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
                if (index != -1)
                {
-                  MidiControlRule source = (MidiControlRule) MidiTools.this.rules.getElementAt(index);
-                  MidiControlRuleEditor editor = new MidiControlRuleEditor(source);
+                   MidiControlRule source = (MidiControlRule) MidiTools.this.rules.getElementAt(index);
+                   if (e.getButton() == MouseEvent.BUTTON1)
+                   {
+                       long cms = System.currentTimeMillis();
+                       if (cms - MidiTools.this.lastRuleClick < 500 && MidiTools.this.lastRuleClick > 0)
+                       {
+                          MidiControlRuleEditor editor = new MidiControlRuleEditor(source);
+                       } else {
+                          source.toggleEnabled();
+                       }
+                       MidiTools.this.lastRuleClick = cms;
+                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
+                      MidiControlRuleEditor editor = new MidiControlRuleEditor(source);
+                   }
                }
             }
         });
@@ -315,8 +341,16 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         loadConfig();
-        this.apiServerEnable.setState(this.options.optBoolean("apiServer", false));
-        this.apiServer.setState(this.apiServerEnable.getState());
+        boolean apiEnable = this.options.optBoolean("apiServer", false);
+        changeAPIState(apiEnable);
+    }
+    
+    public void changeAPIState(boolean apiEnable)
+    {
+        this.apiServerEnable.setState(apiEnable);
+        this.showQrItem.setEnabled(apiEnable);
+        this.openInBrowserItem.setEnabled(apiEnable);
+        this.apiServer.setState(apiEnable);
     }
     
     public void resetConfiguration()
@@ -347,6 +381,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         } else {
             this.setTitle("MIDI Control Change Tool");
         }
+    }
+    
+    public static void repaintRules()
+    {
+        addTask(() -> {
+            MidiTools.instance.rulesList.repaint();
+        });
     }
     
     public static void addTask(Runnable r)
@@ -380,8 +421,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         {
             boolean state = this.apiServerEnable.getState();
             this.options.put("apiServer", state);
-            this.apiServer.setState(state);
-            this.showQrItem.setEnabled(state);
+            changeAPIState(state);
             return;
         }
         String cmd = e.getActionCommand();
@@ -402,6 +442,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             System.exit(0);
         } else if (cmd.equals("about")) {
             browseTo("http://openstatic.org/miditools/");
+        } else if (cmd.equals("open_api")) {
+            String url = "http://" + MidiTools.getLocalIP() + ":6123/";
+            browseTo(url);
         } else if (cmd.equals("save")) {
             saveConfigAs(this.lastSavedFile);
         } else if (cmd.equals("export")) {
@@ -418,7 +461,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         } else if (cmd.equals("show_qr")) {
             JDialog dialog = new JDialog();     
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            dialog.setTitle("QR Code");
+            dialog.setTitle("Midi Control Change Tool");
             String url = "http://" + MidiTools.getLocalIP() + ":6123/";
             dialog.add(new JLabel(new ImageIcon(MidiTools.QRCode(url))));
             dialog.pack();
@@ -514,7 +557,44 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         MidiTools mlb = new MidiTools();
         mlb.setVisible(true);
     }
+
+    public static void setRuleGroupEnabled(String groupName, boolean v)
+    {
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        {
+            MidiControlRule mcr = mcre.nextElement();
+            if (mcr.getRuleGroup().equals(groupName))
+            {
+                mcr.setEnabled(v);
+            }
+        }
+    }
     
+    public static void toggleRuleGroupEnabled(String groupName)
+    {
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        {
+            MidiControlRule mcr = mcre.nextElement();
+            if (mcr.getRuleGroup().equals(groupName))
+            {
+                mcr.toggleEnabled();
+            }
+        }
+    }
+    
+    public static MidiControlRule getMidiControlRuleById(String ruleId)
+    {
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        {
+            MidiControlRule mcr = mcre.nextElement();
+            if (mcr.getRuleId().equals(ruleId))
+            {
+                return mcr;
+            }
+        }
+        return null;
+    }
+       
     public static MidiControl getMidiControlByChannelCC(int channel, int cc)
     {
         for (Enumeration<MidiControl> mce = MidiTools.instance.controls.elements(); mce.hasMoreElements();)

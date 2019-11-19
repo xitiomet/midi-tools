@@ -148,6 +148,7 @@ public class MidiControl
         jo.put("nickname", this.nickname);
         jo.put("value", this.value);
         jo.put("settledValue", this.settled_value);
+        jo.put("lastChangeAt", this.lastChangeAt);
         return jo;
     }
     

@@ -14,12 +14,14 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -27,30 +29,38 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;    
+
 import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 
 public class APIWebServer implements MidiControlListener
 {
     private Server httpServer;
-    protected ArrayList<Session> wsSessions;
+    protected ArrayList<WebSocketSession> wsSessions;
     protected static APIWebServer instance;
     private String staticRoot;
     
     public APIWebServer()
     {
         APIWebServer.instance = this;
-        this.wsSessions = new ArrayList<Session>();
+        this.wsSessions = new ArrayList<WebSocketSession>();
         httpServer = new Server(6123);
+        
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
         context.addServlet(ApiServlet.class, "/api/*");
@@ -63,15 +73,73 @@ public class APIWebServer implements MidiControlListener
             ServletHolder holderPwd = new ServletHolder("default", defaultServlet);
             holderPwd.setInitParameter("resourceBase", this.staticRoot);
             context.addServlet(holderPwd, "/*");
+            
+            final HttpConfiguration httpConfiguration = new HttpConfiguration();
+            httpConfiguration.setSecureScheme("https");
+            httpConfiguration.setSecurePort(6124);
+            final SslContextFactory sslContextFactory = new SslContextFactory(this.staticRoot + "midi-tools.jks");
+            sslContextFactory.setKeyStorePassword("miditools");
+            final HttpConfiguration httpsConfiguration = new HttpConfiguration(httpConfiguration);
+            httpsConfiguration.addCustomizer(new SecureRequestCustomizer());
+            final ServerConnector httpsConnector = new ServerConnector(httpServer,
+                new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
+                new HttpConnectionFactory(httpsConfiguration));
+            httpsConnector.setPort(6124);
+            httpServer.addConnector(httpsConnector);
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
         httpServer.setHandler(context);
     }
     
-    public void handleWebSocketEvent(JSONObject j, Session session)
+    public void handleWebSocketEvent(JSONObject j, WebSocketSession session)
     {
-        
+        if (j.has("do"))
+        {
+            String doCmd = j.optString("do","");
+            if (doCmd.equals("registerMidiDevice"))
+            {
+                String hostname = session.getRemoteAddress().getHostName();
+                String deviceName = j.optString("name", "unknown");
+                String deviceId = j.optString("device", "unknown");
+                
+                String deviceFullName = deviceName + " (" + hostname + ")";
+                String deviceFullId = deviceId + "." + hostname;
+                
+                int type = MidiAPIPort.TYPE_BIDIRECTIONAL;
+                String sType = j.optString("type","both");
+                if (sType.equals("input"))
+                    type = MidiAPIPort.TYPE_INPUT;
+                else if (sType.equals("output"))
+                    type = MidiAPIPort.TYPE_OUTPUT;
+                
+                MidiAPIPort apiPort = new MidiAPIPort(deviceFullName, deviceId, session, type);
+                MidiPort existingPort = MidiPortManager.findVirtualPort(deviceFullId);
+                if (existingPort == null)
+                {
+                    MidiPortManager.registerVirtualPort(deviceFullId, apiPort);
+                } else if (existingPort instanceof MidiAPIPort) {
+                    MidiAPIPort existingAPIPort = (MidiAPIPort) existingPort;
+                    existingAPIPort.setWebSocketSession(session);
+                }
+            } else if (doCmd.equals("removeMidiDevice")) {
+                String hostname = session.getRemoteAddress().getHostName();
+                String deviceId = j.optString("device", "unknown");
+                String deviceFullId = deviceId + "." + hostname;
+                MidiPortManager.removeVirtualPort(deviceFullId);
+            } else if (doCmd.equals("midiShortMessage")) {
+                String hostname = session.getRemoteAddress().getHostName();
+                String deviceId = j.optString("device", "unknown");
+                String deviceFullId = deviceId + "." + hostname;
+                            
+                MidiPort p = MidiPortManager.findVirtualPort(deviceFullId);
+                if (p instanceof MidiAPIPort)
+                {
+                    MidiAPIPort port = (MidiAPIPort) p;
+                    port.handleWebSocketEvent(j);
+                }
+            }
+        }
     }
     
     public void setState(boolean b)
@@ -119,7 +187,12 @@ public class APIWebServer implements MidiControlListener
         String message = jo.toString();
         for(Session s : this.wsSessions)
         {
-            s.getRemote().sendStringByFuture(message);
+            try
+            {
+                s.getRemote().sendStringByFuture(message);
+            } catch (Exception e) {
+                
+            }
         }
     }
 
@@ -143,30 +216,57 @@ public class APIWebServer implements MidiControlListener
             try
             {
                 JSONObject jo = new JSONObject(message);
-                APIWebServer.instance.handleWebSocketEvent(jo, session);
+                if (session instanceof WebSocketSession)
+                {
+                    WebSocketSession wssession = (WebSocketSession) session;
+                    APIWebServer.instance.handleWebSocketEvent(jo, wssession);
+                } else {
+                    System.err.println("not instance of WebSocketSession");
+                }
             } catch (Exception e) {}
         }
      
         @OnWebSocketConnect
         public void onConnect(Session session) throws IOException
         {
-            System.out.println(session.getRemoteAddress().getHostString() + " connected!");
-            APIWebServer.instance.wsSessions.add(session);
-            for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
+            if (session instanceof WebSocketSession)
             {
-                MidiControl mc = cenum.nextElement();
-                JSONObject event = new JSONObject();
-                event.put("event", "controlAdded");
-                event.put("control", mc.toJSONObject());
-                session.getRemote().sendStringByFuture(event.toString());
+                WebSocketSession wssession = (WebSocketSession) session;
+                System.out.println(wssession.getRemoteAddress().getHostString() + " connected!");
+                APIWebServer.instance.wsSessions.add(wssession);
+                for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
+                {
+                    MidiControl mc = cenum.nextElement();
+                    JSONObject event = new JSONObject();
+                    event.put("event", "controlAdded");
+                    event.put("control", mc.toJSONObject());
+                    wssession.getRemote().sendStringByFuture(event.toString());
+                }
             }
         }
      
         @OnWebSocketClose
         public void onClose(Session session, int status, String reason)
         {
-            System.out.println(session.getRemoteAddress().getHostString() + " closed!");
-            APIWebServer.instance.wsSessions.remove(session);
+            if (session instanceof WebSocketSession)
+            {
+                WebSocketSession wssession = (WebSocketSession) session;
+                APIWebServer.instance.wsSessions.remove(wssession);
+                /*
+                System.out.println(session.getRemoteAddress().getHostString() + " closed!");
+                Vector<MidiPort> vports = new Vector(MidiPortManager.getVirtualPorts());
+                for(MidiPort p : vports)
+                {
+                    if(p instanceof MidiAPIPort)
+                    {
+                        MidiAPIPort port = (MidiAPIPort) p;
+                        if (port.getWebSocketSession().getRemoteAddress().equals(wssession.getRemoteAddress()))
+                        {
+                            MidiPortManager.removeVirtualPort(port);
+                        }
+                    }
+                }*/
+            }
         }
      
     }

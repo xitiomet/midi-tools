@@ -53,7 +53,7 @@ public class MidiControlRule implements MidiControlListener
             return_key.append(alpha.charAt(n.nextInt(alpha.length())));
         }
         String randKey = return_key.toString();
-        System.err.println("Generated Rule ID: " + randKey);
+        //System.err.println("Generated Rule ID: " + randKey);
         return randKey;
     }
     
@@ -138,27 +138,21 @@ public class MidiControlRule implements MidiControlListener
             if (this.getActionType() == MidiControlRule.ACTION_URL)
             {
                 PendingURLFetch puf = new PendingURLFetch(avparsed);
-                MidiTools.addTask(puf);
+                puf.run();
             } else if (this.getActionType() == MidiControlRule.ACTION_PROC) {
-                Runnable r = () -> {
-                    try
+                try
+                {
+                    Process process = new ProcessBuilder(avparsed).start();
+                    if (!process.waitFor(10, TimeUnit.SECONDS))
                     {
-                        Process process = new ProcessBuilder(avparsed).start();
-                        if (!process.waitFor(10, TimeUnit.SECONDS))
-                        {
-                            process.destroyForcibly();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace(System.err);
+                        process.destroyForcibly();
                     }
-                };
-                MidiTools.addTask(r);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
             } else if (this.getActionType() == MidiControlRule.ACTION_SOUND) {
-                Runnable r = () -> {
-                    if (MidiControlRule.this.sound != null)
-                        MidiControlRule.this.sound.play();
-                };
-                MidiTools.addTask(r);
+                if (MidiControlRule.this.sound != null)
+                    MidiControlRule.this.sound.play();
             } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
                 StringTokenizer st = new StringTokenizer(avparsed, ",");
                 if (st.countTokens() == 4)
@@ -306,7 +300,7 @@ public class MidiControlRule implements MidiControlListener
         } else if (n == MidiControlRule.ACTION_SOUND) {
             return "PLAY SOUND";
         } else if (n == MidiControlRule.ACTION_TRANSMIT) {
-            return "TRANSMIT MIDI";
+            return "TRANSMIT CONTROL CHANGE";
         } else if (n == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
             return "ENABLE RULE GROUP";
         } else if (n == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {

@@ -355,7 +355,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public void resetConfiguration()
     {
-        addTask(() -> {
+        (new Thread (() -> {
             for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
             {
                 MidiControl mc = mce.nextElement();
@@ -369,7 +369,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 });
             } catch (Exception e) {}
             this.setLastSavedFile(null);
-        });
+        })).start();
     }
     
     public void setLastSavedFile(File f)
@@ -385,11 +385,18 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void repaintRules()
     {
-        addTask(() -> {
+        (new Thread (() -> {
             MidiTools.instance.rulesList.repaint();
-        });
+        })).start();
     }
     
+    public static void repaintControls()
+    {
+        (new Thread (() -> {
+            MidiTools.instance.controlList.repaint();
+        })).start();
+    }
+
     public static void addTask(Runnable r)
     {
         MidiTools.instance.taskQueue.add(r);
@@ -443,7 +450,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         } else if (cmd.equals("about")) {
             browseTo("http://openstatic.org/miditools/");
         } else if (cmd.equals("open_api")) {
-            String url = "http://" + MidiTools.getLocalIP() + ":6123/";
+            String url = "https://" + MidiTools.getLocalIP() + ":6124/";
             browseTo(url);
         } else if (cmd.equals("save")) {
             saveConfigAs(this.lastSavedFile);
@@ -462,7 +469,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             JDialog dialog = new JDialog();     
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             dialog.setTitle("Midi Control Change Tool");
-            String url = "http://" + MidiTools.getLocalIP() + ":6123/";
+            String url = "https://" + MidiTools.getLocalIP() + ":6124/";
             dialog.add(new JLabel(new ImageIcon(MidiTools.QRCode(url))));
             dialog.pack();
             dialog.setLocationByPlatform(true);
@@ -476,9 +483,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
                 final File fileToLoad = fileChooser.getSelectedFile();
-                addTask(() -> {
+                (new Thread(() -> {
                     loadConfigFrom(fileToLoad);
-                });
+                })).start();
             }
         } else if (cmd.equals("create_rule")) {
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
@@ -495,9 +502,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             if (t != null)
             {
-                addTask(() -> {
+                (new Thread(() -> {
                     removeMidiControl(t);
-                });
+                })).start();
             }
         }
     }
@@ -639,7 +646,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             event.put("event", "controlRemoved");
             event.put("control", mc.toJSONObject());
             MidiTools.instance.apiServer.broadcastJSONObject(event);
-            MidiTools.instance.controlList.repaint();
+            MidiTools.repaintControls();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -657,7 +664,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             event.put("event", "controlAdded");
             event.put("control", mc.toJSONObject());
             MidiTools.instance.apiServer.broadcastJSONObject(event);
-            MidiTools.instance.controlList.repaint();
+            MidiTools.repaintControls();
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -701,7 +708,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     }
                     if (should_repaint)
                     {
-                        this.controlList.repaint();
+                        this.repaintControls();
                     }
                 });
             }

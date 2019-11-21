@@ -9,12 +9,14 @@ import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class MidiPortManager
 {
     private static LinkedHashMap<MidiDevice.Info, MidiPort> localDevices = new LinkedHashMap<MidiDevice.Info, MidiPort>();
+    private static LinkedHashMap<String, MidiPort> virtualPorts = new LinkedHashMap<String, MidiPort>();
     
     private static Vector<MidiPort> ports = new Vector<MidiPort>();
     
@@ -77,9 +79,15 @@ public class MidiPortManager
     {
         //System.err.println("MidiPortManager Refresh");
         refreshLocalDevices();
+        Set<Map.Entry<String, MidiPort>> virtualPortSet = MidiPortManager.virtualPorts.entrySet();
+        virtualPortSet.removeIf(entry -> {
+            return !entry.getValue().isAvailable();
+        });
+        
         Vector<MidiPort> updatedSources = new Vector<MidiPort>();
         updatedSources.addAll(MidiPortManager.localDevices.values());
-
+        updatedSources.addAll(MidiPortManager.virtualPorts.values());
+        
          // Check for new sources added
         for(Iterator<MidiPort> updatedPortsIterator = updatedSources.iterator(); updatedPortsIterator.hasNext();)
         {
@@ -186,6 +194,55 @@ public class MidiPortManager
         {
             MidiPortManager.listeners.remove(msl);
         }
+    }
+    
+    public static void registerVirtualPort(String id, MidiPort port)
+    {
+        if (!MidiPortManager.virtualPorts.containsKey(id))
+        {
+            System.err.println("Register Virtal Port: " + id);
+            MidiPortManager.virtualPorts.put(id, port);
+        }
+    }
+    
+    public static void removeVirtualPort(String id)
+    {
+        if (MidiPortManager.virtualPorts.containsKey(id))
+        {
+            System.err.println("Removing Virtal Port: " + id);
+            MidiPortManager.virtualPorts.remove(id);
+        }
+    }
+    
+    public static MidiPort findVirtualPort(String id)
+    {
+        if (MidiPortManager.virtualPorts.containsKey(id))
+        {
+            return MidiPortManager.virtualPorts.get(id);
+        } else {
+            return null;
+        }
+    }
+    
+    public static void removeVirtualPort(MidiPort port)
+    {
+        if (MidiPortManager.virtualPorts.containsValue(port))
+        {
+            Iterator<Map.Entry<String, MidiPort>> iterator = MidiPortManager.virtualPorts.entrySet().iterator();
+            while(iterator.hasNext())
+            {
+                Map.Entry<String, MidiPort> entry = iterator.next();
+                if (port.equals(entry.getValue()))
+                {
+                    iterator.remove();
+                }
+            }
+        }
+    }
+    
+    public static Collection<MidiPort> getVirtualPorts()
+    {
+        return MidiPortManager.virtualPorts.values();
     }
 
     public static Collection<MidiPort> getPorts()

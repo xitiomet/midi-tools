@@ -95,6 +95,7 @@
             <include>*.jpg</include>
             <include>*.js</include>
             <include>*.gif</include>
+            <include>*.jks</include>
           </includes>
         </resource>
     </resources>

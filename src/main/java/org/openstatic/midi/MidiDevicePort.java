@@ -87,6 +87,11 @@ public class MidiDevicePort implements MidiPort
             e.printStackTrace(System.err);
         }
     }
+    
+    public boolean isAvailable()
+    {
+        return true;
+    }
 
     public boolean isOpened()
     {
@@ -129,6 +134,14 @@ public class MidiDevicePort implements MidiPort
         if (!this.receivers.contains(r))
         {
             this.receivers.add(r);
+        }
+    }
+    
+    public void removeReceiver(Receiver r)
+    {
+        if (this.receivers.contains(r))
+        {
+            this.receivers.remove(r);
         }
     }
 

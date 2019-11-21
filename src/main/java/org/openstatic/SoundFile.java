@@ -180,7 +180,6 @@ public class SoundFile
         {
             try
             {
-                System.err.println("joining thread");
                 this.downloadThread.join();
             } catch (Exception e) {
                 e.printStackTrace(System.err);

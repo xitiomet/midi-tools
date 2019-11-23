@@ -138,6 +138,13 @@ public class APIWebServer implements MidiControlListener
                     MidiAPIPort port = (MidiAPIPort) p;
                     port.handleWebSocketEvent(j);
                 }
+            } else if (doCmd.equals("changeControlValue")) {
+                MidiControl mc = MidiTools.getMidiControlByChannelCC(j.optInt("channel", 0), j.optInt("cc", 0));
+                if (mc != null)
+                {
+                    mc.manualAdjust(j.optInt("value",0));
+                    MidiTools.repaintControls();
+                }
             }
         }
     }

@@ -74,8 +74,12 @@ public class MidiControl
 
     public void processMessage(ShortMessage msg)
     {
+        manualAdjust(msg.getData2());
+    }
+    
+    public void manualAdjust(final int new_value)
+    {
         final int old_value = this.value;
-        final int new_value = msg.getData2();
         if (old_value != new_value)
         {
             this.value = new_value;

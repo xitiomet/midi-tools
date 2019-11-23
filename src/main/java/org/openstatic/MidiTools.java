@@ -87,7 +87,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     protected JList controlList;
     private JList midiList;
     private JList rulesList;
-    private JPopupMenu controlMenu;
+    private JPopupMenu controlMenuPopup;
     protected MidiControlCellRenderer midiControlCellRenderer;
     protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
@@ -98,11 +98,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     protected LinkedBlockingQueue<Runnable> taskQueue;
     private JMenuBar menuBar;
     private JMenu fileMenu;
+    private JMenu controlsMenu;
     private JMenu apiMenu;
     private JCheckBoxMenuItem apiServerEnable;
+    private JCheckBoxMenuItem createControlOnInput;
     private JMenuItem showQrItem;
     private JMenuItem openInBrowserItem;
-
+    private JMenuItem createNewControlItem;
     private JMenuItem aboutMenuItem;
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
@@ -137,7 +139,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             this.setIconImage(windowIcon);
         } catch (Exception iconException) {}
         
-        this.controlMenu = new JPopupMenu("control");
+        this.controlMenuPopup = new JPopupMenu("control");
         
         this.deleteControlMenuItem = new JMenuItem("Delete Control");
         this.deleteControlMenuItem.setMnemonic(KeyEvent.VK_D);
@@ -167,9 +169,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.openInBrowserItem.addActionListener(this);
         this.openInBrowserItem.setActionCommand("open_api");
         
-        this.controlMenu.add(this.renameControlMenuItem);
-        this.controlMenu.add(this.deleteControlMenuItem);
-        this.controlMenu.add(this.createRuleMenuItem);
+        this.controlMenuPopup.add(this.renameControlMenuItem);
+        this.controlMenuPopup.add(this.deleteControlMenuItem);
+        this.controlMenuPopup.add(this.createRuleMenuItem);
         
         this.menuBar = new JMenuBar();
         
@@ -214,14 +216,31 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.fileMenu.add(new JSeparator());
         this.fileMenu.add(this.exitMenuItem);
         
+        this.controlsMenu = new JMenu("Controls");
+        this.controlsMenu.setMnemonic(KeyEvent.VK_C);
+        this.createNewControlItem = new JMenuItem("Create Control");
+        this.createNewControlItem.setActionCommand("new_control");
+        this.createNewControlItem.addActionListener(this);
+        this.createNewControlItem.setMnemonic(KeyEvent.VK_C);
+        
+        this.createControlOnInput = new JCheckBoxMenuItem("Create Control on Midi Input");
+        this.createControlOnInput.addActionListener(this);
+        this.createControlOnInput.setState(true);
+        this.options.put("createControlOnInput", true);
+        this.controlsMenu.add(this.createControlOnInput);
+        this.controlsMenu.add(this.createNewControlItem);
+        
         this.apiMenu = new JMenu("API");
+        this.apiMenu.setMnemonic(KeyEvent.VK_A);
         this.apiServerEnable = new JCheckBoxMenuItem("Enable Internal Web Server");
         this.apiServerEnable.addActionListener(this);
+        this.apiServerEnable.setMnemonic(KeyEvent.VK_E);
         this.apiMenu.add(this.apiServerEnable);
         this.apiMenu.add(this.showQrItem);
         this.apiMenu.add(this.openInBrowserItem);
         
         this.menuBar.add(this.fileMenu);
+        this.menuBar.add(this.controlsMenu);
         this.menuBar.add(this.apiMenu);
         
         this.setJMenuBar(this.menuBar);
@@ -247,11 +266,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                        long cms = System.currentTimeMillis();
                        if (cms - MidiTools.this.lastControlClick < 500 && MidiTools.this.lastControlClick > 0)
                        {
-                            MidiTools.this.controlMenu.show(MidiTools.this.controlList, e.getX(), e.getY()); 
+                            MidiTools.this.controlMenuPopup.show(MidiTools.this.controlList, e.getX(), e.getY()); 
                        }
                        MidiTools.this.lastControlClick = cms;
                    } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                      MidiTools.this.controlMenu.show(MidiTools.this.controlList, e.getX(), e.getY()); 
+                      MidiTools.this.controlMenuPopup.show(MidiTools.this.controlList, e.getX(), e.getY()); 
                    }
                }
             }
@@ -430,6 +449,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             this.options.put("apiServer", state);
             changeAPIState(state);
             return;
+        } else if (e.getSource() == this.createControlOnInput) {
+            boolean state = this.createControlOnInput.getState();
+            this.options.put("createControlOnInput", state);
+            return;
         }
         String cmd = e.getActionCommand();
         if (cmd.equals("save") && this.lastSavedFile == null)
@@ -491,6 +514,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             MidiControlRule newRule = new MidiControlRule(t, 1, 0, null);
             MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
+        } else if (cmd.equals("new_control")) {
+            CreateControlDialog editr = new CreateControlDialog();
         } else if (cmd.equals("rename_control")) {
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             String s = (String)JOptionPane.showInputDialog(this,"Rename Control", t.getNickname());
@@ -701,7 +726,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                             }
                         }
                     }
-                    if (!found_control)
+                    if (!found_control && this.createControlOnInput.getState())
                     {
                         MidiControl mc = new MidiControl(sm.getChannel()+1, sm.getData1());
                         handleNewMidiControl(mc);
@@ -754,7 +779,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 }
             }
             if (configJson.has("options"))
+            {
                 this.options = configJson.getJSONObject("options");
+                this.createControlOnInput.setState(this.options.optBoolean("createControlOnInput", true));
+            }
             if (remember)
                 this.setLastSavedFile(file);
             if (configJson.has("openReceivingPorts"))

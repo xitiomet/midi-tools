@@ -53,7 +53,7 @@ function onMIDIFailure(e) {
 function sendEvent(wsEvent)
 {
     var out_event = JSON.stringify(wsEvent);
-    //console.log("Transmit: " + out_event);
+    console.log("Transmit: " + out_event);
     try
     {
         connection.send(out_event);
@@ -77,8 +77,10 @@ function createControlElement(control)
     {
         var trow = document.createElement("tr");
         trow.id = rowId;
+        trow.style.height = '48px';
         trow.innerHTML = '<td style="max-width: 35%;"><b id="nickname_' + idPostfix + '" style="font-size: 18px;">' + control.nickname + '</b><br /><i id="italic_' + idPostfix + '" style="font-size: 10px;">ch=' + control.channel + ' cc=' + control.cc + ' v=' + control.value + '</i></td>' +
-                         '<td style="min-width: 65%; max-width: 85%;"><progress id="progress_' + idPostfix + '" style="min-width: 99%;" max="127" value="' + control.value + '"></td>';
+                         '<td style="min-width: 65%; max-width: 85%;"><progress id="progress_' + idPostfix + '" style="min-width: 99%;" max="127" value="' + control.value + '"></progress><br />' +
+                         '<input style="min-width: 99%;" type="range" min="0" max="127" value="0" oninput="sendEvent({&quot;do&quot;:&quot;changeControlValue&quot;, &quot;channel&quot;: ' + control.channel + ', &quot;cc&quot;: ' + control.cc + ', &quot;value&quot;: parseInt(this.value)});" /></td>';
         document.getElementById('controlsTable').appendChild(trow);
     }
 }
@@ -99,15 +101,19 @@ function setupWebsocket()
     {
         var hostname = location.hostname;
         var protocol = location.protocol;
-        console.log("protocol: " + protocol);
-        var prot = 'ws';
+        var port = location.port;
+        var wsProtocol = 'ws';
         if (hostname == '')
+        {
             hostname = '192.168.34.129';
+            protocol = 'https';
+            port = 6124;
+        }
         if (protocol.startsWith('https'))
         {
-            prot = 'wss';
+            wsProtocol = 'wss';
         }
-        connection = new WebSocket(prot+'://' + hostname + ':' + location.port + '/events/');
+        connection = new WebSocket(wsProtocol + '://' + hostname + ':' + port + '/events/');
         
         connection.onopen = function () {
             console.log("Connected to device!");

@@ -40,12 +40,36 @@ public class MidiAPIPort implements MidiPort
     
     public void open()
     {
-        this.opened = true;
+        if (!this.opened)
+        {
+            try
+            {
+                JSONObject mm = new JSONObject();
+                mm.put("event", "openMidiDevice");
+                mm.put("device", this.getDeviceId());
+                this.session.getRemote().sendStringByFuture(mm.toString());
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+            this.opened = true;
+        }
     }
     
     public void close()
     {
-        this.opened = false;
+        if (this.opened)
+        {
+            try
+            {
+                JSONObject mm = new JSONObject();
+                mm.put("event", "closeMidiDevice");
+                mm.put("device", this.getDeviceId());
+                this.session.getRemote().sendStringByFuture(mm.toString());
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+            this.opened = false;
+        }
     }
     
     public boolean isOpened()

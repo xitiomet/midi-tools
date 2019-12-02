@@ -11,42 +11,42 @@ import java.util.List;
 import java.util.Iterator;
 import java.io.*;
 
-public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
+public class MidiPortMappingListModel implements ListModel<MidiPortMapping>, MidiPortListener
 {
     private Vector<ListDataListener> listeners = new Vector<ListDataListener>();
 
-    public MidiPortListModel()
+    public MidiPortMappingListModel()
     {
         MidiPortManager.addMidiPortListener(this);
     }
-    
-    public void mappingAdded(int idx, MidiPortMapping mapping) {}
-    public void mappingRemoved(int idx, MidiPortMapping mapping) {}
+
+    public void portAdded(int idx, MidiPort port) {}
+    public void portRemoved(int idx, MidiPort port) {}
     public void portOpened(MidiPort port) {}
     public void portClosed(MidiPort port) {}
 
-    public void portAdded(int idx, MidiPort port)
+    public void mappingAdded(int idx, MidiPortMapping mapping)
     {
         for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
         {
             try
             {
                 ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_ADDED, idx, idx);
+                ListDataEvent lde = new ListDataEvent(mapping, ListDataEvent.INTERVAL_ADDED, idx, idx);
                 ldl.intervalAdded(lde);
             } catch (Exception mlex) {
             }
         }
     }
 
-    public void portRemoved(int idx, MidiPort port)
+    public void mappingRemoved(int idx, MidiPortMapping mapping)
     {
         for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
         {
             try
             {
                 ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_REMOVED, idx, idx);
+                ListDataEvent lde = new ListDataEvent(mapping, ListDataEvent.INTERVAL_REMOVED, idx, idx);
                 ldl.intervalRemoved(lde);
             } catch (Exception mlex) {
             }
@@ -57,17 +57,17 @@ public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
     {
         try
         {
-            return MidiPortManager.getPorts().size();
+            return MidiPortManager.getMidiPortMappings().size();
         } catch (Exception e) {
             return 0;
         }
     }
 
-    public MidiPort getElementAt(int index)
+    public MidiPortMapping getElementAt(int index)
     {
         try
         {
-            MidiPort[] sources = MidiPortManager.getPorts().toArray(new MidiPort[0]);
+            MidiPortMapping[] sources = MidiPortManager.getMidiPortMappings().toArray(new MidiPortMapping[0]);
             return sources[index];
         } catch (Exception e) {
             return null;

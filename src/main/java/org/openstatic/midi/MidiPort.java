@@ -1,6 +1,7 @@
 package org.openstatic.midi;
 
 import javax.sound.midi.*;
+import java.util.Collection;
 
 public interface MidiPort extends Receiver
 {
@@ -23,6 +24,11 @@ public interface MidiPort extends Receiver
     
     // removes a receiver from the device
     public void removeReceiver(Receiver r);
+    
+    // check if this port has a receiver
+    public boolean hasReceiver(Receiver r);
+    
+    public Collection<Receiver> getReceivers();
     
     // does the midi port have an input?
     public boolean canReceiveMessages();

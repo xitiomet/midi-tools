@@ -48,7 +48,7 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 
 
-public class APIWebServer implements MidiControlListener
+public class APIWebServer implements MidiControlListener, MidiPortListener
 {
     private Server httpServer;
     protected ArrayList<WebSocketSession> wsSessions;
@@ -90,6 +90,7 @@ public class APIWebServer implements MidiControlListener
             e.printStackTrace(System.err);
         }
         httpServer.setHandler(context);
+        MidiPortManager.addMidiPortListener(this);
     }
     
     public void handleWebSocketEvent(JSONObject j, WebSocketSession session)
@@ -138,6 +139,34 @@ public class APIWebServer implements MidiControlListener
                     MidiAPIPort port = (MidiAPIPort) p;
                     port.handleWebSocketEvent(j);
                 }
+            } else if (doCmd.equals("openDevice")) {
+                String deviceId = j.optString("device", "unknown");
+                String deviceType = j.optString("type", "both");
+                if ("input".equals(deviceType))
+                {
+                    MidiPort p = MidiPortManager.findReceivingPortByName(deviceId);
+                    p.open();
+                } else if ("output".equals(deviceType)) {
+                    MidiPort p = MidiPortManager.findTransmittingPortByName(deviceId);
+                    p.open();
+                } else {
+                    MidiPort p = MidiPortManager.findBidirectionalPortByName(deviceId);
+                    p.open();
+                }
+            } else if (doCmd.equals("closeDevice")) {
+                String deviceId = j.optString("device", "unknown");
+                String deviceType = j.optString("type", "both");
+                if ("input".equals(deviceType))
+                {
+                    MidiPort p = MidiPortManager.findReceivingPortByName(deviceId);
+                    p.close();
+                } else if ("output".equals(deviceType)) {
+                    MidiPort p = MidiPortManager.findTransmittingPortByName(deviceId);
+                    p.close();
+                } else {
+                    MidiPort p = MidiPortManager.findBidirectionalPortByName(deviceId);
+                    p.close();
+                }
             } else if (doCmd.equals("changeControlValue")) {
                 MidiControl mc = MidiTools.getMidiControlByChannelCC(j.optInt("channel", 0), j.optInt("cc", 0));
                 if (mc != null)
@@ -167,6 +196,66 @@ public class APIWebServer implements MidiControlListener
                 e.printStackTrace(System.err);
             }
         }
+    }
+    
+    public static JSONObject MidiPortToJSONObject(MidiPort port)
+    {
+        JSONObject dev = new JSONObject();
+        dev.put("name", port.getName());
+        if (port.canTransmitMessages() && port.canReceiveMessages())
+        {
+            dev.put("type", "both");
+        } else if (port.canTransmitMessages()) {
+            dev.put("type", "output");
+        } else if (port.canReceiveMessages()) {
+            dev.put("type", "input");
+        }
+        dev.put("opened", port.isOpened());
+        return dev;
+    }
+    
+    public void portAdded(int idx, MidiPort port)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "deviceAdded");
+        event.put("id", idx);
+        event.put("device", MidiPortToJSONObject(port));
+        broadcastJSONObject(event);
+    }
+    
+    public void portRemoved(int idx, MidiPort port)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "deviceRemoved");
+        event.put("id", idx);
+        event.put("device", MidiPortToJSONObject(port));
+        broadcastJSONObject(event);
+    }
+    
+    public void portOpened(MidiPort port)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "deviceOpened");
+        event.put("device", MidiPortToJSONObject(port));
+        broadcastJSONObject(event);
+    }
+    
+    public void portClosed(MidiPort port)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "deviceClosed");
+        event.put("device", MidiPortToJSONObject(port));
+        broadcastJSONObject(event);
+    }
+    
+    public void mappingAdded(int idx, MidiPortMapping mapping)
+    {
+        
+    }
+    
+    public void mappingRemoved(int idx, MidiPortMapping mapping)
+    {
+        
     }
     
     public void controlValueChanged(MidiControl control, int old_value, int new_value)
@@ -248,6 +337,17 @@ public class APIWebServer implements MidiControlListener
                     event.put("event", "controlAdded");
                     event.put("control", mc.toJSONObject());
                     wssession.getRemote().sendStringByFuture(event.toString());
+                }
+                int idx = 0;
+                for (Iterator<MidiPort> pi = MidiPortManager.getPorts().iterator(); pi.hasNext();)
+                {
+                    MidiPort mp = pi.next();
+                    JSONObject event = new JSONObject();
+                    event.put("event", "deviceAdded");
+                    event.put("id", idx);
+                    event.put("device", MidiPortToJSONObject(mp));
+                    wssession.getRemote().sendStringByFuture(event.toString());
+                    idx++;
                 }
             }
         }
@@ -345,6 +445,20 @@ public class APIWebServer implements MidiControlListener
                     response.put("controls", MidiTools.instance.controlsAsJSONArray());
                 } else if ("/info/".equals(target)) {
                     response.put("staticRoot", APIWebServer.instance.staticRoot);
+                } else if ("/mappings/add/".equals(target)) {
+                    String source = request.getParameter("source");
+                    String destination = request.getParameter("destination");
+                    MidiPort sourcePort = MidiPortManager.findTransmittingPortByName(source);
+                    MidiPort destinationPort = MidiPortManager.findReceivingPortByName(destination);
+                    if (sourcePort != null && destinationPort != null)
+                    {
+                        MidiPortMapping mpm = MidiPortManager.createMidiPortMapping(sourcePort, destinationPort);
+                        response.put("mapping", mpm.toJSONObject());
+                    } else {
+                        response.put("error", "Bad Request");
+                    }
+                } else if ("/mappings/".equals(target)) {
+                    response.put("mappings", MidiTools.instance.mappingsAsJSONArray());
                 }
             } catch (Exception x) {
                 x.printStackTrace(System.err);

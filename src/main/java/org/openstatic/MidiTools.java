@@ -82,15 +82,18 @@ import javax.sound.midi.*;
 
 import org.json.*;
 
-public class MidiTools extends JFrame implements Runnable, Receiver, ActionListener
+public class MidiTools extends JFrame implements Runnable, Receiver, ActionListener, MidiPortListener
 {
+    public static final String VERSION = "1.0";
     protected JList controlList;
     private JList midiList;
     private JList rulesList;
+    private JList mappingList;
     private JPopupMenu controlMenuPopup;
     protected MidiControlCellRenderer midiControlCellRenderer;
     protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
+    private MidiPortMappingCellRenderer midiPortMappingCellRenderer;
     private MidiPortListModel midiListModel;
     private Thread mainThread;
     protected DefaultListModel<MidiControl> controls;
@@ -100,11 +103,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenu fileMenu;
     private JMenu controlsMenu;
     private JMenu apiMenu;
+    private JTabbedPane bottomTabbedPane;
     private JCheckBoxMenuItem apiServerEnable;
     private JCheckBoxMenuItem createControlOnInput;
     private JMenuItem showQrItem;
     private JMenuItem openInBrowserItem;
     private JMenuItem createNewControlItem;
+    private JMenuItem createNewMappingItem;
     private JMenuItem aboutMenuItem;
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
@@ -119,12 +124,14 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private boolean keep_running;
     private long lastControlClick;
     private long lastRuleClick;
+    private long lastDeviceClick;
+    private long lastMappingClick;
     private APIWebServer apiServer;
     private JSONObject options;
 
     public MidiTools()
     {
-        super("MIDI Control Change Tool v1.0");
+        super("MIDI Control Change Tool v" + MidiTools.VERSION);
         this.options = new JSONObject();
         this.taskQueue = new LinkedBlockingQueue<Runnable>();
         this.keep_running = true;
@@ -216,17 +223,23 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.fileMenu.add(new JSeparator());
         this.fileMenu.add(this.exitMenuItem);
         
-        this.controlsMenu = new JMenu("Controls");
+        this.controlsMenu = new JMenu("MIDI");
         this.controlsMenu.setMnemonic(KeyEvent.VK_C);
         this.createNewControlItem = new JMenuItem("Create Control");
         this.createNewControlItem.setActionCommand("new_control");
         this.createNewControlItem.addActionListener(this);
         this.createNewControlItem.setMnemonic(KeyEvent.VK_C);
         
+        this.createNewMappingItem = new JMenuItem("Create Port Mapping");
+        this.createNewMappingItem.setActionCommand("new_mapping");
+        this.createNewMappingItem.addActionListener(this);
+        this.createNewMappingItem.setMnemonic(KeyEvent.VK_M);
+        
         this.createControlOnInput = new JCheckBoxMenuItem("Create Control on Midi Input");
         this.createControlOnInput.addActionListener(this);
         this.createControlOnInput.setState(true);
         this.options.put("createControlOnInput", true);
+        this.controlsMenu.add(this.createNewMappingItem);
         this.controlsMenu.add(this.createControlOnInput);
         this.controlsMenu.add(this.createNewControlItem);
         
@@ -250,7 +263,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         this.midiControlCellRenderer = new MidiControlCellRenderer();
         this.midiControlRuleCellRenderer = new MidiControlRuleCellRenderer();
-
+        this.midiPortMappingCellRenderer = new MidiPortMappingCellRenderer();
+        
         // Setup toy list
         this.controlList = new JList(this.controls);
         this.controlList.setCellRenderer(this.midiControlCellRenderer);
@@ -276,16 +290,16 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             }
         });
         
-        JScrollPane lovenseToyScrollPane = new JScrollPane(this.controlList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        lovenseToyScrollPane.setBorder(new TitledBorder("Midi Controls"));
+        JScrollPane controlsScrollPane = new JScrollPane(this.controlList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        controlsScrollPane.setBorder(new TitledBorder("Midi Controls"));
         JPanel toysAndPower = new JPanel(new BorderLayout());
-        toysAndPower.add(lovenseToyScrollPane, BorderLayout.CENTER);
+        toysAndPower.add(controlsScrollPane, BorderLayout.CENTER);
 
         // Setup rule list
         this.rulesList = new JList(this.rules);
         this.rulesList.setCellRenderer(this.midiControlRuleCellRenderer);
         JScrollPane ruleScrollPane = new JScrollPane(this.rulesList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming MIDI Messages (right-click or double-click to edit)"));
+        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming Control Change Messages (right-click to edit, double-click to toggle)"));
         this.rulesList.addMouseListener(new MouseAdapter()
         {
             public void mouseClicked(MouseEvent e)
@@ -300,8 +314,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                        long cms = System.currentTimeMillis();
                        if (cms - MidiTools.this.lastRuleClick < 500 && MidiTools.this.lastRuleClick > 0)
                        {
-                          MidiControlRuleEditor editor = new MidiControlRuleEditor(source);
-                       } else {
                           source.toggleEnabled();
                        }
                        MidiTools.this.lastRuleClick = cms;
@@ -316,7 +328,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         this.midiListModel = new MidiPortListModel();
         this.midiRenderer = new MidiPortCellRenderer();
-        MidiPortManager.addMidiPortListener(this.midiListModel);
         MidiPortManager.init();
         this.midiList = new JList(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
@@ -328,22 +339,72 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                if (index != -1)
                {
                   MidiPort source = (MidiPort) MidiTools.this.midiListModel.getElementAt(index);
-                  if (source.isOpened())
+                  if (e.getButton() == MouseEvent.BUTTON1)
                   {
-                      source.close();
-                  } else {
-                      source.open();
-                      source.addReceiver(MidiTools.this);
+                    long cms = System.currentTimeMillis();
+                    if (cms - MidiTools.this.lastDeviceClick < 500 && MidiTools.this.lastDeviceClick > 0)
+                    {
+                      if (source.isOpened())
+                      {
+                          source.close();
+                          source.removeReceiver(MidiTools.this);
+                      } else {
+                          source.open();
+                          source.addReceiver(MidiTools.this);
+                      }
+                    }
+                    MidiTools.this.lastDeviceClick = cms;
                   }
-                  repaint();
                }
             }
         });
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane2.setBorder(new TitledBorder("MIDI Devices"));
+        scrollPane2.setBorder(new TitledBorder("MIDI Devices (double-click to toggle)"));
         this.add(scrollPane2, BorderLayout.WEST);
-        this.add(ruleScrollPane, BorderLayout.PAGE_END);
+        
+        this.bottomTabbedPane = new JTabbedPane();
+        this.bottomTabbedPane.setPreferredSize(new Dimension(0, 200));
+        this.bottomTabbedPane.addTab("Control Change Rules", ruleScrollPane);
+        
+        // Setup rule list
+        this.mappingList = new JList(new MidiPortMappingListModel());
+        this.mappingList.setCellRenderer(this.midiPortMappingCellRenderer);
+        this.mappingList.addMouseListener(new MouseAdapter()
+        {
+            public void mouseClicked(MouseEvent e)
+            {
+               int index = MidiTools.this.mappingList.locationToIndex(e.getPoint());
+
+               if (index != -1)
+               {
+                   MidiPortMapping mapping = (MidiPortMapping) MidiTools.this.mappingList.getModel().getElementAt(index);
+                   if (e.getButton() == MouseEvent.BUTTON1)
+                   {
+                       long cms = System.currentTimeMillis();
+                       if (cms - MidiTools.this.lastMappingClick < 500 && MidiTools.this.lastMappingClick > 0)
+                       {
+                          mapping.toggle();
+                       }
+                       MidiTools.this.lastMappingClick = cms;
+                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
+                      int n = JOptionPane.showConfirmDialog(null, "Delete this port mapping?\n" + mapping.toString(),
+                        "Port Mapping",
+                        JOptionPane.YES_NO_OPTION);
+                        if(n == JOptionPane.YES_OPTION)
+                        {
+                            MidiPortManager.removeMidiPortMapping(mapping);
+                        }
+                   }
+                   MidiTools.repaintMappings();
+               }
+            }
+        });
+        JScrollPane mappingScrollPane = new JScrollPane(this.mappingList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        mappingScrollPane.setBorder(new TitledBorder("MIDI Port Mappings (right-click to delete, double-click to toggle)"));
+        this.bottomTabbedPane.addTab("Port Mappings", mappingScrollPane);
+        
+        this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
 
         this.mainThread = new Thread(this);
         this.mainThread.setDaemon(true);
@@ -362,7 +423,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         loadConfig();
         boolean apiEnable = this.options.optBoolean("apiServer", false);
         changeAPIState(apiEnable);
+        MidiPortManager.addMidiPortListener(this);
     }
+    
+    public void portAdded(int idx, MidiPort port) { repaintDevices(); }
+    public void portRemoved(int idx, MidiPort port) { repaintDevices(); }
+    public void portOpened(MidiPort port) { repaintDevices(); }
+    public void portClosed(MidiPort port) { repaintDevices(); }
+    public void mappingAdded(int idx, MidiPortMapping mapping) { MidiTools.repaintMappings(); }
+    public void mappingRemoved(int idx, MidiPortMapping mapping)  { MidiTools.repaintMappings(); }
     
     public void changeAPIState(boolean apiEnable)
     {
@@ -413,6 +482,20 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     {
         (new Thread (() -> {
             MidiTools.instance.controlList.repaint();
+        })).start();
+    }
+    
+    public static void repaintDevices()
+    {
+        (new Thread (() -> {
+            MidiTools.instance.midiList.repaint();
+        })).start();
+    }
+    
+    public static void repaintMappings()
+    {
+        (new Thread (() -> {
+            MidiTools.instance.mappingList.repaint();
         })).start();
     }
 
@@ -516,6 +599,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
+        } else if (cmd.equals("new_mapping")) {
+            CreateMappingDialog editr = new CreateMappingDialog();
         } else if (cmd.equals("rename_control")) {
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             String s = (String)JOptionPane.showInputDialog(this,"Rename Control", t.getNickname());
@@ -815,6 +900,16 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     }
                 }
             }
+            if (configJson.has("mappings"))
+            {
+                JSONArray mappingsArray = configJson.getJSONArray("mappings");
+                for (int m = 0; m < mappingsArray.length(); m++)
+                {
+                    JSONObject mappingObj = mappingsArray.getJSONObject(m);
+                    MidiPortMapping mpm = new MidiPortMapping(mappingObj);
+                    MidiPortManager.addMidiPortMapping(mpm);
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -840,6 +935,18 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
         return rulesArray;
     }
+    
+    public JSONArray mappingsAsJSONArray()
+    {
+       JSONArray mappingArray = new JSONArray();
+        for (Iterator<MidiPortMapping> mpme = MidiPortManager.getMidiPortMappings().iterator(); mpme.hasNext();)
+        {
+            MidiPortMapping mpm = mpme.next();
+            mappingArray.put(mpm.toJSONObject());
+        }
+        return mappingArray;
+    }
+    
     
     public JSONArray controlsAsJSONArray()
     {
@@ -886,6 +993,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             configJson.put("options", this.options);
             configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
             configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
+            configJson.put("mappings", this.mappingsAsJSONArray());
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);

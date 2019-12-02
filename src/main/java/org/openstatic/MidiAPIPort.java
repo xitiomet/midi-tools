@@ -5,6 +5,7 @@ import javax.sound.midi.*;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import java.util.Vector;
 import java.util.Enumeration;
+import java.util.Collection;
 import org.json.*;
 
 public class MidiAPIPort implements MidiPort
@@ -48,6 +49,7 @@ public class MidiAPIPort implements MidiPort
                 mm.put("event", "openMidiDevice");
                 mm.put("device", this.getDeviceId());
                 this.session.getRemote().sendStringByFuture(mm.toString());
+                MidiPortManager.firePortOpened(this);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -65,6 +67,7 @@ public class MidiAPIPort implements MidiPort
                 mm.put("event", "closeMidiDevice");
                 mm.put("device", this.getDeviceId());
                 this.session.getRemote().sendStringByFuture(mm.toString());
+                MidiPortManager.firePortClosed(this);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -89,6 +92,11 @@ public class MidiAPIPort implements MidiPort
     }
     
     public String getName()
+    {
+        return this.name;
+    }
+    
+    public String toString()
     {
         return this.name;
     }
@@ -179,6 +187,15 @@ public class MidiAPIPort implements MidiPort
         }
     }
     
+    public boolean hasReceiver(Receiver r)
+    {
+        return this.receivers.contains(r);
+    }
+    
+    public Collection<Receiver> getReceivers()
+    {
+        return this.receivers;
+    }
     
     // does the midi port have an input?
     public boolean canReceiveMessages()

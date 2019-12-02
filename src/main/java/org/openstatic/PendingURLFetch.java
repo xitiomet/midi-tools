@@ -86,7 +86,7 @@ public class PendingURLFetch implements Runnable
             con.setConnectTimeout(5000);
             con.setReadTimeout(15000);
             con.setRequestMethod("GET");
-            con.setRequestProperty("User-Agent", "MidiTools 1.0");
+            con.setRequestProperty("User-Agent", "MidiTools " + MidiTools.VERSION);
             con.connect();
             int response_code = con.getResponseCode();
             if (response_code == 200)

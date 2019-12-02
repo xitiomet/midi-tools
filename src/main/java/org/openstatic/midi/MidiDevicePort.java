@@ -82,6 +82,7 @@ public class MidiDevicePort implements MidiPort
                     this.outputReceiver = device.getReceiver();
                 }
                 this.device.open();
+                MidiPortManager.firePortOpened(this);
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -115,6 +116,7 @@ public class MidiDevicePort implements MidiPort
             if (this.isOpened())
             {
                 this.device.close();
+                MidiPortManager.firePortClosed(this);
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -145,8 +147,23 @@ public class MidiDevicePort implements MidiPort
         }
     }
 
+    public Collection<Receiver> getReceivers()
+    {
+        return this.receivers;
+    }
+
+    public boolean hasReceiver(Receiver r)
+    {
+        return this.receivers.contains(r);
+    }
+
     public boolean equals(MidiPort port)
     {
         return this.name.equals(port.getName());
+    }
+    
+    public String toString()
+    {
+        return this.name;
     }
 }

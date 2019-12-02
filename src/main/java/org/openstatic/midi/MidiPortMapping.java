@@ -77,6 +77,10 @@ public class MidiPortMapping
     
     public void open()
     {
+        if (this.source == null)
+            this.source = MidiPortManager.findTransmittingPortByName(this.sourceName);
+        if (this.destination == null)
+            this.destination = MidiPortManager.findReceivingPortByName(this.destinationName);
         if (this.source != null && this.destination != null)
         {
             if (!this.source.isOpened())
@@ -109,7 +113,7 @@ public class MidiPortMapping
     public String toString()
     {
         if (this.nickname == null)
-            return this.source.getName() + " >> " + this.destination.getName();
+            return this.sourceName + " >> " + this.destinationName;
         else
             return this.nickname + ": " + this.sourceName + " >> " + this.destinationName;
     }

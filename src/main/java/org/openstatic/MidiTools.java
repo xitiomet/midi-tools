@@ -328,6 +328,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         this.midiListModel = new MidiPortListModel();
         this.midiRenderer = new MidiPortCellRenderer();
+        MidiPortManager.addMidiPortListener(this);
         MidiPortManager.init();
         this.midiList = new JList(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
@@ -423,13 +424,20 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         loadConfig();
         boolean apiEnable = this.options.optBoolean("apiServer", false);
         changeAPIState(apiEnable);
-        MidiPortManager.addMidiPortListener(this);
     }
     
     public void portAdded(int idx, MidiPort port) { repaintDevices(); }
     public void portRemoved(int idx, MidiPort port) { repaintDevices(); }
-    public void portOpened(MidiPort port) { repaintDevices(); }
-    public void portClosed(MidiPort port) { repaintDevices(); }
+    public void portOpened(MidiPort port)
+    {
+        port.addReceiver(MidiTools.this);
+        repaintDevices();
+    }
+    public void portClosed(MidiPort port)
+    {
+        port.removeReceiver(MidiTools.this);
+        repaintDevices();
+    }
     public void mappingAdded(int idx, MidiPortMapping mapping) { MidiTools.repaintMappings(); }
     public void mappingRemoved(int idx, MidiPortMapping mapping)  { MidiTools.repaintMappings(); }
     
@@ -473,30 +481,42 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void repaintRules()
     {
-        (new Thread (() -> {
-            MidiTools.instance.rulesList.repaint();
-        })).start();
+        if (MidiTools.instance.rulesList != null)
+        {
+            (new Thread (() -> {
+                MidiTools.instance.rulesList.repaint();
+            })).start();
+        }
     }
     
     public static void repaintControls()
     {
-        (new Thread (() -> {
-            MidiTools.instance.controlList.repaint();
-        })).start();
+        if (MidiTools.instance.controlList != null)
+        {
+            (new Thread (() -> {
+                MidiTools.instance.controlList.repaint();
+            })).start();
+        }
     }
     
     public static void repaintDevices()
     {
-        (new Thread (() -> {
-            MidiTools.instance.midiList.repaint();
-        })).start();
+        if (MidiTools.instance.midiList != null)
+        {
+            (new Thread (() -> {
+                MidiTools.instance.midiList.repaint();
+            })).start();
+        }
     }
     
     public static void repaintMappings()
     {
-        (new Thread (() -> {
-            MidiTools.instance.mappingList.repaint();
-        })).start();
+        if (MidiTools.instance.midiList != null)
+        {
+            (new Thread (() -> {
+                MidiTools.instance.mappingList.repaint();
+            })).start();
+        }
     }
 
     public static void addTask(Runnable r)
@@ -896,7 +916,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     {
                         System.err.println("Found Transmitting Port " + p.getName());
                         p.open();
-                        p.addReceiver(MidiTools.this);
                     }
                 }
             }

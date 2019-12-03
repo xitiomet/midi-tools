@@ -20,7 +20,7 @@ public class MidiControl
     {
         this.channel = jo.optInt("channel", 0);
         this.cc = jo.optInt("cc", 0);
-        this.nickname = jo.optString("nickname", "Control " + String.valueOf(cc));
+        this.nickname = jo.optString("nickname", nameControl(cc));
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
         this.value = jo.optInt("value", 0);
@@ -32,9 +32,56 @@ public class MidiControl
         this.channel = channel;
         this.cc = cc;
         this.value = 0;
-        this.nickname = "Control " + String.valueOf(cc);
+        this.nickname = nameControl(cc);
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
+    }
+    
+    private static String nameControl(int cc)
+    {
+        switch(cc)
+        {
+            case 0:
+                return "Bank Select";
+            case 1:
+                return "Mod Wheel";
+            case 2:
+                return "Breath Controller";
+            case 4:
+                return "Foot Controller";
+            case 5:
+                return "Portamento Time";
+            case 7:
+                return "Volume";
+            case 8:
+                return "Balance";
+            case 10:
+                return "Pan";
+            case 11:
+                return "Expression";
+            case 12:
+                return "Effect Controller 1";
+            case 13:
+                return "Effect Controller 2";
+            case 64:
+                return "Sustain Pedal";
+            case 65:
+                return "Portamento Switch";
+            case 66:
+                return "Sostenuto Switch";
+            case 91:
+                return "Effect 1 Depth";
+            case 92:
+                return "Effect 2 Depth";
+            case 93:
+                return "Effect 3 Depth";
+            case 94:
+                return "Effect 4 Depth";
+            case 95:
+                return "Effect 5 Depth";
+            default:
+                return "Control " + String.valueOf(cc);
+        }
     }
     
     public void addMidiControlListener(MidiControlListener mcl)

@@ -1,0 +1,8 @@
+Package: midi-tools
+Version: 1.0
+Section: misc
+Priority: low
+Architecture: all
+Description: Midi Control Change Tool
+Depends: openjdk-11-jre
+Maintainer: openstatic.org <support@openstatic.org>

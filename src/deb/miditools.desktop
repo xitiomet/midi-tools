@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Name=Midi Tools
+Comment=Midi Control Change Tools
+Exec=/usr/bin/miditools
+Icon=/usr/share/miditools/windows.png
+Terminal=false
+Type=Application
+Categories=Utility;Application;

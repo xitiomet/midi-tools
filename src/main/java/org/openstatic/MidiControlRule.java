@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.Random;
+import java.util.regex.*;
 
 public class MidiControlRule implements MidiControlListener
 {
@@ -121,13 +122,29 @@ public class MidiControlRule implements MidiControlListener
         }
     }
     
+    public static String mapReplace(String source, int value)
+    {
+        Pattern p = Pattern.compile("\\{\\{value.map\\((\\d+)\\,(\\d+)\\)\\}\\}");
+        Matcher m = p.matcher(source);
+        StringBuffer s = new StringBuffer();
+        while (m.find())
+        {
+            int out_min = Integer.valueOf(m.group(1)).intValue();
+            int out_max = Integer.valueOf(m.group(2)).intValue();
+            int new_value = value * (out_max - out_min) / 127 + out_min;
+            m.appendReplacement(s, String.valueOf(new_value));
+        }
+        m.appendTail(s);
+        return s.toString();
+    }
+    
     public void executeAction(MidiControl control, int old_value, int new_value)
     {
         if (this.enabled)
         {
             this.lastTriggered = System.currentTimeMillis();
             //System.err.println(this.toString() + " Recieved From " + control.toString());
-            final String avparsed = this.action_value
+            final String avparsed = mapReplace(this.action_value, new_value)
                               .replaceAll("\\{\\{value\\}\\}", String.valueOf(new_value))
                               .replaceAll("\\{\\{value.inv\\}\\}", String.valueOf((127-new_value)))
                               .replaceAll("\\{\\{value.old\\}\\}", String.valueOf(old_value))

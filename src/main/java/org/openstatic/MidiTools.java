@@ -850,9 +850,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     public void close() {}
     
     
+    public static File getConfigFile()
+    {
+        File homeDir = new File(System.getProperty("user.home"));
+        return new File(homeDir, ".midi-tools.json");
+    }
+    
     public void loadConfig()
     {
-        loadConfigFrom(new File("config.json"), false);
+        loadConfigFrom(getConfigFile(), false);
     }
     
     public void loadConfigFrom(File file)
@@ -887,6 +893,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             {
                 this.options = configJson.getJSONObject("options");
                 this.createControlOnInput.setState(this.options.optBoolean("createControlOnInput", true));
+                if (this.options.has("apiServer"))
+                {
+                    changeAPIState(this.options.optBoolean("apiServer", false));
+                }
+                
             }
             if (remember)
                 this.setLastSavedFile(file);
@@ -936,7 +947,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public void saveConfig()
     {
-        saveConfigAs(new File("config.json"), false);
+        saveConfigAs(getConfigFile(), false);
     }
 
     public void saveConfigAs(File file)

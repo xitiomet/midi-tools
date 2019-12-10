@@ -7,3 +7,6 @@ dependency-reduced-pom.xml
 *.json
 .DS_Store
 upload.sh
+.classpath
+.project
+.settings/

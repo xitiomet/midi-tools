@@ -142,7 +142,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.setLayout(new BorderLayout());
         try
         {
-            BufferedImage windowIcon = ImageIO.read(getClass().getResource("/windows.png"));
+            BufferedImage windowIcon = ImageIO.read(getClass().getResource("/midi-tools-res/windows.png"));
             this.setIconImage(windowIcon);
         } catch (Exception iconException) {}
         

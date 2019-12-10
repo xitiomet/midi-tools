@@ -67,7 +67,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         context.addServlet(EventsWebSocketServlet.class, "/events/*");
         try
         {
-            URL url = MidiTools.class.getResource("/index.html");
+            URL url = MidiTools.class.getResource("/midi-tools-res/index.html");
             this.staticRoot = url.toString().replaceAll("index.html","");
             DefaultServlet defaultServlet = new DefaultServlet();
             ServletHolder holderPwd = new ServletHolder("default", defaultServlet);

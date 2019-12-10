@@ -4,5 +4,5 @@ Section: misc
 Priority: low
 Architecture: all
 Description: Midi Control Change Tool
-Depends: openjdk-11-jre
+Depends: default-jre
 Maintainer: openstatic.org <support@openstatic.org>

@@ -50,7 +50,9 @@
         <td align="right"></td>
         </tr>
         <tr><td class="radio-toolbar" colspan="2">
-            <input type="radio" id="viewAreaSelectorControls" name="viewAreaSelector" value="controls" oninput="changeView(this)" checked>
+            <input type="radio" id="viewAreaSelectorConsole" name="viewAreaSelector" value="console" oninput="changeView(this)" checked>
+            <label for="viewAreaSelectorConsole">Console</label>
+            <input type="radio" id="viewAreaSelectorControls" name="viewAreaSelector" value="controls" oninput="changeView(this)">
             <label for="viewAreaSelectorControls">Controls</label>
             <!--<input type="radio" id="viewAreaSelectorMappings" name="viewAreaSelector" value="mappings" oninput="changeView(this)">
             <label for="viewAreaSelectorMappings">Mappings</label>-->
@@ -59,7 +61,8 @@
         </td></tr>
     </tbody></table>
 </div>
-<table id="controlsTable" style="width: 100%;">
+<div id="console" style="width:99%; height: 80%; padding: 5px 5px 5px 5px; overflow-y: scroll; overflow-x: hidden; font-family: monospace; font-size: 10px;"></div>
+<table id="controlsTable" style="width: 100%; display: none;">
 </table>
 <table id="mappingsTable" style="width: 100%; display: none;">
     <tr><td>Mappings HERE!</td></tr>

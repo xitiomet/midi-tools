@@ -2,11 +2,13 @@ var localOutputDevices = new Map();
 var localInputDevices = new Map();
 var connection;
 var debugMode = false;
+var reconnectTimeout;
 
 // midi functions
 function onMIDISuccess(midiAccess) {
     // when we get a succesful response, run this code
     console.log('MIDI Access Object', midiAccess);
+    logIt("Scanning for local midi devices");
     if (midiAccess.outputs && midiAccess.outputs.size > 0)
     {
         var outputs = midiAccess.outputs.values();
@@ -14,7 +16,7 @@ function onMIDISuccess(midiAccess) {
         {
             var v = output.value
             localOutputDevices.set(v.name+".output", v);
-            console.log("output Device: " + v.name);
+            logIt("Local Output Device found: " + v.name);
             registerMidiDevice("output", v);
         }
         var inputs = midiAccess.inputs.values();
@@ -22,7 +24,7 @@ function onMIDISuccess(midiAccess) {
         {
             var v = input.value
             localInputDevices.set(v.name+".input", v);
-            console.log("input Device: " + v.name);
+            logIt("Local Input Device found: " + v.name);
             registerMidiDevice("input", v);
         }
     } else {
@@ -34,17 +36,25 @@ function changeView(radio)
 {
     if (radio.value == "controls")
     {
+        document.getElementById('console').style.display = 'none';
         document.getElementById('controlsTable').style.display = 'table';
         document.getElementById('mappingsTable').style.display = 'none';
         document.getElementById('devicesTable').style.display = 'none';
     } else if (radio.value == "mappings") {
+        document.getElementById('console').style.display = 'none';
         document.getElementById('controlsTable').style.display = 'none';
         document.getElementById('mappingsTable').style.display = 'table';
         document.getElementById('devicesTable').style.display = 'none';
     } else if (radio.value == "devices") {
+        document.getElementById('console').style.display = 'none';
         document.getElementById('controlsTable').style.display = 'none';
         document.getElementById('mappingsTable').style.display = 'none';
         document.getElementById('devicesTable').style.display = 'table';
+    } else if (radio.value == "console") {
+        document.getElementById('console').style.display = 'block';
+        document.getElementById('controlsTable').style.display = 'none';
+        document.getElementById('mappingsTable').style.display = 'none';
+        document.getElementById('devicesTable').style.display = 'none';
     }
 }
 
@@ -66,7 +76,7 @@ function registerMidiDevice(type, v)
 
 function onMIDIFailure(e) {
     // when we get a failed response, run this code
-    console.log("No access to MIDI devices or your browser doesn't support WebMIDI API. Please use WebMIDIAPIShim " + e);
+    logIt("No access to MIDI devices or your browser doesn't support WebMIDI API. " + e);
 }
 
 function sendEvent(wsEvent)
@@ -150,6 +160,16 @@ function createControlElement(control)
     }
 }
 
+function logIt(message)
+{
+    var console = document.getElementById('console');
+    var d = new Date();
+    var dString = d.toLocaleTimeString();
+    if (console.innerHTML != "") console.innerHTML += "<br />";
+    console.innerHTML += "&lt;" + dString + "&gt; " + message;
+    console.scrollTop = console.scrollHeight;
+}
+
 function updateControl(event)
 {
     var control = event.control;
@@ -164,6 +184,7 @@ function setupWebsocket()
 {
     try
     {
+        logIt("Attempting to connect to WebSocket backend");
         var hostname = location.hostname;
         var protocol = location.protocol;
         var port = location.port;
@@ -182,20 +203,21 @@ function setupWebsocket()
         connection = new WebSocket(wsProtocol + '://' + hostname + ':' + port + '/events/');
         
         connection.onopen = function () {
-            console.log("Connected to device!");
+            logIt("Connected to WebSocket backend!");
             // request MIDI access
             if (navigator.requestMIDIAccess)
             {
+                logIt("Checking for WebMIDI access");
                 navigator.requestMIDIAccess({
                     sysex: false // this defaults to 'false' and we won't be covering sysex in this article.
                 }).then(onMIDISuccess, onMIDIFailure);
             } else {
-                console.log("No MIDI support in your browser.");
+                logIt("No MIDI support in your browser.");
             }
         };
         
         connection.onerror = function (error) {
-          console.log(error);
+          logIt("WebSocket error!");
         };
 
         //Code for handling incoming Websocket messages from the server
@@ -208,22 +230,28 @@ function setupWebsocket()
             {
                 var control = jsonObject.control;
                 createControlElement(control);
+                logIt("Control Added: " + jsonObject.control.nickname);
             } else if (event == 'controlValueChanged') {
                 updateControl(jsonObject);
             } else if (event == 'controlRemoved') {
                 removeControlElement(jsonObject.control);
+                logIt("Control Removed: " + jsonObject.control.nickname);
             } else if (event == 'deviceAdded') {
                 createDeviceElement(jsonObject.id, jsonObject.device);
+                logIt("Device Added: " + jsonObject.device.name);
             } else if (event == 'deviceRemoved') {
                 removeDeviceElement(jsonObject.id, jsonObject.device);
+                logIt("Device Removed: " + jsonObject.device.name);
             } else if (event == 'deviceClosed') {
                 var dev = jsonObject.device;
                 var id = "checkboxdev_" + dev.name + "." + dev.type;
                 document.getElementById(id).checked = false;
+                logIt("Device Closed: " + dev.name + "." + dev.type);
             } else if (event == 'deviceOpened') {
                 var dev = jsonObject.device;
                 var id = "checkboxdev_" + dev.name + "." + dev.type;
                 document.getElementById(id).checked = true;
+                logIt("Device Opened: " + dev.name + "." + dev.type);
             } else if (event == 'midiShortMessage') {
                 var marray = jsonObject.data;
                 try
@@ -242,8 +270,8 @@ function setupWebsocket()
         };
         
         connection.onclose = function () {
-          console.log('WebSocket connection closed');
-          setTimeout(setupWebsocket(), 10000);
+          logIt('WebSocket connection closed');
+          reconnectTimeout = setTimeout(setupWebsocket, 10000);
         };
     } catch (err) {
         console.log(err);

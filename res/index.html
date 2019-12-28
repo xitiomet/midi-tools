@@ -6,7 +6,7 @@
   <link rel="apple-touch-icon" href="windows.png">
   <style type="text/css">
   .radio-toolbar {
-    margin: 10px;
+    margin: 5px;
     }
 
     .radio-toolbar input[type="radio"] {
@@ -18,7 +18,7 @@
     .radio-toolbar label {
         display: inline-block;
         background-color: #ddd;
-        padding: 5px 20px;
+        padding: 5px 5px;
         font-family: sans-serif, Arial;
         font-size: 16px;
         border: 2px solid #444;
@@ -54,8 +54,8 @@
             <label for="viewAreaSelectorConsole">Console</label>
             <input type="radio" id="viewAreaSelectorControls" name="viewAreaSelector" value="controls" oninput="changeView(this)">
             <label for="viewAreaSelectorControls">Controls</label>
-            <!--<input type="radio" id="viewAreaSelectorMappings" name="viewAreaSelector" value="mappings" oninput="changeView(this)">
-            <label for="viewAreaSelectorMappings">Mappings</label>-->
+            <input type="radio" id="viewAreaSelectorMappings" name="viewAreaSelector" value="mappings" oninput="changeView(this)">
+            <label for="viewAreaSelectorMappings">Mappings</label>
             <input type="radio" id="viewAreaSelectorDevices" name="viewAreaSelector" value="devices" oninput="changeView(this)">
             <label for="viewAreaSelectorDevices">Devices</label>
         </td></tr>
@@ -65,7 +65,6 @@
 <table id="controlsTable" style="width: 100%; display: none;">
 </table>
 <table id="mappingsTable" style="width: 100%; display: none;">
-    <tr><td>Mappings HERE!</td></tr>
 </table>
 <table id="devicesTable" style="width: 100%; display: none;">
 </table>

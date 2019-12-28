@@ -24,7 +24,9 @@ public class MidiPortMappingListModel implements ListModel<MidiPortMapping>, Mid
     public void portRemoved(int idx, MidiPort port) {}
     public void portOpened(MidiPort port) {}
     public void portClosed(MidiPort port) {}
-
+    public void mappingOpened(MidiPortMapping mapping) {}
+    public void mappingClosed(MidiPortMapping mapping) {}
+    
     public void mappingAdded(int idx, MidiPortMapping mapping)
     {
         for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)

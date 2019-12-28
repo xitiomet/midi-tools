@@ -224,6 +224,32 @@ public class MidiPortManager
             (new Thread(() -> msl.mappingRemoved(idx, mapping))).start();
         }
     }
+    
+    public static void fireMappingOpened(final MidiPortMapping mapping)
+    {
+        for (Enumeration<MidiPortListener> msle = ((Vector<MidiPortListener>) MidiPortManager.listeners.clone()).elements(); msle.hasMoreElements();)
+        {
+            try
+            {
+                final MidiPortListener msl = msle.nextElement();
+                (new Thread(() -> msl.mappingOpened(mapping))).start();
+            } catch (Exception mlex) {
+            }
+        }
+    }
+
+    public static void fireMappingClosed(final MidiPortMapping mapping)
+    {
+        for (Enumeration<MidiPortListener> msle = ((Vector<MidiPortListener>) MidiPortManager.listeners.clone()).elements(); msle.hasMoreElements();)
+        {
+            try
+            {
+                final MidiPortListener msl = msle.nextElement();
+                (new Thread(() -> msl.mappingClosed(mapping))).start();
+            } catch (Exception mlex) {
+            }
+        }
+    }
 
     public static void addMidiPortListener(MidiPortListener msl)
     {
@@ -349,6 +375,19 @@ public class MidiPortManager
             }
         }
         return outputs;
+    }
+    
+    public static MidiPortMapping findMidiPortMappingById(String mappingId)
+    {
+        for(Iterator<MidiPortMapping> mappingsIterator = MidiPortManager.mappings.iterator(); mappingsIterator.hasNext();)
+        {
+            MidiPortMapping t = mappingsIterator.next();
+            if (t.getMappingId().equals(mappingId))
+            {
+                return t;
+            }
+        }
+        return null;
     }
     
     public static MidiPort findReceivingPortByName(String name)

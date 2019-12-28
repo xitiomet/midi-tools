@@ -22,6 +22,8 @@ public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
     
     public void mappingAdded(int idx, MidiPortMapping mapping) {}
     public void mappingRemoved(int idx, MidiPortMapping mapping) {}
+    public void mappingOpened(MidiPortMapping mapping) {}
+    public void mappingClosed(MidiPortMapping mapping) {}
     public void portOpened(MidiPort port) {}
     public void portClosed(MidiPort port) {}
 

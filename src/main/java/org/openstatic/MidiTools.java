@@ -440,6 +440,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     }
     public void mappingAdded(int idx, MidiPortMapping mapping) { MidiTools.repaintMappings(); }
     public void mappingRemoved(int idx, MidiPortMapping mapping)  { MidiTools.repaintMappings(); }
+    public void mappingOpened(MidiPortMapping mapping) { MidiTools.repaintMappings(); }
+    public void mappingClosed(MidiPortMapping mapping) { MidiTools.repaintMappings(); }
     
     public void changeAPIState(boolean apiEnable)
     {

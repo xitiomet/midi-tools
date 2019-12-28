@@ -92,6 +92,19 @@ function sendEvent(wsEvent)
     }
 }
 
+function inputMappingElement(element, mappingId)
+{
+    console.log(mappingId + ": " + element.checked);
+    if (element.checked)
+    {
+        var mm = {"do":"openMapping", "mappingId": mappingId};
+        sendEvent(mm);
+    } else {
+        var mm = {"do":"closeMapping", "mappingId": mappingId};
+        sendEvent(mm);
+    }
+}
+
 function inputDeviceElement(element, deviceName, deviceType)
 {
     console.log(deviceName + ": " + element.checked);
@@ -134,6 +147,29 @@ function createDeviceElement(idx, dev)
         }
         trow.innerHTML = '<td style="max-width: 100%;"><input type="checkbox" oninput="inputDeviceElement(this,\'' + dev.name + '\',\'' + dev.type + '\')" id="' + input_id + '" value="' + dev.name + '"' + checkedText + ' /><label for="' + input_id + '">' + direction + ' ' + dev.name + '</label></td>';
         document.getElementById('devicesTable').appendChild(trow);
+    }
+}
+
+function removeMappingElement(idx, mapping)
+{
+    var id = "mapping_" + mapping.mappingId;
+    var trow = document.getElementById(id);
+    document.getElementById('mappingsTable').removeChild(trow);
+}
+
+function createMappingElement(idx, mapping)
+{
+    var id = "mapping_" + mapping.mappingId;
+    if (document.getElementById(id) == undefined)
+    {
+        var trow = document.createElement("tr");
+        trow.id = id;
+        var input_id = 'checkbox' + id;
+        var checkedText = '';
+        if (mapping.opened)
+            checkedText = ' checked';
+        trow.innerHTML = '<td style="max-width: 100%;"><input type="checkbox" oninput="inputMappingElement(this,\'' + mapping.mappingId + '\')" id="' + input_id + '" value="' + mapping.mappingId + '"' + checkedText + ' /><label for="' + input_id + '">' + mapping.nickname + '</label></td>';
+        document.getElementById('mappingsTable').appendChild(trow);
     }
 }
 
@@ -252,6 +288,22 @@ function setupWebsocket()
                 var id = "checkboxdev_" + dev.name + "." + dev.type;
                 document.getElementById(id).checked = true;
                 logIt("Device Opened: " + dev.name + "." + dev.type);
+            } else if (event == 'mappingAdded') {
+                createMappingElement(jsonObject.id, jsonObject.mapping);
+                logIt("Mapping Added: " + jsonObject.mapping.nickname);
+            } else if (event == 'mappingRemoved') {
+                removeMappingElement(jsonObject.id, jsonObject.mapping);
+                logIt("Mapping Removed: " + jsonObject.mapping.nickname);
+            } else if (event == 'mappingClosed') {
+                var mapping = jsonObject.mapping;
+                var id = "checkboxmapping_" + mapping.mappingId;
+                document.getElementById(id).checked = false;
+                logIt("Mapping Closed: " + mapping.nickname);
+            } else if (event == 'mappingOpened') {
+                var mapping = jsonObject.mapping;
+                var id = "checkboxmapping_" + mapping.mappingId;
+                document.getElementById(id).checked = true;
+                logIt("Mapping Opened: " + mapping.nickname);
             } else if (event == 'midiShortMessage') {
                 var marray = jsonObject.data;
                 try

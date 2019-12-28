@@ -167,6 +167,20 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
                     MidiPort p = MidiPortManager.findBidirectionalPortByName(deviceId);
                     p.close();
                 }
+            } else if (doCmd.equals("openMapping")) {
+                String mappingId = j.optString("mappingId", null);
+                MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(mappingId);
+                if (mapping != null)
+                {
+                    mapping.open();
+                }
+            } else if (doCmd.equals("closeMapping")) {
+                String mappingId = j.optString("mappingId", null);
+                MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(mappingId);
+                if (mapping != null)
+                {
+                    mapping.close();
+                }
             } else if (doCmd.equals("changeControlValue")) {
                 MidiControl mc = MidiTools.getMidiControlByChannelCC(j.optInt("channel", 0), j.optInt("cc", 0));
                 if (mc != null)
@@ -248,14 +262,36 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         broadcastJSONObject(event);
     }
     
+    public void mappingOpened(MidiPortMapping mapping)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "mappingOpened");
+        event.put("mapping", mapping.toJSONObject());
+        broadcastJSONObject(event);
+    }
+    
+    public void mappingClosed(MidiPortMapping mapping)
+    {
+        JSONObject event = new JSONObject();
+        event.put("event", "mappingClosed");
+        event.put("mapping", mapping.toJSONObject());
+        broadcastJSONObject(event);
+    }
+    
     public void mappingAdded(int idx, MidiPortMapping mapping)
     {
-        
+        JSONObject event = new JSONObject();
+        event.put("event", "mappingAdded");
+        event.put("mapping", mapping.toJSONObject());
+        broadcastJSONObject(event);
     }
     
     public void mappingRemoved(int idx, MidiPortMapping mapping)
     {
-        
+        JSONObject event = new JSONObject();
+        event.put("event", "mappingAdded");
+        event.put("mapping", mapping.toJSONObject());
+        broadcastJSONObject(event);
     }
     
     public void controlValueChanged(MidiControl control, int old_value, int new_value)
@@ -346,6 +382,17 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
                     event.put("event", "deviceAdded");
                     event.put("id", idx);
                     event.put("device", MidiPortToJSONObject(mp));
+                    wssession.getRemote().sendStringByFuture(event.toString());
+                    idx++;
+                }
+                idx = 0;
+                for (Iterator<MidiPortMapping> pi = MidiPortManager.getMidiPortMappings().iterator(); pi.hasNext();)
+                {
+                    MidiPortMapping mp = pi.next();
+                    JSONObject event = new JSONObject();
+                    event.put("event", "mappingAdded");
+                    event.put("id", idx);
+                    event.put("mapping", mp.toJSONObject());
                     wssession.getRemote().sendStringByFuture(event.toString());
                     idx++;
                 }

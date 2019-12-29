@@ -128,7 +128,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
                 String deviceId = j.optString("device", "unknown");
                 String deviceFullId = deviceId + "." + hostname;
                 MidiPortManager.removeVirtualPort(deviceFullId);
-            } else if (doCmd.equals("midiShortMessage")) {
+            } else if (doCmd.equals("midiShortMessage") || doCmd.equals("beatClock")) {
                 String hostname = session.getRemoteAddress().getHostName();
                 String deviceId = j.optString("device", "unknown");
                 String deviceFullId = deviceId + "." + hostname;

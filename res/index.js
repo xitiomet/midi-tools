@@ -68,8 +68,9 @@ function registerMidiDevice(type, v)
         {
             var mm = {"do":"midiShortMessage", "device": deviceId, "data": [midiMessage.data[0], midiMessage.data[1], midiMessage.data[2]], "timeStamp": midiMessage.receivedTime};
             sendEvent(mm);
-        } else {
-            //console.log("Non-short message received");
+        } else if (midiMessage.data[0] == 241) {
+            var mm = {"do":"beatClock", "device": deviceId, "timeStamp": midiMessage.receivedTime};
+            sendEvent(mm);
         }
     }
 }
@@ -262,8 +263,22 @@ function setupWebsocket()
                 console.log("Receive: " + e.data);
             var jsonObject = JSON.parse(e.data);
             var event = jsonObject.event;
-            if (event == "controlAdded")
+            if (event == "beatClock")
             {
+                var marray = [ 248 ];
+                try
+                {
+                    var outputDevice = localOutputDevices.get(jsonObject.device)
+                    if (outputDevice != undefined)
+                    {
+                        outputDevice.send( new Uint8Array( marray ) );
+                    } else {
+                        console.log("output device not found");
+                    }
+                } catch (err_msm) {
+                    console.log(err_msm);
+                }
+            } else if (event == "controlAdded") {
                 var control = jsonObject.control;
                 createControlElement(control);
                 logIt("Control Added: " + jsonObject.control.nickname);

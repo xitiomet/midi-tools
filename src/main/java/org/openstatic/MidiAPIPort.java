@@ -140,6 +140,19 @@ public class MidiAPIPort implements MidiPort
                                 e.printStackTrace(System.err);
                             }
                         }
+                    } else if (doCmd.equals("beatClock")) {
+                        final long timeStamp = j.optLong("timeStamp", 0);
+                        final ShortMessage sm = new ShortMessage(ShortMessage.TIMING_CLOCK);
+                        for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiAPIPort.this.receivers.clone()).elements(); re.hasMoreElements();)
+                        {
+                            try
+                            {
+                                Receiver r = re.nextElement();
+                                r.send(sm, timeStamp);
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -214,25 +227,41 @@ public class MidiAPIPort implements MidiPort
         if(message instanceof ShortMessage && this.opened)
         {
             final ShortMessage sm = (ShortMessage) message;
+            int smStatus = sm.getStatus();
             /*
             if (sm.getData1() > 0)
                 System.err.println("Recieved Short Message " + MidiPortManager.shortMessageToString(sm));
                 */
-            try
+            if (smStatus == ShortMessage.TIMING_CLOCK)
             {
-                JSONObject mm = new JSONObject();
-                mm.put("event", "midiShortMessage");
-                mm.put("device", this.getDeviceId());
-                JSONArray dArray = new JSONArray();
-                dArray.put(sm.getStatus());
-                dArray.put(sm.getData1());
-                dArray.put(sm.getData2());
-                mm.put("data", dArray);
-                mm.put("timeStamp", timeStamp);
-                this.session.getRemote().sendStringByFuture(mm.toString());
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-                this.close();
+                try
+                {
+                    JSONObject mm = new JSONObject();
+                    mm.put("event", "beatClock");
+                    mm.put("device", this.getDeviceId());
+                    mm.put("timeStamp", timeStamp);
+                    this.session.getRemote().sendStringByFuture(mm.toString());
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                    this.close();
+                }
+            } else {
+                try
+                {
+                    JSONObject mm = new JSONObject();
+                    mm.put("event", "midiShortMessage");
+                    mm.put("device", this.getDeviceId());
+                    JSONArray dArray = new JSONArray();
+                    dArray.put(sm.getStatus());
+                    dArray.put(sm.getData1());
+                    dArray.put(sm.getData2());
+                    mm.put("data", dArray);
+                    mm.put("timeStamp", timeStamp);
+                    this.session.getRemote().sendStringByFuture(mm.toString());
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                    this.close();
+                }
             }
         }
     }

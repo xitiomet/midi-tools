@@ -48,8 +48,8 @@ public class MidiAPIPort implements MidiPort
                 JSONObject mm = new JSONObject();
                 mm.put("event", "openMidiDevice");
                 mm.put("device", this.getDeviceId());
-                this.session.getRemote().sendStringByFuture(mm.toString());
                 MidiPortManager.firePortOpened(this);
+                this.session.getRemote().sendStringByFuture(mm.toString());
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -66,8 +66,8 @@ public class MidiAPIPort implements MidiPort
                 JSONObject mm = new JSONObject();
                 mm.put("event", "closeMidiDevice");
                 mm.put("device", this.getDeviceId());
-                this.session.getRemote().sendStringByFuture(mm.toString());
                 MidiPortManager.firePortClosed(this);
+                this.session.getRemote().sendStringByFuture(mm.toString());
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -232,6 +232,7 @@ public class MidiAPIPort implements MidiPort
                 this.session.getRemote().sendStringByFuture(mm.toString());
             } catch (Exception e) {
                 e.printStackTrace(System.err);
+                this.close();
             }
         }
     }

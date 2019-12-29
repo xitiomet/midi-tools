@@ -143,9 +143,9 @@ public class MidiPortMapping
     public String toString()
     {
         if (this.nickname == null)
-            return this.sourceName + " >> " + this.destinationName;
+            return this.sourceName + " to " + this.destinationName;
         else
-            return this.nickname + ": " + this.sourceName + " >> " + this.destinationName;
+            return this.nickname;
     }
     
     public JSONObject toJSONObject()

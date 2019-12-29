@@ -4,6 +4,7 @@ import javax.sound.midi.*;
 import javax.swing.ListModel;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListDataEvent;
+import javax.swing.SwingUtilities;
 import java.util.Enumeration;
 import java.util.Vector;
 import java.util.ArrayList;
@@ -33,9 +34,11 @@ public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
         {
             try
             {
-                ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_ADDED, idx, idx);
-                ldl.intervalAdded(lde);
+                final ListDataListener ldl = ldle.nextElement();
+                final ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_ADDED, idx, idx);
+                SwingUtilities.invokeAndWait(() -> {
+                    ldl.intervalAdded(lde);
+                });
             } catch (Exception mlex) {
             }
         }
@@ -47,9 +50,11 @@ public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
         {
             try
             {
-                ListDataListener ldl = ldle.nextElement();
-                ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_REMOVED, idx, idx);
-                ldl.intervalRemoved(lde);
+                final ListDataListener ldl = ldle.nextElement();
+                final ListDataEvent lde = new ListDataEvent(port, ListDataEvent.INTERVAL_REMOVED, idx, idx);
+                SwingUtilities.invokeAndWait(() -> {
+                    ldl.intervalRemoved(lde);
+                });
             } catch (Exception mlex) {
             }
         }

@@ -90,6 +90,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JList rulesList;
     private JList mappingList;
     private JPopupMenu controlMenuPopup;
+    private JPanel deviceQRPanel;
+    private JLabel qrLabel;
     protected MidiControlCellRenderer midiControlCellRenderer;
     protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
@@ -106,7 +108,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JTabbedPane bottomTabbedPane;
     private JCheckBoxMenuItem apiServerEnable;
     private JCheckBoxMenuItem createControlOnInput;
-    private JMenuItem showQrItem;
+    private JCheckBoxMenuItem showQrItem;
     private JMenuItem openInBrowserItem;
     private JMenuItem createNewControlItem;
     private JMenuItem createNewMappingItem;
@@ -163,7 +165,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createRuleMenuItem.addActionListener(this);
         this.createRuleMenuItem.setActionCommand("create_rule");
         
-        this.showQrItem = new JMenuItem("Show QR Code");
+        this.showQrItem = new JCheckBoxMenuItem("Show QR Code");
         this.showQrItem.setEnabled(false);
         this.showQrItem.setMnemonic(KeyEvent.VK_Q);
         this.showQrItem.addActionListener(this);
@@ -362,7 +364,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane2.setBorder(new TitledBorder("MIDI Devices (double-click to toggle)"));
-        this.add(scrollPane2, BorderLayout.WEST);
+        
+        this.deviceQRPanel = new JPanel(new BorderLayout());
+        this.deviceQRPanel.add(scrollPane2, BorderLayout.CENTER);
+        
+        
+        this.add(this.deviceQRPanel, BorderLayout.WEST);
         
         this.bottomTabbedPane = new JTabbedPane();
         this.bottomTabbedPane.setPreferredSize(new Dimension(0, 200));
@@ -558,6 +565,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             boolean state = this.createControlOnInput.getState();
             this.options.put("createControlOnInput", state);
             return;
+        } else if (e.getSource() == this.showQrItem) {
+            boolean state = this.showQrItem.getState();
+            this.setShowQR(state);
+            return;
         }
         String cmd = e.getActionCommand();
         if (cmd.equals("save") && this.lastSavedFile == null)
@@ -593,15 +604,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 File fileToSave = fileChooser.getSelectedFile();
                 saveConfigAs(fileToSave);
             }
-        } else if (cmd.equals("show_qr")) {
-            JDialog dialog = new JDialog();     
-            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-            dialog.setTitle("Midi Control Change Tool");
-            String url = "https://" + MidiTools.getLocalIP() + ":6124/";
-            dialog.add(new JLabel(new ImageIcon(MidiTools.QRCode(url))));
-            dialog.pack();
-            dialog.setLocationByPlatform(true);
-            dialog.setVisible(true);
         } else if (cmd.equals("import")) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Specify a file to open");   
@@ -641,6 +643,23 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
     }
 
+    public void setShowQR(boolean value)
+    {
+        if (value)
+        {
+            String url = "https://" + MidiTools.getLocalIP() + ":6124/";
+            this.qrLabel = new JLabel(new ImageIcon(MidiTools.QRCode(url)));
+            this.qrLabel.setBackground(Color.WHITE);
+            this.qrLabel.setOpaque(true);
+            this.deviceQRPanel.add(this.qrLabel, BorderLayout.SOUTH);
+            this.deviceQRPanel.revalidate();
+        } else if (this.qrLabel != null) {
+            this.deviceQRPanel.remove(this.qrLabel);
+            this.qrLabel = null;
+            this.deviceQRPanel.revalidate();
+        }
+    }
+
     public void run()
     {
         while(this.keep_running)
@@ -674,7 +693,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
         int wWidth = 800;
-        int wHeight = 500;
+        int wHeight = 560;
         Dimension d = new Dimension(wWidth, wHeight);
         this.setSize(d);
         //this.setMaximumSize(d);
@@ -899,7 +918,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 {
                     changeAPIState(this.options.optBoolean("apiServer", false));
                 }
-                
+            }
+            if (configJson.has("showQr"))
+            {
+                boolean state = configJson.optBoolean("showQr", false);
+                this.showQrItem.setState(state);
+                this.setShowQR(state);
             }
             if (remember)
                 this.setLastSavedFile(file);
@@ -1023,6 +1047,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             configJson.put("controls", this.controlsAsJSONArray());
             configJson.put("rules", this.rulesAsJSONArray());
             configJson.put("options", this.options);
+            configJson.put("showQr", this.showQrItem.getState());
             configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
             configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
             configJson.put("mappings", this.mappingsAsJSONArray());
@@ -1081,7 +1106,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     {
         try
         {
-            ByteArrayOutputStream stream = QRCode.from(url).withSize(300, 300).to(ImageType.PNG).stream();
+            ByteArrayOutputStream stream = QRCode.from(url).withSize(150, 150).to(ImageType.PNG).stream();
             return ImageIO.read(new ByteArrayInputStream(stream.toByteArray()));
         } catch (Exception e) {
             e.printStackTrace(System.err);

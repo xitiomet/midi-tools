@@ -1,7 +1,9 @@
 # MIDI Control Change Tool #
 ## Websocket API Document ##
 ---------
-MIDI Control Change Tool features a Websocket API for registering virtual devices and control events.
+MIDI Control Change Tool features a Websocket API for registering virtual devices and control events. 
+
+***This document is a work in progress***
 
 ### Protocol: ###
 

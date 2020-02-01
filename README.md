@@ -1,8 +1,12 @@
 # Midi Control Change Tools #
 
-This utility allows you to observe MIDI control change messages in real-time, and associate rules with them.
+This utility allows you to observe MIDI control change messages from every channel in real-time, and associate rules with them. It also features midi port mapping, and a websocket interface. Each Channel/CC# is treated as in individual "Control" so this application can be thought of as an "omni" mode midi input.
 
-![](http://www.openstatic.org/miditools/miditools.gif)
+Each "Control" can have rules associated with it that will execute "Actions" based on the type of change made to the Control. For instance you can have a rule that will execute whenever the value increases.
+
+Possible "Actions" are executing a script or program, calling a url or api, playing a sound, or Transmitting a midi message to another device.
+
+![](http://www.openstatic.org/miditools/miditools3.gif)
 
 ### How do I use it? ###
 Simply launch the app and check off what MIDI devices you want to listen to, as you play with the physical controls on your device, those controls will appear in the "Midi Controls" section. Each control represents a channel and a control change number. Simply double-click or right click on a control to change its name, and create rules.
@@ -10,7 +14,7 @@ Simply launch the app and check off what MIDI devices you want to listen to, as 
 ### Creating a rule ###
 "Rules" are a way to create mappings from your MIDI Controls to an event
 
-![](http://www.openstatic.org/miditools/rule.png)
+![](http://www.openstatic.org/miditools/rule4.png)
 
 - Rule Name - This is just a label for the rule
 - Select Control - Midi Control to listen for events on (A control represents a channel and cc#)
@@ -33,7 +37,7 @@ Simply launch the app and check off what MIDI devices you want to listen to, as 
 	- TRANSMIT MIDI - Send a MIDI Message
 	  Action Type: Device Name,channel#,cc#,{{value}}
 - Action Value - Specify the parameters to an Action Type (variables below)
-	- {{value}} - The value of the MIDI Event
+	- {{value}} - The value(third byte) of the MIDI Control Change Event (0-127)
 	- {{value.inv}} - The inverted value of the MIDI Event
 	- {{value.old}} - The value previously held by the midi control
 	- {{value.old.inv}} - The inverted value previously held by the midi control

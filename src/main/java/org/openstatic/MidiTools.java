@@ -64,6 +64,7 @@ import java.awt.image.BufferedImage;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.Toolkit;
+import java.awt.Point;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -130,6 +131,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private long lastMappingClick;
     private APIWebServer apiServer;
     private JSONObject options;
+    private Point windowLocation;
 
     public MidiTools()
     {
@@ -429,8 +431,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         loadConfig();
-        boolean apiEnable = this.options.optBoolean("apiServer", false);
-        changeAPIState(apiEnable);
     }
     
     public void portAdded(int idx, MidiPort port) { repaintDevices(); }
@@ -680,6 +680,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     if (!taskName.contains("Lambda"))
                         System.err.println("TaskComplete> " + taskName);
                 }
+                this.windowLocation = this.getLocationOnScreen();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -701,6 +702,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         //this.setResizable(false);
         int x = (int) ((WIDTH/2f) - ( ((float)wWidth) /2f ));
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
+        this.windowLocation = new Point(x,y);
         this.setLocation(x, y);
     }
 
@@ -892,6 +894,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     {
         try
         {
+            int windowWidth = this.getWidth();
+            int windowHeight = this.getHeight();
+            Point newWindowLocation = this.windowLocation;
             JSONObject configJson = loadJSONObject(file);
             if (configJson.has("controls"))
             {
@@ -910,14 +915,31 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     this.rules.addElement(mcr);
                 }
             }
+            if (configJson.has("apiServer"))
+            {
+                boolean apiEnable = configJson.optBoolean("apiServer", false);
+                changeAPIState(apiEnable);
+            }
             if (configJson.has("options"))
             {
                 this.options = configJson.getJSONObject("options");
                 this.createControlOnInput.setState(this.options.optBoolean("createControlOnInput", true));
-                if (this.options.has("apiServer"))
-                {
-                    changeAPIState(this.options.optBoolean("apiServer", false));
-                }
+            }
+            if (configJson.has("windowX"))
+            {
+                newWindowLocation.x = configJson.optInt("windowX", 0);
+            }
+            if (configJson.has("windowY"))
+            {
+                newWindowLocation.y = configJson.optInt("windowY", 0);
+            }
+            if (configJson.has("windowWidth"))
+            {
+                windowWidth = configJson.optInt("windowWidth", windowWidth);
+            }
+            if (configJson.has("windowHeight"))
+            {
+                windowHeight = configJson.optInt("windowHeight", windowHeight);
             }
             if (configJson.has("showQr"))
             {
@@ -966,6 +988,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     MidiPortManager.addMidiPortMapping(mpm);
                 }
             }
+            this.setSize(windowWidth, windowHeight);
+            this.setLocation(newWindowLocation);
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -1047,10 +1071,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             configJson.put("controls", this.controlsAsJSONArray());
             configJson.put("rules", this.rulesAsJSONArray());
             configJson.put("options", this.options);
+            configJson.put("apiServer", this.apiServerEnable.getState());
             configJson.put("showQr", this.showQrItem.getState());
             configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
             configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
             configJson.put("mappings", this.mappingsAsJSONArray());
+            configJson.put("windowX", this.windowLocation.x);
+            configJson.put("windowY", this.windowLocation.y);
+            configJson.put("windowWidth", this.getWidth());
+            configJson.put("windowHeight", this.getHeight());
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);

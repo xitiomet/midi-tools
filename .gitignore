@@ -10,3 +10,4 @@ upload.sh
 .classpath
 .project
 .settings/
+.vscode/

@@ -117,6 +117,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
     private JMenuItem createRuleMenuItem;
+    private JMenuItem createRandomizerRuleMenuItem;
     private JMenuItem exportConfigurationMenuItem;
     private JMenuItem importConfigurationMenuItem;
     private JMenuItem saveMenuItem;
@@ -130,6 +131,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private long lastDeviceClick;
     private long lastMappingClick;
     private APIWebServer apiServer;
+    private MidiRandomizerPort randomizerPort;
     private JSONObject options;
     private Point windowLocation;
 
@@ -242,10 +244,16 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createControlOnInput = new JCheckBoxMenuItem("Create Control on Midi Input");
         this.createControlOnInput.addActionListener(this);
         this.createControlOnInput.setState(true);
+        
+        this.createRandomizerRuleMenuItem = new JMenuItem("Create Rule for Randomizer");
+        this.createRandomizerRuleMenuItem.setActionCommand("new_random_rule");
+        this.createRandomizerRuleMenuItem.addActionListener(this);
+        
         this.options.put("createControlOnInput", true);
         this.controlsMenu.add(this.createNewMappingItem);
         this.controlsMenu.add(this.createControlOnInput);
         this.controlsMenu.add(this.createNewControlItem);
+        this.controlsMenu.add(this.createRandomizerRuleMenuItem);
         
         this.apiMenu = new JMenu("API");
         this.apiMenu.setMnemonic(KeyEvent.VK_A);
@@ -334,6 +342,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.midiRenderer = new MidiPortCellRenderer();
         MidiPortManager.addMidiPortListener(this);
         MidiPortManager.init();
+        this.randomizerPort = new MidiRandomizerPort("Randomizer");
+        MidiPortManager.registerVirtualPort("random", this.randomizerPort);
+
         this.midiList = new JList(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
         {
@@ -431,6 +442,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         loadConfig();
+        
     }
     
     public void portAdded(int idx, MidiPort port) { repaintDevices(); }
@@ -586,6 +598,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             }
         } else if (cmd.equals("exit")) {
             System.exit(0);
+        } else if (cmd.equals("new_random_rule")) {
+            JSONObject newRule = MidiRandomizerPort.defaultRuleJSONObject();
+            JSONObjectDialog jod = new JSONObjectDialog("New Randomizer Rule", newRule);
+            MidiTools.this.randomizerPort.addRandomRule(newRule);
         } else if (cmd.equals("about")) {
             browseTo("http://openstatic.org/miditools/");
         } else if (cmd.equals("open_api")) {

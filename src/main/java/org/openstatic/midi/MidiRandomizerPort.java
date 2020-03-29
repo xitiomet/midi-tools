@@ -222,12 +222,12 @@ public class MidiRandomizerPort implements MidiPort, Runnable
 
     public void close()
     {
-        this.opened = false;
         try
         {
             if (this.isOpened())
             {
                 MidiPortManager.firePortClosed(this);
+                this.opened = false;
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);

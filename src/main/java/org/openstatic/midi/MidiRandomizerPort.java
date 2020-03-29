@@ -19,11 +19,33 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     private Thread myThread;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
-    private Vector<JSONObject> randomRules = new Vector<JSONObject>();
+    private JSONArray randomRules = new JSONArray();
+
 
     public MidiRandomizerPort(String name)
     {
+        this(name, new JSONArray());
+    }
+    
+    public MidiRandomizerPort(String name, JSONArray rules)
+    {
         this.name = name;
+        this.randomRules = rules;
+    }
+    
+    public JSONArray getAllRules()
+    {
+        return randomRules;
+    }
+    
+    public void setAllRules(JSONArray rules)
+    {
+        this.randomRules = new JSONArray();
+        for (int i = 0; i < rules.length(); i++)
+        {
+            JSONObject randRule = rules.getJSONObject(i);
+            addRandomRule(randRule);
+        }
     }
     
     public static JSONObject defaultRuleJSONObject()
@@ -34,6 +56,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         newRule.put("min", 0);
         newRule.put("max", 127);
         newRule.put("smooth", true);
+        newRule.put("changeDelay", 5);
         return newRule;
     }
     
@@ -47,9 +70,26 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         this.addRandomRule(newRule);
     }
     
+    public int ruleIndex(JSONObject rule)
+    {
+        for (int i = 0; i < this.randomRules.length(); i++)
+        {
+            JSONObject randRule = this.randomRules.getJSONObject(i);
+            if (randRule.optInt("channel", -1) == rule.optInt("channel", -1) && randRule.optInt("cc", -1) == rule.optInt("cc", -1))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
     public void addRandomRule(JSONObject newRule)
     {
-        this.randomRules.add(newRule);
+        int ri = ruleIndex(newRule);
+        if (ri == -1)
+            this.randomRules.put(newRule);
+        else
+            this.randomRules.put(ri, newRule);
     }
     
     public long getMicrosecondPosition()
@@ -85,39 +125,69 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         {
             try
             {
+                long currentMillis = System.currentTimeMillis();
                 long timeStamp = this.getMicrosecondPosition();
-                for (Enumeration<JSONObject> rr = ((Vector<JSONObject>) MidiRandomizerPort.this.randomRules.clone()).elements(); rr.hasMoreElements();)
+                for (int i = 0; i < this.randomRules.length(); i++)
                 {
-                    JSONObject randRule = rr.nextElement();
+                    JSONObject randRule = this.randomRules.getJSONObject(i);
                     int min = randRule.optInt("min", 0);
                     int max = randRule.optInt("max", 0);
                     int channel = randRule.optInt("channel", 1);
                     int cc = randRule.optInt("cc", 0);
-                    int target = randRule.optInt("target", 0);
-                    int value = randRule.optInt("value", 0);
+                    boolean smooth = randRule.optBoolean("smooth", true);
+                    int changeDelay = randRule.optInt("changeDelay", 5);
+                    int target = randRule.optInt("_target", 0);
+                    int value = randRule.optInt("_value", 0);
+                    int targetSpeed = randRule.optInt("_targetSpeed", 1);
+                    
+                    long lastRandomMillis = randRule.optLong("_lastRandomMillis", 0l);
+                    long lastChangeMillis = randRule.optLong("_lastChangeMillis", 0l);
+                    long elapsed = (currentMillis - lastRandomMillis);
+                    long lastChangeElapsed = currentMillis - lastChangeMillis;
+                    long changeDelayMillis = (changeDelay * 1000l);
                     
                     int data2 = value;
-                    if (target == value)
+                    if (elapsed >= changeDelayMillis || lastRandomMillis == 0l)
                     {
                         target = getRandomNumberInRange(min, max);
-                        randRule.put("target", target);
-                    } else {
-                        if (target > value)
+                        randRule.put("_target", target);
+                        randRule.put("_lastRandomMillis", System.currentTimeMillis());
+                        int diff = Math.abs(value - target);
+                        if (diff == 0) diff = 1;
+                        randRule.put("_targetSpeed", (changeDelayMillis / diff)); 
+                    } else if (value != target) {
+                        boolean valueChanged = false;
+                        if (smooth)
                         {
-                            data2++;
-                        } else if (target < value) {
-                            data2--;
+                            if (lastChangeElapsed > targetSpeed)
+                            {
+                                if (target > value)
+                                {
+                                    data2++;
+                                } else if (target < value) {
+                                    data2--;
+                                }
+                                valueChanged = true;
+                                //System.err.println("Elapsed: " + String.valueOf(elapsed) + " Target: " + String.valueOf(target) + " Value: " + String.valueOf(value));
+                            }
+                        } else {
+                            data2 = target;
+                            valueChanged = true;
                         }
-                        randRule.put("value", data2);
-                        final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, data2);
-                        for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiRandomizerPort.this.receivers.clone()).elements(); re.hasMoreElements();)
+                        if (valueChanged)
                         {
-                            Receiver r = re.nextElement();
-                            r.send(sm, timeStamp);
+                            randRule.put("_value", data2);
+                            randRule.put("_lastChangeMillis", currentMillis);
+                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, data2);
+                            for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiRandomizerPort.this.receivers.clone()).elements(); re.hasMoreElements();)
+                            {
+                                Receiver r = re.nextElement();
+                                r.send(sm, timeStamp);
+                            }
                         }
                     }
                 }
-                Thread.sleep(10);
+                Thread.sleep(1);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }

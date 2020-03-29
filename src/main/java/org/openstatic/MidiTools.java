@@ -341,9 +341,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.midiListModel = new MidiPortListModel();
         this.midiRenderer = new MidiPortCellRenderer();
         MidiPortManager.addMidiPortListener(this);
-        MidiPortManager.init();
         this.randomizerPort = new MidiRandomizerPort("Randomizer");
         MidiPortManager.registerVirtualPort("random", this.randomizerPort);
+        
+        MidiPortManager.init();
+        
 
         this.midiList = new JList(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
@@ -1004,6 +1006,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     MidiPortManager.addMidiPortMapping(mpm);
                 }
             }
+            if (configJson.has("randomizerRules"))
+            {
+                JSONArray rulesArray = configJson.getJSONArray("randomizerRules");
+                this.randomizerPort.setAllRules(rulesArray);
+            }
             this.setSize(windowWidth, windowHeight);
             this.setLocation(newWindowLocation);
         } catch (Exception e) {
@@ -1096,6 +1103,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             configJson.put("windowY", this.windowLocation.y);
             configJson.put("windowWidth", this.getWidth());
             configJson.put("windowHeight", this.getHeight());
+            configJson.put("randomizerRules", this.randomizerPort.getAllRules());
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);

@@ -98,6 +98,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private MidiPortCellRenderer midiRenderer;
     private MidiPortMappingCellRenderer midiPortMappingCellRenderer;
     private MidiPortListModel midiListModel;
+    private LoggerMidiPort midi_logger;
     private Thread mainThread;
     protected DefaultListModel<MidiControl> controls;
     protected DefaultListModel<MidiControlRule> rules;
@@ -341,6 +342,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.midiListModel = new MidiPortListModel();
         this.midiRenderer = new MidiPortCellRenderer();
         MidiPortManager.addMidiPortListener(this);
+        
+        this.midi_logger = new LoggerMidiPort("MIDI Logger");
+        MidiPortManager.registerVirtualPort("midi_logger", this.midi_logger);
+        
         this.randomizerPort = new MidiRandomizerPort("Randomizer");
         MidiPortManager.registerVirtualPort("random", this.randomizerPort);
         
@@ -426,6 +431,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         JScrollPane mappingScrollPane = new JScrollPane(this.mappingList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         mappingScrollPane.setBorder(new TitledBorder("MIDI Port Mappings (right-click to delete, double-click to toggle)"));
         this.bottomTabbedPane.addTab("Port Mappings", mappingScrollPane);
+        
+        this.bottomTabbedPane.addTab("MIDI Logger", this.midi_logger);
         
         this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
 

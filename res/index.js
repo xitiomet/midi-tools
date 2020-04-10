@@ -1,8 +1,94 @@
 var localOutputDevices = new Map();
 var localInputDevices = new Map();
 var connection;
-var debugMode = false;
+var debugMode = true;
 var reconnectTimeout;
+var gamepads = {};
+var previousButtonStates = [];
+var previousAxesStates = [];
+
+function gamepadHandler(event, connecting)
+{
+  var gamepad = event.gamepad;
+  // Note:
+  // gamepad === navigator.getGamepads()[gamepad.index]
+  var deviceName =  ("gamepad_" + gamepad.index + ".input");
+  if (connecting)
+  {
+    logIt("Gamepad Found " + gamepad.id);
+    previousButtonStates[gamepad.index] = new Array(gamepad.buttons.length);
+    previousAxesStates[gamepad.index] = new Array(gamepad.axes.length);
+
+    gamepads[gamepad.index] = gamepad;
+    var mm = {"do":"registerMidiDevice", "name": gamepad.id, "device": deviceName, "type": "input"};
+    sendEvent(mm);
+  } else {
+    var mm = {"do":"removeMidiDevice", "name": gamepad.id, "device": deviceName, "type": "input"};
+    sendEvent(mm);
+    delete gamepads[gamepad.index];
+  }
+}
+
+window.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+window.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+
+function pollGamepads()
+{
+  var controllers = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+  for (var i = 0; i < controllers.length; i++)
+  {
+    if (controllers[i])
+    {
+      if (controllers[i].index in gamepads)
+      {
+        gamepads[controllers[i].index] = controllers[i];
+      }
+    }
+  }
+  
+  for (j in gamepads) 
+  {
+    var gamepad = gamepads[j];
+    var deviceName =  ("gamepad_" + gamepad.index + ".input");
+    
+    // Handle Gamepad Buttons
+    for (i = 0; i < gamepad.buttons.length; i++)
+    {
+      var val = gamepad.buttons[i];
+      var pressed = val == 1.0;
+      if (typeof(val) == "object") {
+        pressed = val.pressed;
+        val = val.value;
+        if (val == 1) pressed = true;
+      }
+
+      if (previousButtonStates[j][i] != pressed)
+      {
+        //logIt("button state" + j + " - " + i + " = " + pressed);
+        previousButtonStates[j][i] = pressed;
+        var data0 = 0xB << 4;
+        var mm = {"do":"midiShortMessage", "device": deviceName, "data": [data0, 20+i, (pressed ? 127 : 0)] };
+        sendEvent(mm);
+      }
+    }
+    
+    // Handle Gamepad Axis
+    for (i = 0; i < gamepad.axes.length; i++)
+    {
+      var val = Math.round(gamepad.axes[i] * 64) + 63;
+      if (val < 0) val = 0;
+      if (val > 127) val = 127;
+      if (previousAxesStates[j][i] != val)
+      {
+        //logIt("axis state" + j + " - " + i + " = " + val);
+        previousAxesStates[j][i] = val;
+        var data0 = 0xB << 4;
+        var mm = {"do":"midiShortMessage", "device": deviceName, "data": [data0, 1+i, val] };
+        sendEvent(mm);
+      }
+    }
+  }
+}
 
 // midi functions
 function onMIDISuccess(midiAccess) {
@@ -347,5 +433,6 @@ function setupWebsocket()
 
 window.onload = function() {
     setupWebsocket();
+    setInterval(pollGamepads,10);
 };
 

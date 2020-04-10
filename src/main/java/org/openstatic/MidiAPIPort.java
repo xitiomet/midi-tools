@@ -123,7 +123,7 @@ public class MidiAPIPort implements MidiPort
                     if (doCmd.equals("midiShortMessage"))
                     {
                         JSONArray data = j.getJSONArray("data");
-                        final long timeStamp = j.optLong("timeStamp", 0);
+                        final long timeStamp = j.optLong("timeStamp", getMicrosecondPosition());
                         int data0 = data.optInt(0, 0);
                         int data1 = data.optInt(1, 0);
                         int data2 = data.optInt(2, 0);

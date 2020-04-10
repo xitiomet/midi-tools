@@ -178,7 +178,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                         {
                             randRule.put("_value", data2);
                             randRule.put("_lastChangeMillis", currentMillis);
-                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, data2);
+                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, (channel-1), cc, data2);
                             for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiRandomizerPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                             {
                                 Receiver r = re.nextElement();
@@ -187,7 +187,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                         }
                     }
                 }
-                Thread.sleep(1);
+                Thread.sleep(10);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }

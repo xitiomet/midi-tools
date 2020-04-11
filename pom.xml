@@ -96,6 +96,7 @@
             <include>*.js</include>
             <include>*.gif</include>
             <include>*.jks</include>
+            <include>*.json</include>
           </includes>
           <targetPath>midi-tools-res</targetPath>
         </resource>

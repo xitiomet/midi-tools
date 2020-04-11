@@ -1,11 +1,12 @@
 var localOutputDevices = new Map();
 var localInputDevices = new Map();
 var connection;
-var debugMode = true;
+var debugMode = false;
 var reconnectTimeout;
 var gamepads = {};
 var previousButtonStates = [];
 var previousAxesStates = [];
+var gamepadInterval = null;
 
 function gamepadHandler(event, connecting)
 {
@@ -15,6 +16,10 @@ function gamepadHandler(event, connecting)
   var deviceName =  ("gamepad_" + gamepad.index + ".input");
   if (connecting)
   {
+    if (gamepadInterval == null)
+    {
+        gamepadInterval = setInterval(pollGamepads,10);
+    }
     logIt("Gamepad Found " + gamepad.id);
     previousButtonStates[gamepad.index] = new Array(gamepad.buttons.length);
     previousAxesStates[gamepad.index] = new Array(gamepad.axes.length);
@@ -26,6 +31,14 @@ function gamepadHandler(event, connecting)
     var mm = {"do":"removeMidiDevice", "name": gamepad.id, "device": deviceName, "type": "input"};
     sendEvent(mm);
     delete gamepads[gamepad.index];
+    if (gamepads.length == 0)
+    {
+      if (gamepadInterval != null)
+      {
+        clearInterval(gamepadInterval);
+        gamepadInteral = null;
+      }
+    }
   }
 }
 
@@ -433,6 +446,5 @@ function setupWebsocket()
 
 window.onload = function() {
     setupWebsocket();
-    setInterval(pollGamepads,10);
 };
 

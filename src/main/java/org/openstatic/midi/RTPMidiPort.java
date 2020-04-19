@@ -26,7 +26,9 @@ import org.json.*;
 public class RTPMidiPort implements MidiPort
 {
     private String name;
-    private String hostname;
+    private String rtp_name;
+    private int port;
+    private InetAddress hostname;
     private Receiver outputReceiver;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
@@ -34,22 +36,12 @@ public class RTPMidiPort implements MidiPort
     private AppleMidiSession session;
     private JmDNS jmdns;
 
-    public RTPMidiPort(String name, int port)
+    public RTPMidiPort(String name, String rtp_name, int port)
     {
         this.name = name;
-        InetAddress localHost = this.getLocalHost();
-        this.hostname = localHost.getHostName();
-        
-        try
-        {
-            this.jmdns = JmDNS.create(localHost);
-            ServiceInfo serviceInfo = ServiceInfo.create("_apple-midi._udp.local.", name, port, "MidiTools RTP Port " + this.name);
-            jmdns.registerService(serviceInfo);
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
-        
-        this.appleMidiServer = new AppleMidiServer(hostname, port);
+        this.rtp_name = rtp_name;
+        this.port = port;
+        this.hostname = this.getLocalHost();
         this.session = new AppleMidiSession()
         {
             protected void onMidiMessage(final io.github.leovr.rtipmidi.model.MidiMessage message, final long timestamp)
@@ -59,23 +51,24 @@ public class RTPMidiPort implements MidiPort
                     if (message instanceof io.github.leovr.rtipmidi.model.ShortMessage)
                     {
                         byte[] msgData = message.getData();
-                        try
+                        if (msgData.length == 3)
                         {
-                            ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
-                            for (Enumeration<Receiver> re = ((Vector<Receiver>) RTPMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
+                            try
                             {
-                                Receiver r = re.nextElement();
-                                r.send(sm, timestamp);
+                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
+                                for (Enumeration<Receiver> re = ((Vector<Receiver>) RTPMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
+                                {
+                                    Receiver r = re.nextElement();
+                                    r.send(sm, timestamp);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
                         }
                     }
                 }
             }
         };
-        this.appleMidiServer.addAppleMidiSession(session);
-        this.appleMidiServer.start();
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
           public void run()
@@ -94,6 +87,7 @@ public class RTPMidiPort implements MidiPort
             {
                 this.jmdns.unregisterAllServices();
                 this.jmdns.close();
+                this.jmdns = null;
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -127,6 +121,20 @@ public class RTPMidiPort implements MidiPort
         if (!this.isOpened())
         {
             this.opened = true;
+            Thread t = new Thread(() -> {
+                try
+                {
+                    this.jmdns = JmDNS.create(this.hostname);
+                    ServiceInfo serviceInfo = ServiceInfo.create("_apple-midi._udp.local.", this.rtp_name, this.port, "MidiTools RTP Port " + this.name);
+                    jmdns.registerService(serviceInfo);
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+                this.appleMidiServer = new AppleMidiServer(this.hostname.getHostName(), this.port);
+                this.appleMidiServer.addAppleMidiSession(session);
+                this.appleMidiServer.start();
+            });
+            t.start();
             MidiPortManager.firePortOpened(this);
         }
     }
@@ -148,15 +156,22 @@ public class RTPMidiPort implements MidiPort
 
     public void close()
     {
-        try
+        if (this.isOpened())
         {
-            if (this.isOpened())
+            MidiPortManager.firePortClosed(this);
+            try
             {
-                MidiPortManager.firePortClosed(this);
-                this.opened = false;
+                Thread t = new Thread(() -> {
+                    shutDownMDNS();
+                });
+                t.start();
+                this.appleMidiServer.removeAppleMidiSession(this.session);
+                this.appleMidiServer.stop();
+                this.appleMidiServer = null;
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
             }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
+            this.opened = false;
         }
     }
     

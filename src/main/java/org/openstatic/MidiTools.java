@@ -475,7 +475,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        this.rtpMidiPort = new RTPMidiPort("RTP MidiTools", 6004);
+        this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
         
         MidiPortManager.registerVirtualPort("midi_logger", this.midi_logger);
         MidiPortManager.registerVirtualPort("random", this.randomizerPort);

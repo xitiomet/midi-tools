@@ -137,12 +137,14 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private long lastMappingClick;
     private APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
+    private RTPMidiPort rtpMidiPort;
     private JSONObject options;
     private Point windowLocation;
 
     public MidiTools()
     {
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
+        System.err.println("MidiTools() midi-tools");
         MidiTools.instance = this;
         this.options = new JSONObject();
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
@@ -472,8 +474,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
           } 
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        this.rtpMidiPort = new RTPMidiPort("RTP MidiTools", 6004);
+        
         MidiPortManager.registerVirtualPort("midi_logger", this.midi_logger);
         MidiPortManager.registerVirtualPort("random", this.randomizerPort);
+        MidiPortManager.registerVirtualPort("rtp", this.rtpMidiPort);
         MidiPortManager.init();
     }
     
@@ -812,6 +818,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public static void main(String[] args)
     {
+        System.err.println("main() midi-tools");
         try
         {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
@@ -882,13 +889,18 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public static MidiControl createMidiControlFromJSON(JSONObject jo)
     {
+        return createMidiControlFromJSON(jo, 0);
+    }
+
+    public static MidiControl createMidiControlFromJSON(JSONObject jo, int index)
+    {
         int channel = jo.optInt("channel", 0);
         int cc = jo.optInt("cc", 0);
         MidiControl mc = getMidiControlByChannelCC(channel, cc);
         if (mc == null)
         {
             mc = new MidiControl(jo);
-            handleNewMidiControl(mc);
+            handleNewMidiControl(mc, index);
         }
         return mc;
     }
@@ -920,10 +932,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void handleNewMidiControl(final MidiControl mc)
     {
+        handleNewMidiControl(mc, 0);
+    }
+    
+    public static void handleNewMidiControl(final MidiControl mc, int index)
+    {
         try
         {
             SwingUtilities.invokeAndWait(() -> {
-                MidiTools.instance.controls.insertElementAt(mc,0);
+                MidiTools.instance.controls.insertElementAt(mc, index);
             });
             mc.addMidiControlListener(MidiTools.instance.apiServer);
             JSONObject event = new JSONObject();
@@ -1032,7 +1049,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 JSONArray controlsArray = configJson.getJSONArray("controls");
                 for (int m = 0; m < controlsArray.length(); m++)
                 {
-                    createMidiControlFromJSON(controlsArray.getJSONObject(m));
+                    createMidiControlFromJSON(controlsArray.getJSONObject(m),m);
                 }
             }
             if (configJson.has("rules"))

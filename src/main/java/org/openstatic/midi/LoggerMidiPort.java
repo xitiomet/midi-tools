@@ -83,6 +83,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private ArrayBlockingQueue<Runnable> taskQueue;
     private Thread taskThread;
     
+    /*
     class ScrollingDocumentListener implements DocumentListener
     {
         public void changedUpdate(DocumentEvent e) {
@@ -96,26 +97,30 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         public void removeUpdate(DocumentEvent e) {
             //maybeScrollToBottom();
         }
-
-        private void maybeScrollToBottom()
+    }
+    */
+    
+    private void maybeScrollToBottom()
+    {
+        if (LoggerMidiPort.this.autoscroll.isSelected())
         {
-            if (LoggerMidiPort.this.autoscroll.isSelected())
-            {
-                JScrollBar scrollBar = midi_log_scroller.getVerticalScrollBar();
-                boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
-                if (!scrollBarAtBottom) {
-                    LoggerMidiPort.this.taskQueue.add(() -> {
-                        LoggerMidiPort.this.scrollToBottom(LoggerMidiPort.this.viewArea);
-                    });
-                }
+            JScrollBar scrollBar = midi_log_scroller.getVerticalScrollBar();
+            boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
+            if (!scrollBarAtBottom) {
+                //System.err.println("Need to scroll to bottom");
+                LoggerMidiPort.this.taskQueue.add(() -> {
+                    LoggerMidiPort.this.scrollToBottom(LoggerMidiPort.this.viewArea);
+                });
+            } else {
+                //System.err.println("Dont need to scroll");
             }
         }
-        
-        public boolean isScrollBarFullyExtended(JScrollBar vScrollBar)
-        {
-            BoundedRangeModel model = vScrollBar.getModel();
-            return (model.getExtent() + model.getValue()) == model.getMaximum();
-        }
+    }
+    
+    private boolean isScrollBarFullyExtended(JScrollBar vScrollBar)
+    {
+        BoundedRangeModel model = vScrollBar.getModel();
+        return (model.getExtent() + model.getValue()) == model.getMaximum();
     }
     
     public LoggerMidiPort(String name)
@@ -132,7 +137,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.viewArea.setText(this.initBody);
         
         Document document = this.viewArea.getDocument();
-        document.addDocumentListener(new ScrollingDocumentListener());
+        //document.addDocumentListener(new ScrollingDocumentListener());
         
         DefaultCaret caret = (DefaultCaret) this.viewArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
@@ -383,6 +388,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                 } else {
                     Thread.sleep(10);
                 }
+                maybeScrollToBottom();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }

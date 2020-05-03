@@ -39,6 +39,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -54,6 +56,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
     protected ArrayList<WebSocketSession> wsSessions;
     protected static APIWebServer instance;
     private String staticRoot;
+    private WebSocketClient upstreamClient;
     
     public APIWebServer()
     {
@@ -93,6 +96,37 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         MidiPortManager.addMidiPortListener(this);
     }
     
+    public void disconnectUpstream()
+    {
+        if (this.upstreamClient != null)
+        {
+            try 
+            {
+                this.upstreamClient.stop();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public void connectUpstream()
+    {
+        String dest = "wss://openstatic.org/channel/" + MidiTools.LOCAL_SERIAL + "/collector/";
+        System.err.println("Upstream: " + dest);
+        SslContextFactory sec = new SslContextFactory();
+        sec.setValidateCerts(false);
+        this.upstreamClient = new WebSocketClient(sec);
+        try
+        {
+            EventsWebSocket socket = new EventsWebSocket();
+            this.upstreamClient.start();
+            URI upstreamUri = new URI(dest);
+            this.upstreamClient.connect(socket, upstreamUri, new ClientUpgradeRequest());
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+    }
+    
     public void handleWebSocketEvent(JSONObject j, WebSocketSession session)
     {
         if (j.has("do"))
@@ -123,6 +157,8 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
                     MidiAPIPort existingAPIPort = (MidiAPIPort) existingPort;
                     existingAPIPort.setWebSocketSession(session);
                 }
+            } else if (doCmd.equals("fetchStatus")) {
+                transmitStatus(session, j.optString("__sourceId", null));
             } else if (doCmd.equals("removeMidiDevice")) {
                 String hostname = session.getRemoteAddress().getHostName();
                 String deviceId = j.optString("device", "unknown");
@@ -338,6 +374,46 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         }
     }
     
+    public void transmitStatus(WebSocketSession wssession, String targetId)
+    {
+        for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
+        {
+            MidiControl mc = cenum.nextElement();
+            JSONObject event = new JSONObject();
+            event.put("event", "controlAdded");
+            event.put("control", mc.toJSONObject());
+            if (targetId != null)
+                event.put("__targetId", targetId);
+            wssession.getRemote().sendStringByFuture(event.toString());
+        }
+        int idx = 0;
+        for (Iterator<MidiPort> pi = MidiPortManager.getPorts().iterator(); pi.hasNext();)
+        {
+            MidiPort mp = pi.next();
+            JSONObject event = new JSONObject();
+            event.put("event", "deviceAdded");
+            event.put("id", idx);
+            event.put("device", MidiPortToJSONObject(mp));
+            if (targetId != null)
+                event.put("__targetId", targetId);
+            wssession.getRemote().sendStringByFuture(event.toString());
+            idx++;
+        }
+        idx = 0;
+        for (Iterator<MidiPortMapping> pi = MidiPortManager.getMidiPortMappings().iterator(); pi.hasNext();)
+        {
+            MidiPortMapping mp = pi.next();
+            JSONObject event = new JSONObject();
+            event.put("event", "mappingAdded");
+            event.put("id", idx);
+            event.put("mapping", mp.toJSONObject());
+            if (targetId != null)
+                event.put("__targetId", targetId);
+            wssession.getRemote().sendStringByFuture(event.toString());
+            idx++;
+        }
+    }
+    
     @WebSocket
     public static class EventsWebSocket
     {
@@ -355,47 +431,23 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
                 } else {
                     System.err.println("not instance of WebSocketSession");
                 }
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
         }
      
         @OnWebSocketConnect
         public void onConnect(Session session) throws IOException
         {
+            System.err.println("@OnWebSocketConnect");
             if (session instanceof WebSocketSession)
             {
                 WebSocketSession wssession = (WebSocketSession) session;
                 System.out.println(wssession.getRemoteAddress().getHostString() + " connected!");
                 APIWebServer.instance.wsSessions.add(wssession);
-                for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
-                {
-                    MidiControl mc = cenum.nextElement();
-                    JSONObject event = new JSONObject();
-                    event.put("event", "controlAdded");
-                    event.put("control", mc.toJSONObject());
-                    wssession.getRemote().sendStringByFuture(event.toString());
-                }
-                int idx = 0;
-                for (Iterator<MidiPort> pi = MidiPortManager.getPorts().iterator(); pi.hasNext();)
-                {
-                    MidiPort mp = pi.next();
-                    JSONObject event = new JSONObject();
-                    event.put("event", "deviceAdded");
-                    event.put("id", idx);
-                    event.put("device", MidiPortToJSONObject(mp));
-                    wssession.getRemote().sendStringByFuture(event.toString());
-                    idx++;
-                }
-                idx = 0;
-                for (Iterator<MidiPortMapping> pi = MidiPortManager.getMidiPortMappings().iterator(); pi.hasNext();)
-                {
-                    MidiPortMapping mp = pi.next();
-                    JSONObject event = new JSONObject();
-                    event.put("event", "mappingAdded");
-                    event.put("id", idx);
-                    event.put("mapping", mp.toJSONObject());
-                    wssession.getRemote().sendStringByFuture(event.toString());
-                    idx++;
-                }
+                
+            } else {
+                System.err.println("Not an instance of WebSocketSession");
             }
         }
      

@@ -340,6 +340,8 @@ function setupWebsocket()
         
         connection.onopen = function () {
             logIt("Connected to WebSocket backend!");
+            var mm = {"do":"fetchStatus"};
+            sendEvent(mm);
             // request MIDI access
             if (navigator.requestMIDIAccess)
             {

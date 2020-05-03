@@ -88,6 +88,7 @@ import org.json.*;
 public class MidiTools extends JFrame implements Runnable, Receiver, ActionListener, MidiPortListener
 {
     public static final String VERSION = "1.0";
+    public static String LOCAL_SERIAL;
     protected JList controlList;
     private JList midiList;
     private JList rulesList;
@@ -554,6 +555,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
         this.openInBrowserItem.setEnabled(apiEnable);
         this.apiServer.setState(apiEnable);
+        if (this.bootstrapSSLItem.getState() && apiEnable)
+            this.apiServer.connectUpstream();
     }
     
     public void resetConfiguration()
@@ -665,6 +668,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 this.setShowQR(false);
                 this.setShowQR(true);
             }
+            if (this.bootstrapSSLItem.getState())
+            {
+                this.apiServer.connectUpstream();
+            } else {
+                this.apiServer.disconnectUpstream();
+            }
             return;
         }
         String cmd = e.getActionCommand();
@@ -763,7 +772,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     {
         String localIP = MidiTools.getLocalIP() ;
         if (this.bootstrapSSLItem.getState())
-            return "https://openstatic.org/mcct/?s=" + Base64.getEncoder().encodeToString(localIP.getBytes​());
+            return "https://openstatic.org/mcct/?s=" + MidiTools.LOCAL_SERIAL;
         else
             return "https://" + localIP + ":6124/";
             
@@ -818,6 +827,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public static void main(String[] args)
     {
+        MidiTools.LOCAL_SERIAL = MidiTools.getLocalMAC();
         System.err.println("main() midi-tools");
         try
         {
@@ -1061,6 +1071,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     this.rules.addElement(mcr);
                 }
             }
+            if (configJson.has("bootstrapSSL"))
+            {
+                this.bootstrapSSLItem.setState(configJson.optBoolean("bootstrapSSL", false));
+            }
             if (configJson.has("apiServer"))
             {
                 boolean apiEnable = configJson.optBoolean("apiServer", false);
@@ -1078,11 +1092,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             if (configJson.has("windowY"))
             {
                 newWindowLocation.y = configJson.optInt("windowY", 0);
-            }
-            
-            if (configJson.has("bootstrapSSL"))
-            {
-                this.bootstrapSSLItem.setState(configJson.optBoolean("bootstrapSSL", false));
             }
 
             if (configJson.has("showQr"))
@@ -1316,5 +1325,33 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         } catch (Exception e) {}
         return return_ip;
+    }
+    
+    public static String getLocalMAC()
+    {
+        String return_mac = "";
+        try
+        {
+            for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
+            {
+                NetworkInterface ni = n.nextElement();
+                for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();)
+                {
+                    InetAddress ia = e.nextElement();
+                    if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
+                    {
+                        byte[] mac = ni.getHardwareAddress();
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < mac.length; i++)
+                        {
+                            sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));
+                        }
+                        return_mac = sb.toString();
+                    }
+                }
+            }
+
+        } catch (Exception e) {}
+        return return_mac;
     }
 }

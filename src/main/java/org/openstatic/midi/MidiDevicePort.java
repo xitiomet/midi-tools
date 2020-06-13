@@ -15,7 +15,11 @@ public class MidiDevicePort implements MidiPort
     private String name;
     private MidiDevice device;
     
+    // Actual Transmitter/Receiver for the MidiDevice
     private Receiver deviceReceiver;
+    private Transmitter deviceTransmitter;
+
+    // Our internal receiver for the output of the device's transmitter
     private Receiver outputReceiver;
     
     private boolean opened;
@@ -25,7 +29,7 @@ public class MidiDevicePort implements MidiPort
     {
         this.device = device;
         this.name = device.getDeviceInfo().getName();
-        this.deviceReceiver = new Receiver()
+        this.outputReceiver = new Receiver()
         {
             public void send(MidiMessage message, long timeStamp)
             {
@@ -75,17 +79,22 @@ public class MidiDevicePort implements MidiPort
             {
                 if (this.canTransmitMessages())
                 {
-                    device.getTransmitter().setReceiver(this.deviceReceiver);
+                    this.deviceTransmitter = device.getTransmitter();
+                    this.deviceTransmitter.setReceiver(this.outputReceiver);
                 }
                 if (this.canReceiveMessages())
                 {
-                    this.outputReceiver = device.getReceiver();
+                    this.deviceReceiver = device.getReceiver();
                 }
                 this.device.open();
                 MidiPortManager.firePortOpened(this);
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
+            if (this.deviceTransmitter != null)
+                this.deviceTransmitter.close();
+            if (this.deviceReceiver != null)
+                this.deviceReceiver.close();
         }
     }
     
@@ -125,9 +134,9 @@ public class MidiDevicePort implements MidiPort
     
     public void send(MidiMessage message, long timeStamp)
     {
-        if (this.outputReceiver != null)
+        if (this.deviceReceiver != null)
         {
-            this.outputReceiver.send(message, timeStamp);
+            this.deviceReceiver.send(message, timeStamp);
         }
     }
 

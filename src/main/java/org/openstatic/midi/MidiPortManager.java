@@ -76,7 +76,7 @@ public class MidiPortManager
         MidiPortManager.taskQueue.add(r);
     }
 
-    private static void refresh()
+    private static synchronized void refresh()
     {
         //System.err.println("MidiPortManager Refresh");
         refreshLocalDevices();
@@ -145,7 +145,7 @@ public class MidiPortManager
         }
 
         // check for devices removed
-        for(Iterator<MidiDevice.Info> oldDevicesIterator = MidiPortManager.localDevices.keySet().iterator(); oldDevicesIterator.hasNext();)
+        for(Iterator<MidiDevice.Info> oldDevicesIterator = ((LinkedHashMap<MidiDevice.Info, MidiPort>) MidiPortManager.localDevices.clone()).keySet().iterator(); oldDevicesIterator.hasNext();)
         {
             MidiDevice.Info di = oldDevicesIterator.next();
             if (!newLocalDevices.contains(di))

@@ -81,6 +81,9 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Desktop;
 
+import org.openstatic.routeput.*;
+import org.openstatic.routeput.client.*;
+
 import javax.sound.midi.*;
 
 import org.json.*;
@@ -141,6 +144,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private RTPMidiPort rtpMidiPort;
     private JSONObject options;
     private Point windowLocation;
+    private RoutePutClient routeputClient;
+    private RoutePutSessionManager routeputSessionManager;
 
     public MidiTools()
     {
@@ -185,7 +190,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.showQrItem.addActionListener(this);
         this.showQrItem.setActionCommand("show_qr");
         
-        this.bootstrapSSLItem = new JCheckBoxMenuItem("Use openstatic.org SSL");
+        this.bootstrapSSLItem = new JCheckBoxMenuItem("Use Openstatic.org Relay");
         this.bootstrapSSLItem.setEnabled(true);
         this.bootstrapSSLItem.setMnemonic(KeyEvent.VK_O);
         this.bootstrapSSLItem.addActionListener(this);
@@ -476,11 +481,19 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
+        String openstaticUri = "wss://openstatic.org/channel/" + MidiTools.LOCAL_SERIAL + "/";
+        System.err.println("OpenStatic URI: " + openstaticUri);
+        this.routeputClient = new RoutePutClient(MidiTools.LOCAL_SERIAL, openstaticUri);
+        this.routeputClient.setAutoReconnect(true);
+        this.routeputClient.setCollector(true);
+        this.routeputSessionManager = new RoutePutSessionManager(this.routeputClient);
+
         this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
-        
+        MidiPortManager.addMidiPortListener(this);
         MidiPortManager.registerVirtualPort("midi_logger", this.midi_logger);
         MidiPortManager.registerVirtualPort("random", this.randomizerPort);
         MidiPortManager.registerVirtualPort("rtp", this.rtpMidiPort);
+        //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
         MidiPortManager.init();
     }
     
@@ -492,7 +505,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.mainThread.start();
         this.midi_logger.addReceiver(MidiTools.this);
         this.randomizerPort.addReceiver(MidiTools.this);
-        MidiPortManager.addMidiPortListener(this);
     }
     
     public void portAdded(int idx, MidiPort port)
@@ -556,7 +568,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.openInBrowserItem.setEnabled(apiEnable);
         this.apiServer.setState(apiEnable);
         if (this.bootstrapSSLItem.getState() && apiEnable)
-            this.apiServer.connectUpstream();
+        {
+            this.routeputClient.connect();
+        }
     }
     
     public void resetConfiguration()
@@ -670,9 +684,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             }
             if (this.bootstrapSSLItem.getState())
             {
-                this.apiServer.connectUpstream();
+                this.routeputClient.connect();
             } else {
-                this.apiServer.disconnectUpstream();
+                this.routeputClient.close();
             }
             return;
         }
@@ -1292,6 +1306,22 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         } catch (Exception dt_ex) {
             return false;
         }
+    }
+
+    public static JSONObject MidiPortToJSONObject(MidiPort port)
+    {
+        JSONObject dev = new JSONObject();
+        dev.put("name", port.getName());
+        if (port.canTransmitMessages() && port.canReceiveMessages())
+        {
+            dev.put("type", "both");
+        } else if (port.canTransmitMessages()) {
+            dev.put("type", "output");
+        } else if (port.canReceiveMessages()) {
+            dev.put("type", "input");
+        }
+        dev.put("opened", port.isOpened());
+        return dev;
     }
     
     public static BufferedImage QRCode(String url)

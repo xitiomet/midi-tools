@@ -77,7 +77,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private StringBuffer logBuffer;
     private JToggleButton autoscroll;
     private JToggleButton portControl;
-    private String initBody = "<html><body style=\"padding: 4px 4px 4px 4px; margin: 0px 0px 0px 0px; color: white; background-color: black; font-size: 14px; font-family: \"terminal\", monospace;\"><table style=\"width: 100%; text-align: left;\" cellspacing=\"0\" cellpadding=\"0\"></table></body></html>";
+    private String initBody = "<html><body style=\"padding: 4px 4px 4px 4px; margin: 0px 0px 0px 0px; color: white; background-color: #222222; font-size: 14px; font-family: \"terminal\", monospace;\"><table style=\"width: 100%; text-align: left;\" cellspacing=\"0\" cellpadding=\"0\"></table></body></html>";
     private JButton clearLog;
     private JPanel buttonPanel;
     private ArrayBlockingQueue<Runnable> taskQueue;
@@ -133,7 +133,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.viewArea = new JTextPane();
         this.viewArea.setContentType("text/html");
         this.viewArea.setEditable(false);
-        this.viewArea.setBackground(Color.BLACK);
+        this.viewArea.setBackground(new Color(34,34,34));
         this.viewArea.setText(this.initBody);
         
         Document document = this.viewArea.getDocument();

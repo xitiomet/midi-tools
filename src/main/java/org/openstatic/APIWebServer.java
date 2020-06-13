@@ -56,7 +56,6 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
     protected ArrayList<WebSocketSession> wsSessions;
     protected static APIWebServer instance;
     private String staticRoot;
-    private WebSocketClient upstreamClient;
     
     public APIWebServer()
     {
@@ -94,37 +93,6 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         }
         httpServer.setHandler(context);
         MidiPortManager.addMidiPortListener(this);
-    }
-    
-    public void disconnectUpstream()
-    {
-        if (this.upstreamClient != null)
-        {
-            try 
-            {
-                this.upstreamClient.stop();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    
-    public void connectUpstream()
-    {
-        String dest = "wss://openstatic.org/channel/" + MidiTools.LOCAL_SERIAL + "/collector/";
-        System.err.println("Upstream: " + dest);
-        SslContextFactory sec = new SslContextFactory();
-        sec.setValidateCerts(false);
-        this.upstreamClient = new WebSocketClient(sec);
-        try
-        {
-            EventsWebSocket socket = new EventsWebSocket();
-            this.upstreamClient.start();
-            URI upstreamUri = new URI(dest);
-            this.upstreamClient.connect(socket, upstreamUri, new ClientUpgradeRequest());
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
     }
     
     public void handleWebSocketEvent(JSONObject j, WebSocketSession session)
@@ -248,28 +216,12 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         }
     }
     
-    public static JSONObject MidiPortToJSONObject(MidiPort port)
-    {
-        JSONObject dev = new JSONObject();
-        dev.put("name", port.getName());
-        if (port.canTransmitMessages() && port.canReceiveMessages())
-        {
-            dev.put("type", "both");
-        } else if (port.canTransmitMessages()) {
-            dev.put("type", "output");
-        } else if (port.canReceiveMessages()) {
-            dev.put("type", "input");
-        }
-        dev.put("opened", port.isOpened());
-        return dev;
-    }
-    
     public void portAdded(int idx, MidiPort port)
     {
         JSONObject event = new JSONObject();
         event.put("event", "deviceAdded");
         event.put("id", idx);
-        event.put("device", MidiPortToJSONObject(port));
+        event.put("device", MidiTools.MidiPortToJSONObject(port));
         broadcastJSONObject(event);
     }
     
@@ -278,7 +230,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
         JSONObject event = new JSONObject();
         event.put("event", "deviceRemoved");
         event.put("id", idx);
-        event.put("device", MidiPortToJSONObject(port));
+        event.put("device", MidiTools.MidiPortToJSONObject(port));
         broadcastJSONObject(event);
     }
     
@@ -286,7 +238,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
     {
         JSONObject event = new JSONObject();
         event.put("event", "deviceOpened");
-        event.put("device", MidiPortToJSONObject(port));
+        event.put("device", MidiTools.MidiPortToJSONObject(port));
         broadcastJSONObject(event);
     }
     
@@ -294,7 +246,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
     {
         JSONObject event = new JSONObject();
         event.put("event", "deviceClosed");
-        event.put("device", MidiPortToJSONObject(port));
+        event.put("device", MidiTools.MidiPortToJSONObject(port));
         broadcastJSONObject(event);
     }
     
@@ -393,7 +345,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener
             JSONObject event = new JSONObject();
             event.put("event", "deviceAdded");
             event.put("id", idx);
-            event.put("device", MidiPortToJSONObject(mp));
+            event.put("device", MidiTools.MidiPortToJSONObject(mp));
             if (targetId != null)
                 event.put("__targetId", targetId);
             wssession.getRemote().sendStringByFuture(event.toString());

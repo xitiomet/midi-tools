@@ -1,24 +1,14 @@
 package org.openstatic;
 
-import java.net.InetAddress;
 import java.net.URLEncoder;
-import java.net.URLDecoder;
 import java.net.URL;
 import java.net.HttpURLConnection;
-import java.util.Vector;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.Set;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.PrintStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+
 
 public class PendingURLFetch implements Runnable
 {

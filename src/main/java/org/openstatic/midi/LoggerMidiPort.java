@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.text.SimpleDateFormat;
 import javax.swing.JTextArea;
 import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.awt.Font;
 import java.awt.Toolkit;
@@ -316,6 +318,18 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         }
         String data1Text = data1Name + " = " + data1Value;
         return commandText + " " + channelText + ", " + data1Text + ", value = " + String.valueOf(msg.getData2());
+    }
+
+    public void printException(Exception e)
+    {
+        println("Exception - " + e.toString());
+        try
+        {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            e.printStackTrace(ps);
+            println(baos.toString());
+        } catch (Exception e2) {}
     }
     
     public void println(String text)

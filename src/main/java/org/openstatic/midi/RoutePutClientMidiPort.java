@@ -17,7 +17,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private RoutePutClient upstreamClient;
 
-    public RoutePutClientMidiPort(String channel, String websocketUri)
+    public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
     {
         this.upstreamClient = new RoutePutClient(channel, websocketUri);
         this.upstreamClient.addMessageListener(this);
@@ -27,6 +27,11 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     {
         this.upstreamClient = client;
         this.upstreamClient.addMessageListener(this);
+    }
+
+    public RoutePutClient getRoutePutClient()
+    {
+        return this.upstreamClient;
     }
 
     @Override
@@ -102,7 +107,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
 
     public String getName()
     {
-        return "#" + this.upstreamClient.getDefaultChannel();
+        return "#" + this.upstreamClient.getDefaultChannel().getName();
     }
 
     public void close()
@@ -184,7 +189,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     
     public String toString()
     {
-        return this.upstreamClient.getDefaultChannel();
+        return this.getName();
     }
 
 }

@@ -3,12 +3,6 @@ package org.openstatic.midi;
 import javax.sound.midi.*;
 import java.util.Vector;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Enumeration;
-import java.util.Map;
-import java.util.Set;
-import java.util.Arrays;
 import java.util.Random;
 import org.json.*;
 
@@ -179,11 +173,9 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                             randRule.put("_value", data2);
                             randRule.put("_lastChangeMillis", currentMillis);
                             final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, (channel-1), cc, data2);
-                            for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiRandomizerPort.this.receivers.clone()).elements(); re.hasMoreElements();)
-                            {
-                                Receiver r = re.nextElement();
+                            MidiRandomizerPort.this.receivers.forEach((r) -> {
                                 r.send(sm, timeStamp);
-                            }
+                            });
                         }
                     }
                 }

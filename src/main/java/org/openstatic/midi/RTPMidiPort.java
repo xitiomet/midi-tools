@@ -14,14 +14,7 @@ import javax.jmdns.ServiceInfo;
 import javax.sound.midi.*;
 import java.util.Vector;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Enumeration;
-import java.util.Map;
-import java.util.Set;
-import java.util.Arrays;
-import java.util.Random;
-import org.json.*;
 
 public class RTPMidiPort implements MidiPort
 {
@@ -41,7 +34,7 @@ public class RTPMidiPort implements MidiPort
         this.name = name;
         this.rtp_name = rtp_name;
         this.port = port;
-        this.hostname = this.getLocalHost();
+        this.hostname = getLocalHost();
         this.session = new AppleMidiSession()
         {
             protected void onMidiMessage(final io.github.leovr.rtipmidi.model.MidiMessage message, final long timestamp)
@@ -56,11 +49,9 @@ public class RTPMidiPort implements MidiPort
                             try
                             {
                                 ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
-                                for (Enumeration<Receiver> re = ((Vector<Receiver>) RTPMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
-                                {
-                                    Receiver r = re.nextElement();
+                                RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
-                                }
+                                });
                             } catch (Exception e) {
                                 e.printStackTrace(System.err);
                             }

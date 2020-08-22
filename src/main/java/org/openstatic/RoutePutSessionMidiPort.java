@@ -1,7 +1,6 @@
 package org.openstatic;
 
 import org.openstatic.routeput.*;
-import org.openstatic.routeput.client.*;
 import org.openstatic.midi.*;
 import javax.sound.midi.*;
 import java.util.Vector;

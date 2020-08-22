@@ -12,6 +12,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <jettyVersion>9.4.28.v20200408</jettyVersion>
+    <jinputVersion>2.0.9</jinputVersion>
   </properties>
   <repositories>
     <repository>
@@ -21,6 +22,17 @@
     </repository>
   </repositories>
   <dependencies>
+    <dependency>
+        <groupId>net.java.jinput</groupId>
+        <artifactId>jinput</artifactId>
+        <version>${jinputVersion}</version>
+    </dependency>
+    <dependency>
+        <groupId>net.java.jinput</groupId>
+        <artifactId>jinput</artifactId>
+        <version>${jinputVersion}</version>
+        <classifier>natives-all</classifier>
+    </dependency>
     <dependency>
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
@@ -109,6 +121,19 @@
         </resource>
     </resources>
     <plugins>
+        <plugin>
+            <groupId>com.googlecode.mavennatives</groupId>
+            <artifactId>maven-nativedependencies-plugin</artifactId>
+            <executions>
+                <execution>
+                    <id>unpacknatives</id>
+                    <phase>generate-resources</phase>
+                    <goals>
+                        <goal>copy</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
@@ -263,11 +288,15 @@
                             <mainClass>${mainClass}</mainClass>
                         </classPath>
                         <icon>res/windows.ico</icon>
+                        <chdir>.</chdir>
                         <jre>
                             <path>jre</path>
                             <minVersion>1.8.0</minVersion>
                             <initialHeapSize>512</initialHeapSize>
                             <maxHeapSize>1024</maxHeapSize>
+                            <opts>
+                              <opt>-Djava.library.path=./natives/</opt>
+                            </opts>
                         </jre>
                         <versionInfo>
                             <fileVersion>1.0.0.0</fileVersion>

@@ -1,15 +1,17 @@
 package org.openstatic;
 
 import org.openstatic.midi.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
+import org.openstatic.midi.ports.LoggerMidiPort;
+import org.openstatic.midi.ports.MidiRandomizerPort;
+import org.openstatic.midi.ports.RTPMidiPort;
+import org.openstatic.midi.providers.CollectionMidiPortProvider;
+import org.openstatic.midi.providers.DeviceMidiPortProvider;
+import org.openstatic.midi.providers.JoystickMidiPortProvider;
+
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
-import java.util.Arrays;
-import java.util.Base64;
 
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
@@ -27,18 +29,10 @@ import java.io.File;
 
 import javax.swing.JFrame;
 import javax.swing.JList;
-import javax.swing.JSlider;
 import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JDialog;
 import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.JTextArea;
-import javax.swing.JTextPane;
-import javax.swing.JToggleButton;
 import javax.swing.JScrollPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -49,12 +43,7 @@ import javax.swing.JSeparator;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingConstants;
-import javax.swing.DefaultListModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.JScrollPane;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JOptionPane;
@@ -63,22 +52,16 @@ import javax.swing.ImageIcon;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.awt.BorderLayout;
-import java.awt.GridLayout;
 import java.awt.Toolkit;
 import java.awt.Point;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.Font;
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics;
 import java.awt.Desktop;
 
 import org.openstatic.routeput.*;
@@ -156,7 +139,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
         this.keep_running = true;
         this.apiServer = new APIWebServer();
-
+        MidiPortManager.addProvider(this.apiServer);
         this.midi_logger = new LoggerMidiPort("Logger");
         this.randomizerPort = new MidiRandomizerPort("Randomizer");
 
@@ -482,20 +465,28 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        String openstaticUri = "wss://openstatic.org/channel/" + MidiTools.LOCAL_SERIAL + "/";
+        String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
         this.routeputClient = new RoutePutClient(RoutePutChannel.getChannel(MidiTools.LOCAL_SERIAL), openstaticUri);
         this.routeputClient.setAutoReconnect(true);
         this.routeputClient.setCollector(true);
+        this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
+        this.routeputClient.setProperty("host", RTPMidiPort.getLocalHost().getHostName());
         this.routeputSessionManager = new RoutePutSessionManager(this.routeputClient);
+        MidiPortManager.addProvider(this.routeputSessionManager);
 
         this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
         MidiPortManager.addMidiPortListener(this);
-        MidiPortManager.registerVirtualPort("midi_logger", this.midi_logger);
-        MidiPortManager.registerVirtualPort("random", this.randomizerPort);
-        MidiPortManager.registerVirtualPort("rtp", this.rtpMidiPort);
+        CollectionMidiPortProvider cmpp = new CollectionMidiPortProvider();
+        MidiPortManager.addProvider(new DeviceMidiPortProvider());
+        MidiPortManager.addProvider(new JoystickMidiPortProvider());
+        MidiPortManager.addProvider(cmpp);
+        cmpp.add(this.midi_logger);
+        cmpp.add(this.randomizerPort);
+        cmpp.add(this.rtpMidiPort);
         //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
         MidiPortManager.init();
+        System.err.println("Finished MidiTools Constructor");
     }
     
     public void start()
@@ -869,9 +860,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             
         }
         MidiTools mlb = new MidiTools();
+        mlb.start();
+        System.err.println("loading config");
         mlb.loadConfig();
         mlb.setVisible(true);
-        mlb.start();
+        System.err.println("finished config load");
     }
 
     public static void setRuleGroupEnabled(String groupName, boolean v)

@@ -314,6 +314,36 @@
                 </execution>
             </executions>
         </plugin>
+        <plugin>
+            <groupId>org.digitalmediaserver</groupId>
+            <artifactId>nsis-maven-plugin</artifactId>
+            <version>1.0.2</version>
+            <configuration>
+                <makensisExecutable></makensisExecutable>
+                <makensisExecutableLinux>/usr/bin/makensis</makensisExecutableLinux>
+                <makensisExecutableMacOS></makensisExecutableMacOS>
+                <compression>lzma</compression>
+                <compressionIsFinal>true</compressionIsFinal>
+                <compressionDictSize>64</compressionDictSize>
+                <defines>
+                    <PROJECT_NAME_SHORT>MidiTools</PROJECT_NAME_SHORT>
+                    <PROJECT_NAME_CAMEL>${project.name.camel}</PROJECT_NAME_CAMEL>
+                </defines>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>build-windows-installer</id>
+                    <configuration>
+                        <scriptFile>${basedir}/src/nsis/midi-tools.nsi</scriptFile>
+                        <outputFile>MidiTools-setup.exe</outputFile>
+                    </configuration>
+                    <goals>
+                        <goal>generate-headerfile</goal>
+                        <goal>make</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
     </plugins>
   </build>
 </project>

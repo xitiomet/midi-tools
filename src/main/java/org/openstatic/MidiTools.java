@@ -4,6 +4,7 @@ import org.openstatic.midi.*;
 import org.openstatic.midi.ports.LoggerMidiPort;
 import org.openstatic.midi.ports.MidiRandomizerPort;
 import org.openstatic.midi.ports.RTPMidiPort;
+import org.openstatic.midi.ports.RoutePutClientMidiPort;
 import org.openstatic.midi.providers.CollectionMidiPortProvider;
 import org.openstatic.midi.providers.DeviceMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
@@ -130,6 +131,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private Point windowLocation;
     private RoutePutClient routeputClient;
     private RoutePutSessionManager routeputSessionManager;
+    public CollectionMidiPortProvider cmpp;
+    private JMenuItem routeputConnectMenuItem;
 
     public MidiTools()
     {
@@ -173,7 +176,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.showQrItem.addActionListener(this);
         this.showQrItem.setActionCommand("show_qr");
         
-        this.bootstrapSSLItem = new JCheckBoxMenuItem("Use Openstatic.org Relay");
+        this.bootstrapSSLItem = new JCheckBoxMenuItem("Enable Openstatic.org Interface");
         this.bootstrapSSLItem.setEnabled(true);
         this.bootstrapSSLItem.setMnemonic(KeyEvent.VK_O);
         this.bootstrapSSLItem.addActionListener(this);
@@ -251,6 +254,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createRandomizerRuleMenuItem = new JMenuItem("Create Rule for Randomizer");
         this.createRandomizerRuleMenuItem.setActionCommand("new_random_rule");
         this.createRandomizerRuleMenuItem.addActionListener(this);
+
+        this.routeputConnectMenuItem = new JMenuItem("Routeput Connect");
+        this.routeputConnectMenuItem.setActionCommand("routeput_connect");
+        this.routeputConnectMenuItem.addActionListener(this);
         
         this.options.put("createControlOnInput", true);
         this.controlsMenu.add(this.createNewMappingItem);
@@ -258,9 +265,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.controlsMenu.add(this.createNewControlItem);
         this.controlsMenu.add(this.createRandomizerRuleMenuItem);
         
-        this.apiMenu = new JMenu("Web Interface");
-        this.apiMenu.setMnemonic(KeyEvent.VK_W);
-        this.apiServerEnable = new JCheckBoxMenuItem("Enable Local Server");
+        this.apiMenu = new JMenu("Network Interfaces");
+        this.apiMenu.setMnemonic(KeyEvent.VK_N);
+        this.apiServerEnable = new JCheckBoxMenuItem("Enable API Server");
         this.apiServerEnable.addActionListener(this);
         this.apiServerEnable.setMnemonic(KeyEvent.VK_E);
 
@@ -268,7 +275,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.apiMenu.add(this.showQrItem);
         this.apiMenu.add(this.bootstrapSSLItem);
         this.apiMenu.add(this.openInBrowserItem);
-        
+        this.apiMenu.add(this.routeputConnectMenuItem);
+
         this.menuBar.add(this.fileMenu);
         this.menuBar.add(this.controlsMenu);
         this.menuBar.add(this.apiMenu);
@@ -467,17 +475,18 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
-        this.routeputClient = new RoutePutClient(RoutePutChannel.getChannel(MidiTools.LOCAL_SERIAL), openstaticUri);
+        RoutePutChannel myChannel = RoutePutChannel.getChannel("midi-tools-" + MidiTools.LOCAL_SERIAL);
+        this.routeputClient = new RoutePutClient(myChannel, openstaticUri);
         this.routeputClient.setAutoReconnect(true);
         this.routeputClient.setCollector(true);
         this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
         this.routeputClient.setProperty("host", RTPMidiPort.getLocalHost().getHostName());
-        this.routeputSessionManager = new RoutePutSessionManager(this.routeputClient);
+        this.routeputSessionManager = new RoutePutSessionManager(myChannel, this.routeputClient);
         MidiPortManager.addProvider(this.routeputSessionManager);
 
         this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
         MidiPortManager.addMidiPortListener(this);
-        CollectionMidiPortProvider cmpp = new CollectionMidiPortProvider();
+        this.cmpp = new CollectionMidiPortProvider();
         MidiPortManager.addProvider(new DeviceMidiPortProvider());
         MidiPortManager.addProvider(new JoystickMidiPortProvider());
         MidiPortManager.addProvider(cmpp);
@@ -499,10 +508,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     Runnable r = this.taskQueue.poll(1, TimeUnit.SECONDS);
                     if (r != null)
                     {
-                        r.run();
                         String taskName = r.toString();
-                        if (!taskName.contains("Lambda"))
-                            System.err.println("TaskComplete> " + taskName);
+                        if (MidiTools.this.isVisible())
+                        {
+                            r.run();
+                            if (!taskName.contains("Lambda"))
+                                System.err.println("TaskComplete> " + taskName);
+                        } else {
+                            System.err.println("Threw away UI task: " + taskName);
+                        }
                     }
                 } catch (Exception e) {
                     MidiTools.instance.midi_logger.printException(e);
@@ -722,6 +736,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             JSONObject newRule = MidiRandomizerPort.defaultRuleJSONObject();
             JSONObjectDialog jod = new JSONObjectDialog("New Randomizer Rule", newRule);
             MidiTools.this.randomizerPort.addRandomRule(newRule);
+        } else if (cmd.equals("routeput_connect")) {
+            JSONObject newRule = new JSONObject();
+            newRule.put("uri", "wss://openstatic.org/channel/");
+            newRule.put("channel", "lobby");
+            JSONObjectDialog jod = new JSONObjectDialog("New Routeput Connection", newRule);
+            RoutePutClientMidiPort rpcmp = new RoutePutClientMidiPort(RoutePutChannel.getChannel(newRule.optString("channel","lobby")), newRule.optString("uri","wss://openstatic.org/channel/"));
+            this.cmpp.add(rpcmp);
         } else if (cmd.equals("about")) {
             browseTo("http://openstatic.org/miditools/");
         } else if (cmd.equals("open_api")) {
@@ -798,7 +819,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     {
         String localIP = MidiTools.getLocalIP() ;
         if (this.bootstrapSSLItem.getState())
-            return "https://openstatic.org/mcct/?s=" + MidiTools.LOCAL_SERIAL;
+            return "https://openstatic.org/mcct/?s=midi-tools-" + MidiTools.LOCAL_SERIAL;
         else
             return "https://" + localIP + ":6124/";
             
@@ -1024,8 +1045,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                     }
                     if (!found_control && this.createControlOnInput.getState())
                     {
-                        MidiControl mc = new MidiControl(sm.getChannel()+1, sm.getData1());
-                        handleNewMidiControl(mc);
+                        int channel = sm.getChannel()+1;
+                        int cc = sm.getData1();
+                        if (cc != 121 && cc != 123)
+                        {
+                            MidiControl mc = new MidiControl(channel,cc);
+                            handleNewMidiControl(mc);
+                        }
                     }
                     if (should_repaint)
                     {
@@ -1180,6 +1206,18 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             }
         } catch (Exception e) {
             MidiTools.instance.midi_logger.printException(e);
+        }
+    }
+
+    public static void logIt(String text)
+    {
+        System.err.println(text);
+        if (MidiTools.instance != null)
+        {
+            if (MidiTools.instance.midi_logger != null)
+            {
+                MidiTools.instance.midi_logger.println(text);
+            }
         }
     }
     

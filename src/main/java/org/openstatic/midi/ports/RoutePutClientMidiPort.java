@@ -15,12 +15,14 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private RoutePutClient upstreamClient;
+    private int beatPulse;
 
     public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
     {
         this.upstreamClient = new RoutePutClient(channel, websocketUri);
         this.upstreamClient.setProperty("description", "Midi Control Change Tool");
         this.upstreamClient.addMessageListener(this);
+        this.beatPulse = 1;
     }
 
     public RoutePutClientMidiPort(RoutePutClient client)
@@ -28,6 +30,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         this.upstreamClient = client;
         this.upstreamClient.setProperty("description", "Midi Control Change Tool");
         this.upstreamClient.addMessageListener(this);
+        this.beatPulse = 1;
     }
 
     public RoutePutClient getRoutePutClient()
@@ -36,7 +39,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     }
 
     @Override
-    public void onMessage(RoutePutMessage j) 
+    public void onMessage(RoutePutSession session, RoutePutMessage j) 
     {
         try
         {
@@ -103,7 +106,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
 
     public boolean isOpened()
     {
-        return this.opened;
+        return this.opened && this.upstreamClient.isConnected();
     }
 
     public String getName()
@@ -140,6 +143,12 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
                 RoutePutMessage mm = new RoutePutMessage();
                 mm.put("event", "beatClock");
                 mm.put("timeStamp", timeStamp);
+                mm.put("pulse", this.beatPulse);
+                if (this.beatPulse >= 24)
+                {
+                    this.beatPulse = 0;
+                }
+                this.beatPulse++;
                 mm.setChannel(this.upstreamClient.getDefaultChannel());
                 this.upstreamClient.send(mm);
             } else {

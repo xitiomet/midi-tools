@@ -181,8 +181,16 @@
             <configuration>
                 <mainClass>${mainClass}</mainClass>
                 <iconFile>res/midi.icns</iconFile>
-                <jrePath>D:\jvms\osx_jre1.8.0_231.jre</jrePath>
+                <jrePath>/mnt/d/jvms/osx_jre1.8.0_231.jre</jrePath>
                 <generateDiskImageFile>false</generateDiskImageFile>
+                <additionalBundledClasspathResources>
+                    <fileSet>
+                      <directory>target/natives/</directory>
+                      <includes>
+                        <include>*.jnilib</include>
+                      </includes>
+                    </fileSet>
+                </additionalBundledClasspathResources>
             </configuration>
             <executions>
                 <execution>

@@ -11,16 +11,18 @@ import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
 
 public class RoutePutSessionManager
-        implements RoutePutSessionListener, MidiControlListener, MidiPortListener, MidiPortProvider {
+        implements RoutePutChannelListener, MidiControlListener, MidiPortListener, MidiPortProvider {
     private RoutePutClient client;
     private LinkedHashMap<String, RoutePutSessionMidiPort> virtualPorts;
+    private RoutePutChannel channel;
 
 
-    public RoutePutSessionManager(RoutePutClient client)
+    public RoutePutSessionManager(RoutePutChannel channel, RoutePutClient client)
     {
+        this.channel = channel;
         this.client = client;
         this.virtualPorts = new LinkedHashMap<String, RoutePutSessionMidiPort>();
-        this.client.addSessionListener(this);
+        this.channel.addChannelListener(this);
         MidiPortManager.addMidiPortListener(this);
     }
 
@@ -116,10 +118,11 @@ public class RoutePutSessionManager
     }
 
     @Override
-    public void onClose(RoutePutSession session, boolean local)
+    public void onLeave(RoutePutChannel channel, RoutePutSession session)
     {
-        if (!local)
+        if (this.client != session)
         {
+            MidiTools.logIt("Web Session Left: " + session.getConnectionId());
             RoutePutSessionManager.this.virtualPorts.entrySet().removeIf((entry) -> {
                 if (entry.getValue().getRoutePutSession() == session)
                 {
@@ -128,16 +131,21 @@ public class RoutePutSessionManager
                 }
                 return false;
             });
+        } else {
+            MidiTools.logIt("Web Session Left (ignored): " + session.getConnectionId());
         }
     }
 
     @Override
-    public void onConnect(RoutePutSession session, boolean local) {
-        if (!local) {
-            final String hostname = session.getProperty("identity", session.getConnectionId().substring(0, 5));
+    public void onJoin(RoutePutChannel channel, RoutePutSession session)
+    {
+        if (this.client != session)
+        {
+            MidiTools.logIt("Web Session Joined: " + session.getConnectionId());
+            final String hostname = session.getProperties().optString("identity", session.getConnectionId().substring(0, 5));
             session.addMessageListener(new RoutePutMessageListener() {
                 @Override
-                public void onMessage(RoutePutMessage j) {
+                public void onMessage(RoutePutSession session, RoutePutMessage j) {
                     System.err.println("RPMR " + j.toString());
                     if (j.has("do")) {
                         String doCmd = j.optString("do", "");
@@ -229,6 +237,8 @@ public class RoutePutSessionManager
                     }
                 }
             });
+        } else {
+            MidiTools.logIt("Web Session Joined (ignored): " + session.getConnectionId());
         }
     }
 

@@ -85,6 +85,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private JPanel buttonPanel;
     private ArrayBlockingQueue<Runnable> taskQueue;
     private Thread taskThread;
+    private int beatPulse;
     
     /*
     class ScrollingDocumentListener implements DocumentListener
@@ -129,6 +130,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     public LoggerMidiPort(String name)
     {
         super(new BorderLayout());
+        this.beatPulse = 1;
         this.taskQueue = new ArrayBlockingQueue<Runnable>(10000);
         this.buttonPanel = new JPanel();
         this.buttonPanel.setLayout(new BoxLayout(this.buttonPanel, BoxLayout.Y_AXIS));
@@ -302,9 +304,15 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         String commandText = "";
         String data1Name = "?";
         String data1Value = "?";
-        
-        if (msg.getCommand() == ShortMessage.CONTROL_CHANGE)
+        String data2Name = "value";
+        if (msg.getCommand() == ShortMessage.PITCH_BEND)
         {
+            data1Name = "BEND";
+            data2Name = "MSB";
+            int bendValue = (msg.getData2() << 7) | msg.getData1();
+            data1Value = String.valueOf(bendValue - 8192);
+            commandText = "<b style=\"color: orange;\">PITCH BEND</b>";
+        } else if (msg.getCommand() == ShortMessage.CONTROL_CHANGE) {
             data1Name = "CC";
             data1Value = String.valueOf(msg.getData1());
             commandText = "<b style=\"color: yellow;\">CONTROL CHANGE</b>";
@@ -318,7 +326,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
             commandText = "<b style=\"color: red;\">NOTE OFF</b>";
         }
         String data1Text = data1Name + " = " + data1Value;
-        return commandText + " " + channelText + ", " + data1Text + ", value = " + String.valueOf(msg.getData2());
+        return commandText + " " + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
     }
 
     public void printException(Exception e)
@@ -423,7 +431,16 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         if (message instanceof ShortMessage && this.opened)
         {
             ShortMessage smsg = (ShortMessage) message;
-            this.println(timeStamp/1000l, shortMessageToString(smsg));
+            if (smsg.getStatus() == ShortMessage.TIMING_CLOCK)
+            {
+                if (this.beatPulse >= 24)
+                {
+                    this.beatPulse = 0;
+                }
+                this.beatPulse++;
+            } else {
+                this.println(shortMessageToString(smsg));
+            }
         }
     }
     

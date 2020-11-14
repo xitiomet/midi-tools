@@ -43,13 +43,10 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     {
         try
         {
-            if (j.has("event"))
+            if (j.isType(RoutePutMessage.TYPE_MIDI))
             {
-                String doCmd = j.optString("event","");
-                if (doCmd.equals("midiShortMessage"))
-                {
-                    JSONArray data = j.getJSONArray("data");
-                    final long timeStamp = j.optLong("timeStamp", getMicrosecondPosition());
+                    JSONArray data = j.getRoutePutMeta().getJSONArray("data");
+                    final long timeStamp = j.getRoutePutMeta().optLong("ts", getMicrosecondPosition());
                     int data0 = data.optInt(0, 0);
                     int data1 = data.optInt(1, 0);
                     int data2 = data.optInt(2, 0);
@@ -59,8 +56,10 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
                     this.receivers.forEach((r) -> {
                         r.send(sm, timeStamp);
                     });
-                } else if (doCmd.equals("beatClock")) {
-                    final long timeStamp = j.optLong("timeStamp", 0);
+            } else if (j.has("event")) {
+                String doCmd = j.optString("event","");
+                if (doCmd.equals("beatClock")) {
+                    final long timeStamp = j.optLong("ts", 0);
                     final ShortMessage sm = new ShortMessage(ShortMessage.TIMING_CLOCK);
                     this.receivers.forEach((r) -> {
                         r.send(sm, timeStamp);
@@ -153,13 +152,13 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
                 this.upstreamClient.send(mm);
             } else {
                 RoutePutMessage mm = new RoutePutMessage();
-                mm.put("event", "midiShortMessage");
+                mm.setType(RoutePutMessage.TYPE_MIDI);
                 JSONArray dArray = new JSONArray();
                 dArray.put(sm.getStatus());
                 dArray.put(sm.getData1());
                 dArray.put(sm.getData2());
-                mm.put("data", dArray);
-                mm.put("timeStamp", timeStamp);
+                mm.setMetaField("data", dArray);
+                mm.setMetaField("ts", timeStamp);
                 mm.setChannel(this.upstreamClient.getDefaultChannel());
                 this.upstreamClient.send(mm);
             }

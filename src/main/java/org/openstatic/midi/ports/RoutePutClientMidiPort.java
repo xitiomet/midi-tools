@@ -56,15 +56,12 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
                     this.receivers.forEach((r) -> {
                         r.send(sm, timeStamp);
                     });
-            } else if (j.has("event")) {
-                String doCmd = j.optString("event","");
-                if (doCmd.equals("beatClock")) {
-                    final long timeStamp = j.optLong("ts", 0);
-                    final ShortMessage sm = new ShortMessage(ShortMessage.TIMING_CLOCK);
-                    this.receivers.forEach((r) -> {
-                        r.send(sm, timeStamp);
-                    });
-                }
+            } else if (j.isType(RoutePutMessage.TYPE_PULSE)) {
+                final long timeStamp = j.getRoutePutMeta().optLong("ts", 0);
+                final ShortMessage sm = new ShortMessage(ShortMessage.TIMING_CLOCK);
+                this.receivers.forEach((r) -> {
+                    r.send(sm, timeStamp);
+                });
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -140,9 +137,9 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
             if (smStatus == ShortMessage.TIMING_CLOCK)
             {
                 RoutePutMessage mm = new RoutePutMessage();
-                mm.put("event", "beatClock");
-                mm.put("timeStamp", timeStamp);
-                mm.put("pulse", this.beatPulse);
+                mm.setType(RoutePutMessage.TYPE_PULSE);
+                mm.setMetaField("ts", timeStamp);
+                mm.setMetaField("pulse", this.beatPulse);
                 if (this.beatPulse >= 24)
                 {
                     this.beatPulse = 0;

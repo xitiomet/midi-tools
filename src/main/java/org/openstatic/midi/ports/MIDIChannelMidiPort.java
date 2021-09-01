@@ -11,26 +11,29 @@ import java.util.Vector;
 import java.util.Collection;
 import org.json.*;
 
-public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
+public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
 {
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
+    private RoutePutChannel channel;
     private RoutePutClient upstreamClient;
     private int beatPulse;
+    private String channelName;
 
-    public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
+    public MIDIChannelMidiPort(String channelName)
     {
-        this.upstreamClient = new RoutePutClient(channel, websocketUri);
+        this.channelName = channelName;
+        this.channel = RoutePutChannel.getChannel("midichannel-" + this.channelName);
+        this.upstreamClient = new RoutePutClient(this.channel, "wss://midichannel.net/channel/");
         this.upstreamClient.setProperty("description", "Midi Control Change Tool");
-        this.upstreamClient.addMessageListener(this);
-        this.beatPulse = 1;
-    }
-
-    public RoutePutClientMidiPort(RoutePutClient client)
-    {
-        this.upstreamClient = client;
-        this.upstreamClient.setProperty("description", "Midi Control Change Tool");
-        this.upstreamClient.addMessageListener(this);
+        this.upstreamClient.setProperty("username", "MidiTools");
+        this.upstreamClient.setProperty("midiChatAvatar", "https://openstatic.org/projects/miditools/icon.png");
+        this.upstreamClient.setProperty("typing", false);
+        this.upstreamClient.setProperty("playing", false);
+        this.upstreamClient.setProperty("outputDevice", "");
+        this.upstreamClient.setProperty("inputDevice", "");
+        this.upstreamClient.setProperty("midiJS", false);
+        this.channel.addMessageListener(this);
         this.beatPulse = 1;
     }
 
@@ -63,6 +66,23 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
                 this.receivers.forEach((r) -> {
                     r.send(sm, timeStamp);
                 });
+            } else if (j.has("username") && j.optString("event","").equals("chat")) {
+                String username = j.optString("username", "unknown");
+                String chatMessage = "";
+                if (j.has("text"))
+                {
+                    chatMessage = "("+ this.getName() +") " + username + ": " + j.optString("text","");
+                } else if (j.has("html")) {
+                    chatMessage = "("+ this.getName() +") " + username + ": " + j.optString("html","");
+                }
+                if (MidiTools.instance != null)
+                {
+                    if (MidiTools.instance.midi_logger != null)
+                    {
+                        MidiTools.instance.midi_logger.println(chatMessage);
+                    }
+                }
+                System.err.println(chatMessage);
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -92,6 +112,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         {
             this.opened = true;
             this.upstreamClient.connect();
+            MidiTools.logIt("Opening connection to MIDIChannel.net");
             MidiPortManager.firePortOpened(this);
         }
     }
@@ -108,7 +129,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
 
     public String getName()
     {
-        return "#" + this.upstreamClient.getDefaultChannel().getName();
+        return "MIDIChannel.net #" + this.channelName;
     }
 
     public void close()

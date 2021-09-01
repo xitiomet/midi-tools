@@ -43,7 +43,7 @@ public class MidiPortManager
                         } catch (Exception e) {
                             e.printStackTrace(System.err);
                         }
-                        if ((System.currentTimeMillis() - MidiPortManager.lastPortFetch) > 20000)
+                        if ((System.currentTimeMillis() - MidiPortManager.lastPortFetch) > 2000)
                         {
                             Thread x = new Thread()
                             {

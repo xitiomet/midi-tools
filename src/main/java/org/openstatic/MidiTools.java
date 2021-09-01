@@ -2,6 +2,7 @@ package org.openstatic;
 
 import org.openstatic.midi.*;
 import org.openstatic.midi.ports.LoggerMidiPort;
+import org.openstatic.midi.ports.MIDIChannelMidiPort;
 import org.openstatic.midi.ports.MidiRandomizerPort;
 import org.openstatic.midi.ports.RTPMidiPort;
 import org.openstatic.midi.ports.RoutePutClientMidiPort;
@@ -9,6 +10,7 @@ import org.openstatic.midi.providers.CollectionMidiPortProvider;
 import org.openstatic.midi.providers.DeviceMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +36,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.ListModel;
 import javax.swing.JScrollPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -79,18 +82,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     protected JList controlList;
     private JList midiList;
     private JList rulesList;
-    private JList mappingList;
     private JPopupMenu controlMenuPopup;
     private JPanel deviceQRPanel;
     private JLabel qrLabel;
     protected MidiControlCellRenderer midiControlCellRenderer;
     protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
-    private MidiPortMappingCellRenderer midiPortMappingCellRenderer;
     private MidiPortListModel midiListModel;
-    private LoggerMidiPort midi_logger;
+    public LoggerMidiPort midi_logger;
     private Thread mainThread;
-    private Thread taskThread;
     protected DefaultListModel<MidiControl> controls;
     protected DefaultListModel<MidiControlRule> rules;
     protected ArrayBlockingQueue<Runnable> taskQueue;
@@ -99,6 +99,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenu controlsMenu;
     private JMenu apiMenu;
     private JTabbedPane bottomTabbedPane;
+    private JTabbedPane mainTabbedPane;
+
     private JCheckBoxMenuItem apiServerEnable;
     private JCheckBoxMenuItem createControlOnInput;
     private JCheckBoxMenuItem showQrItem;
@@ -106,7 +108,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     private JMenuItem openInBrowserItem;
     private JMenuItem createNewControlItem;
-    private JMenuItem createNewMappingItem;
     private JMenuItem aboutMenuItem;
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
@@ -123,7 +124,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private long lastControlClick;
     private long lastRuleClick;
     private long lastDeviceClick;
-    private long lastMappingClick;
     private APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
     private RTPMidiPort rtpMidiPort;
@@ -133,6 +133,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private RoutePutSessionManager routeputSessionManager;
     public CollectionMidiPortProvider cmpp;
     private JMenuItem routeputConnectMenuItem;
+    private MappingControlBox mappingControlBox;
 
     public MidiTools()
     {
@@ -242,11 +243,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createNewControlItem.addActionListener(this);
         this.createNewControlItem.setMnemonic(KeyEvent.VK_C);
         
-        this.createNewMappingItem = new JMenuItem("Create Port Mapping");
-        this.createNewMappingItem.setActionCommand("new_mapping");
-        this.createNewMappingItem.addActionListener(this);
-        this.createNewMappingItem.setMnemonic(KeyEvent.VK_M);
-        
         this.createControlOnInput = new JCheckBoxMenuItem("Create Control on Midi Input");
         this.createControlOnInput.addActionListener(this);
         this.createControlOnInput.setState(true);
@@ -255,12 +251,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createRandomizerRuleMenuItem.setActionCommand("new_random_rule");
         this.createRandomizerRuleMenuItem.addActionListener(this);
 
-        this.routeputConnectMenuItem = new JMenuItem("Routeput Connect");
-        this.routeputConnectMenuItem.setActionCommand("routeput_connect");
+        this.routeputConnectMenuItem = new JMenuItem("MIDIChannel.net Room");
+        this.routeputConnectMenuItem.setActionCommand("midichannel_net_connect");
         this.routeputConnectMenuItem.addActionListener(this);
         
         this.options.put("createControlOnInput", true);
-        this.controlsMenu.add(this.createNewMappingItem);
         this.controlsMenu.add(this.createControlOnInput);
         this.controlsMenu.add(this.createNewControlItem);
         this.controlsMenu.add(this.createRandomizerRuleMenuItem);
@@ -288,7 +283,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         this.midiControlCellRenderer = new MidiControlCellRenderer();
         this.midiControlRuleCellRenderer = new MidiControlRuleCellRenderer();
-        this.midiPortMappingCellRenderer = new MidiPortMappingCellRenderer();
         
         // Setup toy list
         this.controlList = new JList(this.controls);
@@ -337,11 +331,14 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             public void keyTyped(KeyEvent e) { }
         });
 
+        this.mainTabbedPane = new JTabbedPane();
         
         JScrollPane controlsScrollPane = new JScrollPane(this.controlList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        controlsScrollPane.setBorder(new TitledBorder("Midi Controls"));
+        //controlsScrollPane.setBorder(new TitledBorder("Midi Controls"));
+        this.mainTabbedPane.addTab("Midi Controls", controlsScrollPane);
+
         JPanel toysAndPower = new JPanel(new BorderLayout());
-        toysAndPower.add(controlsScrollPane, BorderLayout.CENTER);
+        toysAndPower.add(this.mainTabbedPane, BorderLayout.CENTER);
 
         // Setup rule list
         this.rulesList = new JList(this.rules);
@@ -421,43 +418,11 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.bottomTabbedPane.addTab("Control Change Rules", ruleScrollPane);
         
         // Setup rule list
-        this.mappingList = new JList(new MidiPortMappingListModel());
-        this.mappingList.setCellRenderer(this.midiPortMappingCellRenderer);
-        this.mappingList.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent e)
-            {
-               int index = MidiTools.this.mappingList.locationToIndex(e.getPoint());
-
-               if (index != -1)
-               {
-                   MidiPortMapping mapping = (MidiPortMapping) MidiTools.this.mappingList.getModel().getElementAt(index);
-                   if (e.getButton() == MouseEvent.BUTTON1)
-                   {
-                       long cms = System.currentTimeMillis();
-                       if (cms - MidiTools.this.lastMappingClick < 500 && MidiTools.this.lastMappingClick > 0)
-                       {
-                          mapping.toggle();
-                       }
-                       MidiTools.this.lastMappingClick = cms;
-                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                      int n = JOptionPane.showConfirmDialog(null, "Delete this port mapping?\n" + mapping.toString(),
-                        "Port Mapping",
-                        JOptionPane.YES_NO_OPTION);
-                        if(n == JOptionPane.YES_OPTION)
-                        {
-                            MidiPortManager.removeMidiPortMapping(mapping);
-                        }
-                   }
-                   MidiTools.repaintMappings();
-               }
-            }
-        });
-        JScrollPane mappingScrollPane = new JScrollPane(this.mappingList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        mappingScrollPane.setBorder(new TitledBorder("MIDI Port Mappings (right-click to delete, double-click to toggle)"));
-        this.bottomTabbedPane.addTab("Port Mappings", mappingScrollPane);
+        this.mappingControlBox = new MappingControlBox();
         
-        this.bottomTabbedPane.addTab("Logger", this.midi_logger);
+        this.bottomTabbedPane.addTab("Port Mappings", mappingControlBox);
+        
+        this.mainTabbedPane.addTab("Logger", this.midi_logger);
         
         this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
 
@@ -472,59 +437,36 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
           } 
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
+        this.cmpp = new CollectionMidiPortProvider();
+        MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
         RoutePutChannel myChannel = RoutePutChannel.getChannel("midi-tools-" + MidiTools.LOCAL_SERIAL);
-        this.routeputClient = new RoutePutClient(myChannel, openstaticUri);
-        this.routeputClient.setAutoReconnect(true);
-        this.routeputClient.setCollector(true);
-        this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
-        this.routeputClient.setProperty("host", RTPMidiPort.getLocalHost().getHostName());
-        this.routeputSessionManager = new RoutePutSessionManager(myChannel, this.routeputClient);
-        MidiPortManager.addProvider(this.routeputSessionManager);
-
-        this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
-        MidiPortManager.addMidiPortListener(this);
-        this.cmpp = new CollectionMidiPortProvider();
-        MidiPortManager.addProvider(new DeviceMidiPortProvider());
-        MidiPortManager.addProvider(new JoystickMidiPortProvider());
-        MidiPortManager.addProvider(cmpp);
-        cmpp.add(this.midi_logger);
-        cmpp.add(this.randomizerPort);
-        cmpp.add(this.rtpMidiPort);
-        //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
-        MidiPortManager.init();
-        System.err.println("Finished MidiTools Constructor");
+        MidiTools.this.routeputClient = new RoutePutClient(myChannel, openstaticUri);
+        MidiTools.this.routeputClient.setAutoReconnect(true);
+        MidiTools.this.routeputClient.setCollector(true);
+        MidiTools.this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
+        MidiTools.this.routeputClient.setProperty("host", RTPMidiPort.getLocalHost().getHostName());
+        MidiTools.this.routeputSessionManager = new RoutePutSessionManager(myChannel, MidiTools.this.routeputClient);
+        Thread svcs = new Thread(() -> {
+            this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
+            MidiPortManager.addMidiPortListener(this);
+            MidiPortManager.addProvider(new DeviceMidiPortProvider());
+            MidiPortManager.addProvider(new JoystickMidiPortProvider());
+            cmpp.add(this.midi_logger);
+            cmpp.add(this.randomizerPort);
+            cmpp.add(this.rtpMidiPort);
+            MidiPortManager.addProvider(this.routeputSessionManager);
+            MidiPortManager.init();
+            //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
+        });
+        svcs.start();
+        logIt("Finished MidiTools Constructor");
+        centerWindow();
     }
     
     public void start()
     {
-        this.taskThread = new Thread(() -> {
-            while(this.keep_running)
-            {
-                try
-                {
-                    Runnable r = this.taskQueue.poll(1, TimeUnit.SECONDS);
-                    if (r != null)
-                    {
-                        String taskName = r.toString();
-                        if (MidiTools.this.isVisible())
-                        {
-                            r.run();
-                            if (!taskName.contains("Lambda"))
-                                System.err.println("TaskComplete> " + taskName);
-                        } else {
-                            System.err.println("Threw away UI task: " + taskName);
-                        }
-                    }
-                } catch (Exception e) {
-                    MidiTools.instance.midi_logger.printException(e);
-                }
-            }
-        });
-        this.taskThread.setDaemon(true);
-        this.taskThread.start();
         // All this happens after swing initializes
         this.mainThread = new Thread(this);
         this.mainThread.setDaemon(true);
@@ -601,6 +543,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public void resetConfiguration()
     {
+        logIt("Reset Configuration");
         (new Thread (() -> {
             for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
             {
@@ -612,11 +555,15 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 SwingUtilities.invokeAndWait(() -> {
                     MidiTools.this.controls.clear();
                     MidiTools.this.rules.clear();
+                    MidiTools.this.mappingControlBox.clearMidiPortMappings();
                 });
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
             this.setLastSavedFile(null);
         })).start();
     }
+
     
     public void setLastSavedFile(File f)
     {
@@ -655,15 +602,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void repaintMappings()
     {
-        if (MidiTools.instance.mappingList != null)
+        if (MidiTools.instance.mappingControlBox != null)
         {
-            MidiTools.instance.mappingList.repaint();
-    }
-    }
-
-    public static void addTask(Runnable r)
-    {
-        MidiTools.instance.taskQueue.add(r);
+            MidiTools.instance.mappingControlBox.repaint();
+        }
     }
     
     public static MidiControl getMidiControlByIndex(int i)
@@ -736,15 +678,14 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             JSONObject newRule = MidiRandomizerPort.defaultRuleJSONObject();
             JSONObjectDialog jod = new JSONObjectDialog("New Randomizer Rule", newRule);
             MidiTools.this.randomizerPort.addRandomRule(newRule);
-        } else if (cmd.equals("routeput_connect")) {
+        } else if (cmd.equals("midichannel_net_connect")) {
             JSONObject newRule = new JSONObject();
-            newRule.put("uri", "wss://openstatic.org/channel/");
             newRule.put("channel", "lobby");
-            JSONObjectDialog jod = new JSONObjectDialog("New Routeput Connection", newRule);
-            RoutePutClientMidiPort rpcmp = new RoutePutClientMidiPort(RoutePutChannel.getChannel(newRule.optString("channel","lobby")), newRule.optString("uri","wss://openstatic.org/channel/"));
+            JSONObjectDialog jod = new JSONObjectDialog("New MIDIChannel.net Connection", newRule);
+            MIDIChannelMidiPort rpcmp = new MIDIChannelMidiPort(newRule.optString("channel","lobby"));
             this.cmpp.add(rpcmp);
         } else if (cmd.equals("about")) {
-            browseTo("http://openstatic.org/miditools/");
+            browseTo("http://openstatic.org/projects/miditools/");
         } else if (cmd.equals("open_api")) {
             browseTo(getWebInterfaceURL());
         } else if (cmd.equals("save")) {
@@ -779,8 +720,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
-        } else if (cmd.equals("new_mapping")) {
-            CreateMappingDialog editr = new CreateMappingDialog();
         } else if (cmd.equals("rename_control")) {
             MidiControl t = (MidiControl) MidiTools.this.controlList.getSelectedValue();
             String s = (String)JOptionPane.showInputDialog(this,"Rename Control", t.getNickname());
@@ -857,8 +796,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         Dimension screenSize = tk.getScreenSize();
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
-        int wWidth = 800;
-        int wHeight = 560;
+        int wWidth = 1200;
+        int wHeight = 860;
         Dimension d = new Dimension(wWidth, wHeight);
         this.setSize(d);
         //this.setMaximumSize(d);
@@ -868,6 +807,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
         this.windowLocation = new Point(x,y);
         this.setLocation(x, y);
+        logIt("Centered Window");
     }
 
     public static void main(String[] args)
@@ -882,10 +822,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
         MidiTools mlb = new MidiTools();
         mlb.start();
-        System.err.println("loading config");
-        mlb.loadConfig();
+        logIt("loading config");
         mlb.setVisible(true);
-        System.err.println("finished config load");
+        mlb.loadConfig();
+        logIt("finished config load");
     }
 
     public static void setRuleGroupEnabled(String groupName, boolean v)
@@ -964,6 +904,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void removeMidiControl(MidiControl mc)
     {
+        logIt("Removed Midi Control: " + mc.getNickname());
         try
         {
             mc.removeAllListeners();
@@ -994,6 +935,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void handleNewMidiControl(final MidiControl mc, int index)
     {
+        logIt("Added Midi Control: " + mc.getNickname());
         try
         {
             SwingUtilities.invokeAndWait(() -> {
@@ -1024,43 +966,41 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                 */
             if (sm.getCommand() == ShortMessage.CONTROL_CHANGE)
             {
-                addTask(() -> {
-                    boolean should_repaint = false;
-                    boolean found_control = false;
-                    for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
+                boolean should_repaint = false;
+                boolean found_control = false;
+                for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
+                {
+                    MidiControl mc = mce.nextElement();
+                    if (mc.messageMatches(sm))
                     {
-                        MidiControl mc = mce.nextElement();
-                        if (mc.messageMatches(sm))
+                        //System.err.println(shortMessageToString(sm) + " = " + String.valueOf(sm.getData2()));
+                        try
                         {
-                            //System.err.println(shortMessageToString(sm) + " = " + String.valueOf(sm.getData2()));
-                            try
-                            {
-                                mc.processMessage(sm);
-                                found_control = true;
-                                should_repaint = true;
-                            } catch (Exception e) {
-                                MidiTools.instance.midi_logger.printException(e);
-                            }
+                            mc.processMessage(sm);
+                            found_control = true;
+                            should_repaint = true;
+                        } catch (Exception e) {
+                            MidiTools.instance.midi_logger.printException(e);
                         }
                     }
-                    if (!found_control && this.createControlOnInput.getState())
+                }
+                if (!found_control && this.createControlOnInput.getState())
+                {
+                    int channel = sm.getChannel()+1;
+                    int cc = sm.getData1();
+                    if (cc != 121 && cc != 123)
                     {
-                        int channel = sm.getChannel()+1;
-                        int cc = sm.getData1();
-                        if (cc != 121 && cc != 123)
-                        {
-                            MidiControl mc = new MidiControl(channel,cc);
-                            handleNewMidiControl(mc);
-                        }
+                        MidiControl mc = new MidiControl(channel,cc);
+                        handleNewMidiControl(mc);
                     }
-                    if (should_repaint)
-                    {
-                        repaintControls();
-                    }
-                });
+                }
+                if (should_repaint)
+                {
+                    repaintControls();
+                }
             }
         } else {
-            System.err.println("Unknown non-short message " + msg.toString());
+            logIt("Unknown non-short message " + msg.toString());
         }
     }
 
@@ -1086,6 +1026,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public void loadConfigFrom(File file, boolean remember)
     {
+        logIt("Loading Configuration: " + file.getName());
         try
         {
             JSONObject configJson = loadJSONObject(file);
@@ -1093,8 +1034,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             int windowWidth = this.getWidth();
             int windowHeight = this.getHeight();
             
-            windowWidth = configJson.optInt("windowWidth", 800);
-            windowHeight = configJson.optInt("windowHeight", 560);
+            windowWidth = configJson.optInt("windowWidth", 1200);
+            windowHeight = configJson.optInt("windowHeight", 860);
             
             Point newWindowLocation = this.windowLocation;
             if (newWindowLocation == null)
@@ -1218,6 +1159,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             {
                 MidiTools.instance.midi_logger.println(text);
             }
+            if (MidiTools.instance.routeputClient != null)
+            {
+                RoutePutMessage logMsg = new RoutePutMessage();
+                logMsg.setType(RoutePutMessage.TYPE_LOG_INFO);
+                logMsg.put("text", text);
+                MidiTools.instance.routeputClient.send(logMsg);
+            }
         }
     }
     
@@ -1291,6 +1239,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public void saveConfigAs(File file, boolean remember)
     {
+        logIt("Saving Configuration: " + file.getName());
         try
         {
             JSONObject configJson = new JSONObject();

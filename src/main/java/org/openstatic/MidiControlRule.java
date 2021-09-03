@@ -29,6 +29,8 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_RULE_GROUP = 4;
     public static final int ACTION_DISABLE_RULE_GROUP = 5;
     public static final int ACTION_TOGGLE_RULE_GROUP = 6;
+    public static final int LOGGER_A_MESSAGE = 7;
+    public static final int LOGGER_B_MESSAGE = 8;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;
@@ -142,6 +144,7 @@ public class MidiControlRule implements MidiControlListener
     {
         if (this.enabled)
         {
+            MidiTools.instance.midi_logger_b.println("CC Rule Triggered - " + this.toShortString());
             this.lastTriggered = System.currentTimeMillis();
             //System.err.println(this.toString() + " Recieved From " + control.toString());
             final String avparsed = mapReplace(this.action_value, new_value)
@@ -204,6 +207,10 @@ public class MidiControlRule implements MidiControlListener
                 MidiTools.setRuleGroupEnabled(avparsed, false);
             } else if (this.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
                 MidiTools.toggleRuleGroupEnabled(avparsed);
+            } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
+                MidiTools.instance.midi_logger_a.println(avparsed);
+            } else if (this.getActionType() == MidiControlRule.LOGGER_B_MESSAGE) {
+                MidiTools.instance.midi_logger_b.println(avparsed);
             }
         }
     }
@@ -324,6 +331,10 @@ public class MidiControlRule implements MidiControlListener
             return "DISABLE RULE GROUP";
         } else if (n == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
             return "TOGGLE RULE GROUP";
+        } else if (n == MidiControlRule.LOGGER_A_MESSAGE) {
+            return "LOGGER A MESSAGE";
+        } else if (n == MidiControlRule.LOGGER_B_MESSAGE) {
+            return "LOGGER B MESSAGE";
         }
         return "";
     }
@@ -367,6 +378,20 @@ public class MidiControlRule implements MidiControlListener
         return jo;
     }
     
+    public String toShortString()
+    {
+        String controlText = "(No Control Selected)";
+        if (this.control != null)
+            controlText = this.control.toString();
+        String eventModeText = eventModeToString(this.getEventMode());
+        if (this.nickname == null)
+        {
+            return controlText + " [" + eventModeText + "]";
+        } else {
+            return this.nickname + " " + controlText + " [" + eventModeText + "]";
+        }
+    }
+
     public String toString()
     {
         String controlText = "(No Control Selected)";

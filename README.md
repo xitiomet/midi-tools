@@ -6,7 +6,7 @@ Each "Control" can have rules associated with it that will execute "Actions" bas
 
 Possible "Actions" are executing a script or program, calling a url or api, playing a sound, or Transmitting a midi message to another device.
 
-![](http://www.openstatic.org/miditools/miditools3.gif)
+![](https://openstatic.org/projects/miditools/miditools3.gif)
 
 ### How do I use it? ###
 Simply launch the app and check off what MIDI devices you want to listen to, as you play with the physical controls on your device, those controls will appear in the "Midi Controls" section. Each control represents a channel and a control change number. Simply double-click or right click on a control to change its name, and create rules.
@@ -14,7 +14,7 @@ Simply launch the app and check off what MIDI devices you want to listen to, as 
 ### Creating a rule ###
 "Rules" are a way to create mappings from your MIDI Controls to an event
 
-![](http://www.openstatic.org/miditools/rule4.png)
+![](https://openstatic.org/projects/miditools/rule4.png)
 
 - Rule Name - This is just a label for the rule
 - Select Control - Midi Control to listen for events on (A control represents a channel and cc#)

@@ -169,10 +169,15 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     {
         this.actionValuePanel.removeAll();
         //System.err.println("changeActionSelector: " + String.valueOf(i));
-        if (i == 0)
+        if (i == 0 || i == 7 || i == 8)
         {
             this.actionValuePanel.add(this.actionValueField, BorderLayout.CENTER);
-            this.actionValueLabel.setText("URL");
+            if (i == 0)
+            {
+                this.actionValueLabel.setText("URL");
+            } else if (i == 7 || i == 8) {
+                this.actionValueLabel.setText("Message to display");
+            }
         } else if (i == 1 || i == 2) {
             if (i == 1)
             {
@@ -225,7 +230,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 7; i++)
+        for(int i = 0; i < 9; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }

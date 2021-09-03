@@ -77,9 +77,9 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
                 }
                 if (MidiTools.instance != null)
                 {
-                    if (MidiTools.instance.midi_logger != null)
+                    if (MidiTools.instance.midi_logger_b != null)
                     {
-                        MidiTools.instance.midi_logger.println(chatMessage);
+                        MidiTools.instance.midi_logger_b.println(chatMessage);
                     }
                 }
                 System.err.println(chatMessage);
@@ -111,6 +111,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
         if (!this.isOpened())
         {
             this.opened = true;
+            this.upstreamClient.setAutoReconnect(true);
             this.upstreamClient.connect();
             MidiTools.logIt("Opening connection to MIDIChannel.net");
             MidiPortManager.firePortOpened(this);
@@ -141,6 +142,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
             {
                 try 
                 {
+                    this.upstreamClient.setAutoReconnect(false);
                     this.upstreamClient.close();
                 } catch (Exception e) {
                     e.printStackTrace();

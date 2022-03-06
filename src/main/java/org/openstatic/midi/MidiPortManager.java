@@ -24,7 +24,7 @@ public class MidiPortManager
     {
         if (MidiPortManager.taskThread == null)
         {
-            refresh();
+            //refresh();
             MidiPortManager.taskThread = new Thread()
             {
                 public void run()

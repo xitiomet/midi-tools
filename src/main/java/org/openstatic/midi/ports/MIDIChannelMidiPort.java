@@ -3,6 +3,7 @@ package org.openstatic.midi.ports;
 import org.openstatic.MidiTools;
 import org.openstatic.midi.*;
 
+import org.openstatic.routeput.midi.*;
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
 

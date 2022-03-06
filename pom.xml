@@ -86,7 +86,7 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>routeput</artifactId>
-        <version>1.2021.0902</version>
+        <version>1.2021.0908</version>
     </dependency>
     
   </dependencies>
@@ -165,29 +165,34 @@
        <plugin>
             <groupId>sh.tak.appbundler</groupId>
             <artifactId>appbundle-maven-plugin</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0</version>
             <dependencies>
                 <dependency>
                     <groupId>org.codehaus.plexus</groupId>
                     <artifactId>plexus-archiver</artifactId>
-                    <version>4.1.0</version>
+                    <version>RELEASE</version>
                 </dependency>
                 <dependency>
-                    <groupId>org.codehaus.plexus</groupId>
-                    <artifactId>plexus-velocity</artifactId>
-                    <version>1.2</version>
+                      <groupId>org.apache.velocity</groupId>
+                      <artifactId>velocity-tools</artifactId>
+                      <version>2.0</version>
                 </dependency>
             </dependencies>
             <configuration>
                 <mainClass>${mainClass}</mainClass>
                 <iconFile>res/midi.icns</iconFile>
-                <jrePath>/mnt/d/jvms/osx_jre1.8.0_231.jre</jrePath>
                 <generateDiskImageFile>false</generateDiskImageFile>
                 <additionalBundledClasspathResources>
                     <fileSet>
-                      <directory>target/natives/</directory>
+                      <directory>${project.build.directory}/natives/</directory>
                       <includes>
                         <include>*.jnilib</include>
+                      </includes>
+                    </fileSet>
+                    <fileSet>
+                      <directory>${basedir}/res/</directory>
+                      <includes>
+                        <include>*.*</include>
                       </includes>
                     </fileSet>
                 </additionalBundledClasspathResources>
@@ -217,7 +222,7 @@
                         <!-- expand "SNAPSHOT" to what is in the "USER" env variable -->
                         <snapshotEnv>USER</snapshotEnv>
                         <controlDir>${basedir}/src/deb/control</controlDir>
-                        <deb>${project.build.directory}/${artifactId}-${version}.deb</deb>
+                        <deb>${project.build.directory}/${artifactId}.deb</deb>
                         <dataSet>
                             <data>
                               <src>${project.build.directory}/${project.build.finalName}.jar</src>

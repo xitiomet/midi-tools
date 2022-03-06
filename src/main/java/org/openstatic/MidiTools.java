@@ -77,7 +77,7 @@ import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, Receiver, ActionListener, MidiPortListener
 {
-    public static final String VERSION = "1.0";
+    public static final String VERSION = "1.2";
     public static String LOCAL_SERIAL;
     protected JList controlList;
     private JList midiList;
@@ -339,7 +339,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         
         JScrollPane controlsScrollPane = new JScrollPane(this.controlList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         //controlsScrollPane.setBorder(new TitledBorder("Midi Controls"));
-        this.mainTabbedPane.addTab("Midi Controls", controlsScrollPane);
+        BufferedImage dialIconImage = null;
+        try
+        {
+            dialIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dial64.png"));
+        } catch (Exception e) {}
+        ImageIcon dialIcon = new ImageIcon(dialIconImage);
+        this.mainTabbedPane.addTab("Midi Controls", dialIcon, controlsScrollPane);
 
         JPanel toysAndPower = new JPanel(new BorderLayout());
         toysAndPower.add(this.mainTabbedPane, BorderLayout.CENTER);
@@ -419,14 +425,34 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         
         this.bottomTabbedPane = new JTabbedPane();
         this.bottomTabbedPane.setPreferredSize(new Dimension(0, 200));
-        this.mainTabbedPane.addTab("Control Change Rules", ruleScrollPane);
+        BufferedImage scriptIconImage = null;
+        try
+        {
+            scriptIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/script64.png"));
+        } catch (Exception e) {}
+        ImageIcon scriptIcon = new ImageIcon(scriptIconImage);
+        this.mainTabbedPane.addTab("Control Change Rules", scriptIcon, ruleScrollPane);
         
         // Setup rule list
         this.mappingControlBox = new MappingControlBox();
         
-        this.mainTabbedPane.addTab("Port Mappings", mappingControlBox);
+        BufferedImage cableIconImage = null;
+        try
+        {
+            cableIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/cable64.png"));
+        } catch (Exception e) {}
+        ImageIcon cableIcon = new ImageIcon(cableIconImage);
+        this.mainTabbedPane.addTab("Port Mappings", cableIcon, mappingControlBox);
         
-        this.mainTabbedPane.addTab("Logger A", this.midi_logger_a);
+
+        BufferedImage logIconImage = null;
+        try
+        {
+            logIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/log64.png"));
+        } catch (Exception e) {}
+        ImageIcon logIcon = new ImageIcon(logIconImage);
+        this.mainTabbedPane.addTab("Logger A", logIcon, this.midi_logger_a);
+
         this.bottomTabbedPane.addTab("Logger B", this.midi_logger_b);
         this.bottomTabbedPane.setSelectedIndex(0);
 
@@ -658,7 +684,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             if (this.bootstrapSSLItem.getState())
             {
                 this.routeputClient.connect();
+                this.routeputClient.setAutoReconnect(true);
             } else {
+                this.routeputClient.setAutoReconnect(false);
                 this.routeputClient.close();
             }
             return;

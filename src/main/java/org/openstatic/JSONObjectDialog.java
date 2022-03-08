@@ -45,11 +45,17 @@ public class JSONObjectDialog extends JDialog implements ActionListener
     
     private int nextField;
 
+    public JSONObject getJSONObject()
+    {
+        return this.jsonObject;
+    }
+
     public void actionPerformed(ActionEvent e)
     {
         
         if (e.getSource() == this.deleteButton)
         {
+            this.jsonObject = null;
             this.dispose();
         }
         

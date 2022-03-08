@@ -114,7 +114,6 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     private JMenuItem deleteControlMenuItem;
     private JMenuItem renameControlMenuItem;
     private JMenuItem createRuleMenuItem;
-    private JMenuItem createRandomizerRuleMenuItem;
     private JMenuItem exportConfigurationMenuItem;
     private JMenuItem importConfigurationMenuItem;
     private JMenuItem saveMenuItem;
@@ -136,6 +135,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     public CollectionMidiPortProvider cmpp;
     private JMenuItem routeputConnectMenuItem;
     private MappingControlBox mappingControlBox;
+    private RandomizerControlBox randomizerControlBox;
 
     public MidiTools()
     {
@@ -251,17 +251,12 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.createControlOnInput.addActionListener(this);
         this.createControlOnInput.setState(true);
         this.options.put("createControlOnInput", true);
-        
-        this.createRandomizerRuleMenuItem = new JMenuItem("Create Rule for Randomizer Port");
-        this.createRandomizerRuleMenuItem.setActionCommand("new_random_rule");
-        this.createRandomizerRuleMenuItem.addActionListener(this);
 
         this.routeputConnectMenuItem = new JMenuItem("Connect to MIDIChannel.net Room");
         this.routeputConnectMenuItem.setActionCommand("midichannel_net_connect");
         this.routeputConnectMenuItem.addActionListener(this);
         
         this.actionsMenu.add(this.createNewControlItem);
-        this.actionsMenu.add(this.createRandomizerRuleMenuItem);
         this.actionsMenu.add(this.routeputConnectMenuItem);
         this.actionsMenu.add(this.openInBrowserItem);
         
@@ -453,11 +448,23 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         ImageIcon logIcon = new ImageIcon(logIconImage);
         this.mainTabbedPane.addTab("Logger A", logIcon, this.midi_logger_a);
 
+
+        BufferedImage diceIconImage = null;
+        try
+        {
+            diceIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dice64.png"));
+        } catch (Exception e) {}
+        ImageIcon diceIcon = new ImageIcon(diceIconImage);
+        this.randomizerControlBox = new RandomizerControlBox(this.randomizerPort);
+        this.mainTabbedPane.addTab("Randomizer", diceIcon, this.randomizerControlBox);
+
+
         this.bottomTabbedPane.addTab("Logger B", this.midi_logger_b);
         this.bottomTabbedPane.setSelectedIndex(0);
 
         this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
 
+        
         //this.midi_logger.start();
         Runtime.getRuntime().addShutdownHook(new Thread() 
         { 

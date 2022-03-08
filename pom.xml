@@ -11,7 +11,7 @@
     <mainClass>org.openstatic.MidiTools</mainClass>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
-    <jettyVersion>9.4.30.v20200611</jettyVersion>
+    <jettyVersion>9.4.41.v20210516</jettyVersion>
     <jinputVersion>2.0.9</jinputVersion>
   </properties>
   <repositories>

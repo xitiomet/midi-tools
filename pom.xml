@@ -193,7 +193,7 @@
                   </goals>
               </execution>
           </executions>
-          </plugin>
+       </plugin>
        <plugin>
             <artifactId>jdeb</artifactId>
             <groupId>org.vafer</groupId>
@@ -345,6 +345,44 @@
                 </execution>
             </executions>
         </plugin>
+        <plugin>
+          <groupId>io.github.fvarrui</groupId>
+          <artifactId>javapackager</artifactId>
+          <version>1.6.7</version>
+          <executions>
+              <execution>
+                  <phase>package</phase>
+                  <goals>
+                      <goal>package</goal>
+                  </goals>
+                  <configuration>
+                      <!-- mandatory -->
+                      <name>MidiTools</name>
+                      <mainClass>${mainClass}</mainClass>
+                      <!-- optional -->
+                      <copyDependencies>true</copyDependencies>
+                      <generateInstaller>true</generateInstaller>
+                      <administratorRequired>false</administratorRequired>
+                      <platform>linux</platform>
+                      <bundleJre>true</bundleJre>
+                      <additionalResources>
+                          <additionalResource>${project.basedir}/target/natives/</additionalResource>
+                          <additionalResource>${project.basedir}/src/main/resources/MidiTools.l4j.ini</additionalResource>
+                      </additionalResources>
+                      <linuxConfig>
+                        <pngFile>${project.basedir}/src/main/resources/MidiTools.png</pngFile>
+                        <generateAppImage>true</generateAppImage>
+                        <generateDeb>false</generateDeb>
+                        <generateRpm>false</generateRpm>
+                        <wrapJar>false</wrapJar>
+                        <categories>
+                            <category>Utility</category>
+                        </categories>
+                    </linuxConfig>
+                  </configuration>
+              </execution>
+          </executions>
+      </plugin>
     </plugins>
   </build>
 </project>

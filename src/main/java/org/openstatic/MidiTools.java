@@ -337,7 +337,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         BufferedImage dialIconImage = null;
         try
         {
-            dialIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dial64.png"));
+            dialIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dial32.png"));
         } catch (Exception e) {}
         ImageIcon dialIcon = new ImageIcon(dialIconImage);
         this.mainTabbedPane.addTab("Midi Controls", dialIcon, controlsScrollPane);
@@ -423,7 +423,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         BufferedImage scriptIconImage = null;
         try
         {
-            scriptIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/script64.png"));
+            scriptIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/script32.png"));
         } catch (Exception e) {}
         ImageIcon scriptIcon = new ImageIcon(scriptIconImage);
         this.mainTabbedPane.addTab("Control Change Rules", scriptIcon, ruleScrollPane);
@@ -434,7 +434,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         BufferedImage cableIconImage = null;
         try
         {
-            cableIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/cable64.png"));
+            cableIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/cable32.png"));
         } catch (Exception e) {}
         ImageIcon cableIcon = new ImageIcon(cableIconImage);
         this.mainTabbedPane.addTab("Port Mappings", cableIcon, mappingControlBox);
@@ -443,7 +443,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         BufferedImage logIconImage = null;
         try
         {
-            logIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/log64.png"));
+            logIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/log32.png"));
         } catch (Exception e) {}
         ImageIcon logIcon = new ImageIcon(logIconImage);
         this.mainTabbedPane.addTab("Logger A", logIcon, this.midi_logger_a);
@@ -452,7 +452,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         BufferedImage diceIconImage = null;
         try
         {
-            diceIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dice64.png"));
+            diceIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dice32.png"));
         } catch (Exception e) {}
         ImageIcon diceIcon = new ImageIcon(diceIconImage);
         this.randomizerControlBox = new RandomizerControlBox(this.randomizerPort);
@@ -836,8 +836,8 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         Dimension screenSize = tk.getScreenSize();
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
-        int wWidth = 1200;
-        int wHeight = 860;
+        int wWidth = 1024;
+        int wHeight = 600;
         Dimension d = new Dimension(wWidth, wHeight);
         this.setSize(d);
         //this.setMaximumSize(d);

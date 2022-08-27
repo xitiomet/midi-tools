@@ -77,7 +77,7 @@ import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, Receiver, ActionListener, MidiPortListener
 {
-    public static final String VERSION = "1.2";
+    public static final String VERSION = "1.3";
     public static String LOCAL_SERIAL;
     protected JList controlList;
     private JList midiList;

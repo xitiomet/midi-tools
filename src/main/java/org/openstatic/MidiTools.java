@@ -5,15 +5,12 @@ import org.openstatic.midi.ports.LoggerMidiPort;
 import org.openstatic.midi.ports.MIDIChannelMidiPort;
 import org.openstatic.midi.ports.MidiRandomizerPort;
 import org.openstatic.midi.ports.RTPMidiPort;
-import org.openstatic.midi.ports.RoutePutClientMidiPort;
 import org.openstatic.midi.providers.CollectionMidiPortProvider;
 import org.openstatic.midi.providers.DeviceMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
 
 import net.glxn.qrgen.QRCode;
@@ -36,7 +33,6 @@ import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
-import javax.swing.ListModel;
 import javax.swing.JScrollPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;

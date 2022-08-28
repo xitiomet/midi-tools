@@ -2,7 +2,6 @@ package org.openstatic.midi;
 
 import javax.sound.midi.*;
 
-import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.json.*;
 import java.util.Vector;
 import java.util.Enumeration;

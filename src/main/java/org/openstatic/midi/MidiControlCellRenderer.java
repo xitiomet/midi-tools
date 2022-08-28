@@ -50,7 +50,7 @@ public class MidiControlCellRenderer extends JPanel implements ListCellRenderer<
    {
        try
        {
-            this.controlLabel.setText("<html><body style=\"padding: 3px 3px 3px 3px; width: 130px;\"><b style=\"font-size: 18px;\">" + control.getNickname() + "</b><br />" +
+            this.controlLabel.setText("<html><body style=\"padding: 3px 3px 3px 3px; width: 150px;\"><b style=\"font-size: 18px;\">" + control.getNickname() + "</b><br />" +
                                     "<i style=\"color: blue;\">Ch=" + String.valueOf(control.getChannel()) + "</i> " + 
                                     "<i style=\"color: #672E97;\">CC=" + String.valueOf(control.getControlNumber()) + "</i> " + 
                                     "<span style=\"color: red;\">V=" + String.valueOf(control.getValue())+ "</span></body></html>");

@@ -17,20 +17,25 @@ import net.java.games.input.Controller.PortType;
 
 public class JoystickMidiPortProvider implements MidiPortProvider 
 {
-    private LinkedHashMap<Controller, JoystickMidiPort> localDevices;
+    private LinkedHashMap<String, JoystickMidiPort> localDevices;
 
     public JoystickMidiPortProvider()
     {
-        this.localDevices = new LinkedHashMap<Controller, JoystickMidiPort>();
+        this.localDevices = new LinkedHashMap<String, JoystickMidiPort>();
     }
 
     @Override
     public Collection<? extends MidiPort> getMidiPorts()
     {
-        ControllerEnvironment ce = ControllerEnvironment.getDefaultEnvironment();
+        ControllerEnvironment ce = new DirectAndRawInputEnvironmentPlugin();
+        if(!ce.isSupported())
+        {
+            //System.err.println("Fallback to default controller environment");
+            ce = ControllerEnvironment.getDefaultEnvironment();
+        }
         Controller[] ca = ce.getControllers();
         Vector<Controller> newLocalDevices = new Vector<Controller>(Arrays.asList(ca));
-        
+        Vector<String> controllerNames = new Vector<String>();
 
         // Check for new devices added
         for(Iterator<Controller> newLocalDevicesIterator = newLocalDevices.iterator(); newLocalDevicesIterator.hasNext();)
@@ -38,24 +43,27 @@ public class JoystickMidiPortProvider implements MidiPortProvider
             Controller di = newLocalDevicesIterator.next();
             int componentCount = di.getComponents().length;
             String devName = di.getName().toLowerCase();
+            controllerNames.add(devName);
             //System.out.println("Local Device Found: " +  + " " + String.valueOf(componentCount));
 
-            if (!this.localDevices.containsKey(di) && componentCount > 0 && !devName.contains("mouse") && !devName.contains("keyboard"))
+            if (!this.localDevices.containsKey(devName) && componentCount > 0 && !devName.contains("mouse") && !devName.contains("keyboard"))
             {
                 JoystickMidiPort ms = new JoystickMidiPort(di);
-                this.localDevices.put(di, ms);
+                this.localDevices.put(devName, ms);
+                System.err.println("Gamepad Added: " + devName);
             } else {
                 //System.out.println("Local Device already exists " + di.getName());
             }
         }
-
-        // check for devices removed
-        for(Iterator<Controller> oldDevicesIterator = ((LinkedHashMap<Controller, MidiPort>) this.localDevices.clone()).keySet().iterator(); oldDevicesIterator.hasNext();)
+        Iterator<String> keys = this.localDevices.keySet().iterator();
+        while(keys.hasNext())
         {
-            Controller di = oldDevicesIterator.next();
-            if (!newLocalDevices.contains(di))
+            String key = keys.next();
+            if (!controllerNames.contains(key))
             {
-                this.localDevices.remove(di);
+                System.err.println("Gamepad Removed: " + key);
+                JoystickMidiPort removedGamepad = this.localDevices.remove(key);
+                removedGamepad.close();
             }
         }
         return this.localDevices.values();

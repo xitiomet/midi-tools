@@ -106,17 +106,20 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     
     private void maybeScrollToBottom()
     {
-        if (LoggerMidiPort.this.autoscroll.isSelected())
+        if (LoggerMidiPort.this.autoscroll != null)
         {
-            JScrollBar scrollBar = midi_log_scroller.getVerticalScrollBar();
-            boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
-            if (!scrollBarAtBottom) {
-                //System.err.println("Need to scroll to bottom");
-                LoggerMidiPort.this.taskQueue.add(() -> {
-                    LoggerMidiPort.this.scrollToBottom(LoggerMidiPort.this.viewArea);
-                });
-            } else {
-                //System.err.println("Dont need to scroll");
+            if (LoggerMidiPort.this.autoscroll.isSelected() && this.isVisible())
+            {
+                JScrollBar scrollBar = midi_log_scroller.getVerticalScrollBar();
+                boolean scrollBarAtBottom = isScrollBarFullyExtended(scrollBar);
+                if (!scrollBarAtBottom) {
+                    //System.err.println("Need to scroll to bottom");
+                    LoggerMidiPort.this.taskQueue.add(() -> {
+                        LoggerMidiPort.this.scrollToBottom(LoggerMidiPort.this.viewArea);
+                    });
+                } else {
+                    //System.err.println("Dont need to scroll");
+                }
             }
         }
     }

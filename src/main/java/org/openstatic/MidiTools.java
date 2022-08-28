@@ -12,6 +12,7 @@ import org.openstatic.midi.providers.JoystickMidiPortProvider;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.Iterator;
+import java.util.List;
 
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
@@ -63,6 +64,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.datatransfer.*;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDropEvent;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
@@ -343,9 +348,10 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
         // Setup rule list
         this.rulesList = new JList(this.rules);
+        this.rulesList.setDropTarget(drop_targ);
         this.rulesList.setCellRenderer(this.midiControlRuleCellRenderer);
         JScrollPane ruleScrollPane = new JScrollPane(this.rulesList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming Control Change Messages (right-click to edit, double-click to toggle)"));
+        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming Control Change Messages (right-click to edit, double-click to toggle, drop wav files for sound triggers)"));
         this.rulesList.addMouseListener(new MouseAdapter()
         {
             public void mouseClicked(MouseEvent e)
@@ -498,6 +504,67 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         svcs.start();
         logIt("Finished MidiTools Constructor");
         centerWindow();
+    }
+
+    DropTarget drop_targ = new DropTarget()
+    {
+        public synchronized void drop(DropTargetDropEvent evt)
+        {
+            try
+            {
+                evt.acceptDrop(DnDConstants.ACTION_COPY);
+                final List<File> droppedFiles = (List<File>) evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+                if (droppedFiles.size() == 1)
+                {
+                    try
+                    {
+                        final File droppedFile = droppedFiles.get(0);
+                        Thread t = new Thread(() -> {
+                            MidiTools.this.handleFileDrop(droppedFile);
+                        });
+                        t.start();
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                    }
+                } else {
+                    for(int i = 0; i < droppedFiles.size(); i++)
+                    {
+                        final int fi = i;
+                        Thread t = new Thread(() -> {
+                            MidiTools.this.handleFileDrop(droppedFiles.get(fi));
+                        });
+                        t.start();
+                    }
+                }
+                System.err.println("Cleanly LEFT DROP Routine");
+                evt.dropComplete(true);
+            } catch (Exception ex) {
+                evt.dropComplete(true);
+                System.err.println("Exception During DROP Routine");
+                ex.printStackTrace();
+            }
+        }
+    };
+
+    public void handleFileDrop(File file)
+    {
+        System.err.println("File dropped: " + file.toString());
+        String filename = file.getName();
+        String filenameLower = filename.toLowerCase();
+        if (filenameLower.endsWith(".wav"))
+        {
+            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_INCREASE, MidiControlRule.ACTION_SOUND, file.getAbsolutePath());
+            newRule.setNickname(filename.substring(0, filename.length()-4));
+            if (!MidiTools.instance.rules.contains(newRule))
+                MidiTools.instance.rules.addElement(newRule);
+        }
+        if (filenameLower.endsWith(".exe") || filenameLower.endsWith(".bat") || filenameLower.endsWith(".cmd") || filenameLower.endsWith(".php"))
+        {
+            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_SETTLE, MidiControlRule.ACTION_PROC, file.getAbsolutePath() + ",{{value}}");
+            newRule.setNickname(filename.substring(0, filename.length()-4));
+            if (!MidiTools.instance.rules.contains(newRule))
+                MidiTools.instance.rules.addElement(newRule);
+        }
     }
     
     public void start()

@@ -176,7 +176,8 @@ public class MidiControlRule implements MidiControlListener
                 } else if (this.getActionType() == MidiControlRule.ACTION_PROC) {
                     try
                     {
-                        Process process = new ProcessBuilder(avparsed).start();
+                        String[] avparsed2 = avparsed.split(",");
+                        Process process = new ProcessBuilder(avparsed2).start();
                         if (!process.waitFor(10, TimeUnit.SECONDS))
                         {
                             process.destroyForcibly();

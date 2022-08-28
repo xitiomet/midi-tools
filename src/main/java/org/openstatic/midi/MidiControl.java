@@ -1,6 +1,8 @@
 package org.openstatic.midi;
 
 import javax.sound.midi.*;
+
+import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.json.*;
 import java.util.Vector;
 import java.util.Enumeration;
@@ -9,6 +11,7 @@ public class MidiControl
 {
     private int channel;
     private int cc;
+    private int note;
     private int value;
     private int settled_value;
     private String nickname;
@@ -19,7 +22,8 @@ public class MidiControl
     public MidiControl(JSONObject jo)
     {
         this.channel = jo.optInt("channel", 0);
-        this.cc = jo.optInt("cc", 0);
+        this.cc = jo.optInt("cc", -1);
+        this.note = jo.optInt("note", -1);
         this.nickname = jo.optString("nickname", nameControl(cc));
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
@@ -31,8 +35,20 @@ public class MidiControl
     {
         this.channel = channel;
         this.cc = cc;
+        this.note = -1;
         this.value = 0;
         this.nickname = nameControl(cc);
+        this.settled = true;
+        this.lastChangeAt = System.currentTimeMillis();
+    }
+
+    public MidiControl(int channel, int note, boolean isNote)
+    {
+        this.channel = channel;
+        this.cc = -1;
+        this.note = note;
+        this.value = 0;
+        this.nickname = "Note - " + nameNote(note);
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
     }
@@ -83,6 +99,49 @@ public class MidiControl
                 return "Control " + String.valueOf(cc);
         }
     }
+
+    private static String nameNote(int note)
+    {
+        switch(note)
+        {
+            case 0:
+                return "C";
+            case 1:
+                return "C#";
+            case 2:
+                return "D";
+            case 3:
+                return "D#";
+            case 4:
+                return "E";
+            case 5:
+                return "F";
+            case 6:
+                return "F#";
+            case 7:
+                return "G";
+            case 8:
+                return "G#";
+            case 9:
+                return "A";
+            case 10:
+                return "A#";
+            case 11:
+                return "B";
+            default:
+                return "??" + String.valueOf(note);
+        }
+    }
+
+    public String getNoteName()
+    {
+        return nameNote(this.note);
+    }
+
+    public int getNoteNumber()
+    {
+        return this.note;
+    }
     
     public void addMidiControlListener(MidiControlListener mcl)
     {
@@ -109,11 +168,26 @@ public class MidiControl
     
     public boolean messageMatches(ShortMessage msg)
     {
-        if ( ((msg.getChannel()+1) == this.channel || this.channel == 0) && msg.getCommand() == ShortMessage.CONTROL_CHANGE)
+        if ( ((msg.getChannel()+1) == this.channel || this.channel == 0))
         {
-            if (msg.getData1() == this.cc || this.cc == 0)
+            if (msg.getCommand() == ShortMessage.CONTROL_CHANGE)
             {
-                return true;
+                if (msg.getData1() == this.cc)
+                {
+                    return true;
+                }
+            } else if (msg.getCommand() == ShortMessage.NOTE_ON) {
+                int incomingNote = msg.getData1() % 12;
+                if (incomingNote == this.note)
+                {
+                    return true;
+                }
+            } else if (msg.getCommand() == ShortMessage.NOTE_OFF) {
+                int incomingNote = msg.getData1() % 12;
+                if (incomingNote == this.note)
+                {
+                    return true;
+                }
             }
         }
         return false;
@@ -121,7 +195,20 @@ public class MidiControl
 
     public void processMessage(ShortMessage msg)
     {
-        manualAdjust(msg.getData2());
+        if (this.cc >= 0)
+        {
+            manualAdjust(msg.getData2());
+        } else if (this.note >= 0) {
+            int incomingNote = msg.getData1() % 12;
+            if (incomingNote == this.note)
+            {
+                if (msg.getCommand() == ShortMessage.NOTE_ON) {
+                    manualAdjust(msg.getData2());
+                } else if (msg.getCommand() == ShortMessage.NOTE_OFF) {
+                    manualAdjust(0);
+                }
+            }
+        }
     }
     
     public void manualAdjust(final int new_value)
@@ -194,7 +281,10 @@ public class MidiControl
     public JSONObject toJSONObject()
     {
         JSONObject jo = new JSONObject();
-        jo.put("cc", this.cc);
+        if (this.cc >= 0)
+            jo.put("cc", this.cc);
+        if (this.note >= 0)
+           jo.put("note", this.note);
         jo.put("channel", this.channel);
         jo.put("nickname", this.nickname);
         jo.put("value", this.value);
@@ -214,7 +304,12 @@ public class MidiControl
         {
             return this.nickname;
         } else {
-            return "Control " + String.valueOf(cc) + " (CH-" + String.valueOf(this.channel) + ")";
+            if (this.cc >= 0)
+                return "Control " + String.valueOf(cc) + " (CH-" + String.valueOf(this.channel) + ")";
+            else if (this.note >= 0)
+                return nameNote(this.note) + " (CH-" + String.valueOf(this.channel) + ")";
+            else
+                return "";
         }
     }
 }

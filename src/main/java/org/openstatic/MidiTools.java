@@ -79,9 +79,9 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 {
     public static final String VERSION = "1.3";
     public static String LOCAL_SERIAL;
-    protected JList controlList;
-    private JList midiList;
-    private JList rulesList;
+    protected JList<MidiControl> controlList;
+    private JList<MidiPort> midiList;
+    private JList<MidiControlRule> rulesList;
     private JPopupMenu controlMenuPopup;
     private JPanel deviceQRPanel;
     private JLabel qrLabel;
@@ -379,7 +379,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         this.midiListModel = new MidiPortListModel();
         this.midiRenderer = new MidiPortCellRenderer();
         
-        this.midiList = new JList(this.midiListModel);
+        this.midiList = new JList<MidiPort>(this.midiListModel);
         this.midiList.addMouseListener(new MouseAdapter()
         {
             public void mousePressed(MouseEvent e)
@@ -616,33 +616,54 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
     
     public static void repaintRules()
     {
-        if (MidiTools.instance.rulesList != null)
+        if (MidiTools.instance != null)
         {
-            MidiTools.instance.rulesList.repaint();
+            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 1)
+            {
+                if (MidiTools.instance.rulesList != null)
+                {
+                    MidiTools.instance.rulesList.repaint();
+                }
+            }
         }
     }
     
     public static void repaintControls()
     {
-        if (MidiTools.instance.controlList != null)
+        if (MidiTools.instance != null)
         {
-            MidiTools.instance.controlList.repaint();
+            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 0)
+            {
+                if (MidiTools.instance.controlList != null)
+                {
+                    MidiTools.instance.controlList.repaint();
+                }
+            }
         }
     }
     
     public static void repaintDevices()
     {
-        if (MidiTools.instance.midiList != null)
+        if (MidiTools.instance != null)
         {
-            MidiTools.instance.midiList.repaint();
+            if (MidiTools.instance.midiList != null)
+            {
+                MidiTools.instance.midiList.repaint();
+            }
         }
     }
     
     public static void repaintMappings()
     {
-        if (MidiTools.instance.mappingControlBox != null)
+        if (MidiTools.instance != null)
         {
-            MidiTools.instance.mappingControlBox.repaint();
+            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 2)
+            {
+                if (MidiTools.instance.mappingControlBox != null)
+                {
+                    MidiTools.instance.mappingControlBox.repaint();
+                }
+            }
         }
     }
     
@@ -820,6 +841,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
 
     public void everySecond() throws Exception
     {
+        repaintRules();
         for (Enumeration<MidiControl> mce = this.controls.elements(); mce.hasMoreElements();)
         {
             MidiControl mc = mce.nextElement();
@@ -911,7 +933,20 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         }
         return null;
     }
-       
+    
+    public static MidiControl getMidiControlByChannelNote(int channel, int note)
+    {
+        for (Enumeration<MidiControl> mce = MidiTools.instance.controls.elements(); mce.hasMoreElements();)
+        {
+            MidiControl mc = mce.nextElement();
+            if (mc.getChannel() == channel && mc.getNoteNumber() == note)
+            {
+                return mc;
+            }
+        }
+        return null;
+    }
+
     public static MidiControl getMidiControlByChannelCC(int channel, int cc)
     {
         for (Enumeration<MidiControl> mce = MidiTools.instance.controls.elements(); mce.hasMoreElements();)
@@ -1005,7 +1040,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
             if (sm.getData1() > 0)
                 System.err.println("Recieved Short Message " + MidiPortManager.shortMessageToString(sm));
                 */
-            if (sm.getCommand() == ShortMessage.CONTROL_CHANGE)
+            if (sm.getCommand() == ShortMessage.CONTROL_CHANGE || sm.getCommand() == ShortMessage.NOTE_ON || sm.getCommand() == ShortMessage.NOTE_OFF)
             {
                 boolean should_repaint = false;
                 boolean found_control = false;
@@ -1025,7 +1060,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                         }
                     }
                 }
-                if (!found_control && this.createControlOnInput.getState())
+                if (!found_control && this.createControlOnInput.getState() && sm.getCommand() == ShortMessage.CONTROL_CHANGE)
                 {
                     int channel = sm.getChannel()+1;
                     int cc = sm.getData1();
@@ -1034,6 +1069,13 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
                         MidiControl mc = new MidiControl(channel,cc);
                         handleNewMidiControl(mc);
                     }
+                }
+                if (!found_control && this.createControlOnInput.getState() && sm.getCommand() == ShortMessage.NOTE_ON)
+                {
+                    int channel = sm.getChannel()+1;
+                    int note = sm.getData1() % 12;
+                    MidiControl mc = new MidiControl(channel, note, true);
+                    handleNewMidiControl(mc);
                 }
                 if (should_repaint)
                 {
@@ -1330,7 +1372,7 @@ public class MidiTools extends JFrame implements Runnable, Receiver, ActionListe
         {
             FileOutputStream fos = new FileOutputStream(file);
             PrintStream ps = new PrintStream(fos);
-            ps.print(obj.toString());
+            ps.print(obj.toString(2));
             ps.close();
             fos.close();
         } catch (Exception e) {

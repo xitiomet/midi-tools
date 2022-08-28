@@ -73,11 +73,21 @@ public class MidiControlRule implements MidiControlListener
         if (jo.has("control"))
         {
             JSONObject ctrl = jo.getJSONObject("control");
-            
-            MidiControl mc = MidiTools.getMidiControlByChannelCC(ctrl.optInt("channel", 0), ctrl.optInt("cc", 0));
-            if (mc == null)
+            int ccNum = ctrl.optInt("cc", -1);
+            MidiControl mc = null;
+            if (ccNum >= 0)
             {
-                mc = MidiTools.createMidiControlFromJSON(ctrl);
+                mc = MidiTools.getMidiControlByChannelCC(ctrl.optInt("channel", 0), ccNum);
+                if (mc == null)
+                {
+                    mc = MidiTools.createMidiControlFromJSON(ctrl);
+                }
+            } else {
+                mc = MidiTools.getMidiControlByChannelNote(ctrl.optInt("channel", 0), ctrl.optInt("note", -1));
+                if (mc == null)
+                {
+                    mc = MidiTools.createMidiControlFromJSON(ctrl);
+                }
             }
             this.control = mc;
             this.updateRule();
@@ -144,73 +154,79 @@ public class MidiControlRule implements MidiControlListener
     {
         if (this.enabled)
         {
+            MidiTools.repaintRules();
             MidiTools.instance.midi_logger_b.println("CC Rule Triggered - " + this.toShortString());
             this.lastTriggered = System.currentTimeMillis();
             //System.err.println(this.toString() + " Recieved From " + control.toString());
-            final String avparsed = mapReplace(this.action_value, new_value)
-                              .replaceAll("\\{\\{value\\}\\}", String.valueOf(new_value))
-                              .replaceAll("\\{\\{value.inv\\}\\}", String.valueOf((127-new_value)))
-                              .replaceAll("\\{\\{value.old\\}\\}", String.valueOf(old_value))
-                              .replaceAll("\\{\\{value.old.inv\\}\\}", String.valueOf((127-old_value)))
-                              .replaceAll("\\{\\{value.change\\}\\}", String.valueOf((new_value-old_value)))
-                              .replaceAll("\\{\\{cc\\}\\}", String.valueOf(control.getControlNumber()))
-                              .replaceAll("\\{\\{channel\\}\\}", String.valueOf(control.getChannel()));
-            if (this.getActionType() == MidiControlRule.ACTION_URL)
+            if (this.action_value != null)
             {
-                PendingURLFetch puf = new PendingURLFetch(avparsed);
-                puf.run();
-            } else if (this.getActionType() == MidiControlRule.ACTION_PROC) {
-                try
+                final String avparsed = mapReplace(this.action_value, new_value)
+                                .replaceAll("\\{\\{value\\}\\}", String.valueOf(new_value))
+                                .replaceAll("\\{\\{value.inv\\}\\}", String.valueOf((127-new_value)))
+                                .replaceAll("\\{\\{value.old\\}\\}", String.valueOf(old_value))
+                                .replaceAll("\\{\\{value.old.inv\\}\\}", String.valueOf((127-old_value)))
+                                .replaceAll("\\{\\{value.change\\}\\}", String.valueOf((new_value-old_value)))
+                                .replaceAll("\\{\\{cc\\}\\}", String.valueOf(control.getControlNumber()))
+                                .replaceAll("\\{\\{note\\}\\}", String.valueOf(control.getNoteNumber()))
+                                .replaceAll("\\{\\{note.name\\}\\}", control.getNoteName())
+                                .replaceAll("\\{\\{channel\\}\\}", String.valueOf(control.getChannel()));
+                if (this.getActionType() == MidiControlRule.ACTION_URL)
                 {
-                    Process process = new ProcessBuilder(avparsed).start();
-                    if (!process.waitFor(10, TimeUnit.SECONDS))
-                    {
-                        process.destroyForcibly();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace(System.err);
-                }
-            } else if (this.getActionType() == MidiControlRule.ACTION_SOUND) {
-                if (MidiControlRule.this.sound != null)
-                    MidiControlRule.this.sound.play();
-            } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
-                StringTokenizer st = new StringTokenizer(avparsed, ",");
-                if (st.countTokens() == 4)
-                {
+                    PendingURLFetch puf = new PendingURLFetch(avparsed);
+                    puf.run();
+                } else if (this.getActionType() == MidiControlRule.ACTION_PROC) {
                     try
                     {
-                        String devName = st.nextToken();
-                        int channel = Integer.valueOf(st.nextToken()).intValue()-1;
-                        int cc = Integer.valueOf(st.nextToken()).intValue();
-                        int v = Integer.valueOf(st.nextToken()).intValue();
-                        ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, v);
-                        MidiPort output = MidiPortManager.findReceivingPortByName(devName);
-                        if (output != null)
+                        Process process = new ProcessBuilder(avparsed).start();
+                        if (!process.waitFor(10, TimeUnit.SECONDS))
                         {
-                            if (output.isOpened())
-                            {
-                                //System.err.println("Transmitting ShortMessage " + MidiPortManager.shortMessageToString(sm) + " to " + output.getName());
-                                output.send(sm, output.getMicrosecondPosition());
-                            } else {
-                                //System.err.println("Output device is closed.." + output.getName());
-                            }
-                        } else {
-                            //System.err.println("Couldn't find output device " + devName);
+                            process.destroyForcibly();
                         }
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
+                } else if (this.getActionType() == MidiControlRule.ACTION_SOUND) {
+                    if (MidiControlRule.this.sound != null)
+                        MidiControlRule.this.sound.play();
+                } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
+                    StringTokenizer st = new StringTokenizer(avparsed, ",");
+                    if (st.countTokens() == 4)
+                    {
+                        try
+                        {
+                            String devName = st.nextToken();
+                            int channel = Integer.valueOf(st.nextToken()).intValue()-1;
+                            int cc = Integer.valueOf(st.nextToken()).intValue();
+                            int v = Integer.valueOf(st.nextToken()).intValue();
+                            ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, cc, v);
+                            MidiPort output = MidiPortManager.findReceivingPortByName(devName);
+                            if (output != null)
+                            {
+                                if (output.isOpened())
+                                {
+                                    //System.err.println("Transmitting ShortMessage " + MidiPortManager.shortMessageToString(sm) + " to " + output.getName());
+                                    output.send(sm, output.getMicrosecondPosition());
+                                } else {
+                                    //System.err.println("Output device is closed.." + output.getName());
+                                }
+                            } else {
+                                //System.err.println("Couldn't find output device " + devName);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace(System.err);
+                        }
+                    }
+                } else if (this.getActionType() == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
+                    MidiTools.setRuleGroupEnabled(avparsed, true);
+                } else if (this.getActionType() == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {
+                    MidiTools.setRuleGroupEnabled(avparsed, false);
+                } else if (this.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
+                    MidiTools.toggleRuleGroupEnabled(avparsed);
+                } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
+                    MidiTools.instance.midi_logger_a.println(avparsed);
+                } else if (this.getActionType() == MidiControlRule.LOGGER_B_MESSAGE) {
+                    MidiTools.instance.midi_logger_b.println(avparsed);
                 }
-            } else if (this.getActionType() == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
-                MidiTools.setRuleGroupEnabled(avparsed, true);
-            } else if (this.getActionType() == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {
-                MidiTools.setRuleGroupEnabled(avparsed, false);
-            } else if (this.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
-                MidiTools.toggleRuleGroupEnabled(avparsed);
-            } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
-                MidiTools.instance.midi_logger_a.println(avparsed);
-            } else if (this.getActionType() == MidiControlRule.LOGGER_B_MESSAGE) {
-                MidiTools.instance.midi_logger_b.println(avparsed);
             }
         }
     }
@@ -377,6 +393,11 @@ public class MidiControlRule implements MidiControlListener
         jo.put("lastTriggered", this.lastTriggered);
         return jo;
     }
+
+    public long getLastTriggered()
+    {
+        return this.lastTriggered;
+    }
     
     public String toShortString()
     {
@@ -388,7 +409,7 @@ public class MidiControlRule implements MidiControlListener
         {
             return controlText + " [" + eventModeText + "]";
         } else {
-            return this.nickname + " " + controlText + " [" + eventModeText + "]";
+            return this.nickname + " - " + controlText + " [" + eventModeText + "]";
         }
     }
 
@@ -406,11 +427,6 @@ public class MidiControlRule implements MidiControlListener
             if (mcr != null)
                 targetText = mcr.toString();
         }
-        if (this.nickname == null)
-        {
-            return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
-        } else {
-            return this.nickname + " " + controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
-        }
+        return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
     }
 }

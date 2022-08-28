@@ -31,7 +31,8 @@ public class MidiControlRuleCellRenderer extends JCheckBox implements ListCellRe
    public MidiControlRuleCellRenderer()
    {
        super();
-       this.setOpaque(false);
+       this.setOpaque(true);
+       this.setBackground(Color.WHITE);
        this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 3);
        this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 3);
 
@@ -44,16 +45,19 @@ public class MidiControlRuleCellRenderer extends JCheckBox implements ListCellRe
                                                  boolean isSelected,
                                                  boolean cellHasFocus)
    {
-      this.setText("<html>" + rule.toString() + "</html>");
-      this.setSelected(rule.isEnabled());
-      if (isSelected)
+      if (rule.getNickname() != null)
       {
-         this.setBackground(list.getSelectionBackground());
-         this.setForeground(list.getSelectionForeground());
+         this.setText("<html><body style=\"padding: 3px 3px 3px 3px;\"><b style=\"font-size: 14px;\">" + rule.getNickname() + "</b><br />" + rule.toString() + "</body></html>");
       } else {
-         this.setBackground(list.getBackground());
-         this.setForeground(list.getForeground());
+         this.setText("<html><body style=\"padding: 3px 3px 3px 3px;\">" + rule.toString() + "</body></html>");
       }
+      if ((System.currentTimeMillis() - rule.getLastTriggered()) < 1000l)
+      {
+         this.setBackground(new Color(102,255,102));
+      } else {
+         this.setBackground(Color.WHITE);
+      }
+      this.setSelected(rule.isEnabled());
 
       this.setFont(list.getFont());
       this.setEnabled(list.isEnabled());

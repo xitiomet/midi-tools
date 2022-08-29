@@ -24,7 +24,6 @@ public class RTPMidiPort implements MidiPort
     private String rtp_name;
     private int port;
     private InetAddress hostname;
-    private Receiver outputReceiver;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private AppleMidiServer appleMidiServer;

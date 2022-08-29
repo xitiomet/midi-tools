@@ -56,10 +56,10 @@ public class CreateMappingDialog extends JDialog implements ActionListener
         this.setLayout(new BorderLayout());
         this.nicknameField = new JTextField("");
         
-        this.selectSource = new JComboBox();
+        this.selectSource = new JComboBox<MidiPort>();
         this.selectSource.setModel(new DefaultComboBoxModel<MidiPort>( ((Vector<MidiPort>)MidiPortManager.getTransmittingPorts()) ));
 
-        this.selectDestination = new JComboBox();
+        this.selectDestination = new JComboBox<MidiPort>();
         this.selectDestination.setModel(new DefaultComboBoxModel<MidiPort>( ((Vector<MidiPort>)MidiPortManager.getReceivingPorts()) ));
         
         JPanel formPanel = new JPanel(new GridBagLayout());

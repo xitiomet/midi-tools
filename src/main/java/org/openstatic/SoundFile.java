@@ -2,18 +2,15 @@ package org.openstatic;
 
 import java.io.File;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
 
 import java.net.URL;
 import java.net.URLConnection;
 
-import java.util.regex.Pattern;
 import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 
@@ -21,20 +18,10 @@ import java.util.Random;
 
 public class SoundFile
 {
-    private final int BUFFER_SIZE = 128000;
     private String sound_url;
     private File soundFile;
     private Thread downloadThread;
     private AudioInputStream audioStream;
-    private AudioFormat audioFormat;
-    private SourceDataLine sourceLine;
-
-    private static String contentDisp(String hval)
-    {
-        int idx = hval.lastIndexOf("=");
-        String filename = (idx >= 0 ? hval.substring(idx + 1) : hval);
-        return filename.replaceAll(Pattern.quote("\""), "");
-    }
 
     private File saveUrlAsWav(String urlString) throws Exception
     {
@@ -64,25 +51,6 @@ public class SoundFile
             }
         }
         return file;
-    }
-
-
-    private String filename_from_url(String url)
-    {
-        int fs_loc = url.lastIndexOf("/");
-        if (fs_loc > 0)
-            return url.substring(fs_loc+1);
-        else
-            return url;
-    }
-
-    private String basename(String name)
-    {
-        int fs_loc = name.lastIndexOf(".");
-        if (fs_loc > 0)
-            return name.substring(0, fs_loc);
-        else
-            return name;
     }
 
     private static String generateBigAlphaKey(int key_length)

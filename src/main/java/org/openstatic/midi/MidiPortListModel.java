@@ -1,16 +1,11 @@
 package org.openstatic.midi;
 
-import javax.sound.midi.*;
 import javax.swing.ListModel;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.SwingUtilities;
 import java.util.Enumeration;
 import java.util.Vector;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Iterator;
-import java.io.*;
 
 public class MidiPortListModel implements ListModel<MidiPort>, MidiPortListener
 {

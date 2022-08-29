@@ -286,7 +286,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
     }
 
     public void transmitStatus(WebSocketSession wssession, String targetId) {
-        for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();) {
+        for (Enumeration<MidiControl> cenum = MidiTools.instance.midiControlsPanel.getControlsEnumeration(); cenum.hasMoreElements();) {
             MidiControl mc = cenum.nextElement();
             JSONObject event = new JSONObject();
             event.put("event", "controlAdded");

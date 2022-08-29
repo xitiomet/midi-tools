@@ -1,6 +1,5 @@
 package org.openstatic;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.openstatic.midi.*;
 import org.openstatic.midi.ports.MidiRandomizerPort;
@@ -16,7 +15,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
@@ -24,7 +22,6 @@ import javax.swing.event.ChangeListener;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -97,8 +94,6 @@ public class RandomizerControlBox extends JPanel implements ActionListener, Midi
               public void stateChanged(ChangeEvent changeEvent) {
                 AbstractButton abstractButton = (AbstractButton) changeEvent.getSource();
                 ButtonModel buttonModel = abstractButton.getModel();
-                boolean armed = buttonModel.isArmed();
-                boolean pressed = buttonModel.isPressed();
                 boolean selected = buttonModel.isSelected();
                 //System.out.println("Changed: " + armed + "/" + pressed + "/" + selected);
                 if (RandomizerControlBox.this.randomizerPort.isOpened() != selected)

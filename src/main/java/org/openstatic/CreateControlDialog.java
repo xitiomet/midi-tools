@@ -85,13 +85,13 @@ public class CreateControlDialog extends JDialog implements ActionListener
         Vector<Integer> midiChannels = new Vector<Integer>();
         for(int i = 1; i < 17; i++)
             midiChannels.add(Integer.valueOf(i));
-        this.selectChannel = new JComboBox(midiChannels);
+        this.selectChannel = new JComboBox<Integer>(midiChannels);
         this.selectChannel.addActionListener(this);
         
         Vector<Integer> controlChangeNumbers = new Vector<Integer>();
         for(int i = 0; i < 128; i++)
             controlChangeNumbers.add(Integer.valueOf(i));
-        this.selectCC = new JComboBox(controlChangeNumbers);
+        this.selectCC = new JComboBox<Integer>(controlChangeNumbers);
         this.selectCC.addActionListener(this);
         
         JPanel formPanel = new JPanel(new GridBagLayout());

@@ -4,21 +4,9 @@ import java.awt.Color;
 import java.awt.Component;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
-import javax.swing.JProgressBar;
-import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
-import javax.swing.border.TitledBorder;
-
-import javax.imageio.ImageIO;
-import java.awt.image.AffineTransformOp;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import java.awt.BorderLayout;
-import javax.sound.midi.*;
 
 import javax.swing.border.Border;
 

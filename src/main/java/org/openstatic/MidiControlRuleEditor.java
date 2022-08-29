@@ -1,38 +1,22 @@
 package org.openstatic;
 
 import org.openstatic.midi.*;
-import javax.swing.JFrame;
-import javax.swing.JList;
 import javax.swing.JComboBox;
-import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JDialog;
-import javax.swing.JCheckBox;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JTextField;
 import javax.swing.JTextArea;
 import javax.swing.BorderFactory;
-import javax.swing.JTextPane;
-import javax.swing.JToggleButton;
-import javax.swing.JScrollPane;
 import javax.swing.JFileChooser;
-import javax.swing.SwingUtilities;
 import javax.swing.SwingConstants;
-import javax.swing.DefaultListModel;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.JScrollPane;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.border.TitledBorder;
 import javax.swing.border.EtchedBorder;
-import javax.swing.ImageIcon;
 import javax.swing.WindowConstants;
 
-import javax.imageio.ImageIO;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
@@ -41,38 +25,27 @@ import java.awt.Toolkit;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.Font;
-import java.awt.Color;
 import java.awt.Component;
-import java.awt.Graphics;
 
 import java.util.Vector;
 import java.util.Enumeration;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 
 import java.io.File;
 
-import javax.sound.midi.*;
-
 public class MidiControlRuleEditor extends JDialog implements ActionListener
 {
     private MidiControlRule rule;
-    private JComboBox eventSelector;
-    private JComboBox controlSelector;
-    private JComboBox actionSelector;
+    private JComboBox<String> eventSelector;
+    private JComboBox<MidiControl> controlSelector;
+    private JComboBox<String> actionSelector;
     private JTextField nicknameField;
-    private JComboBox ruleGroupField;
+    private JComboBox<String> ruleGroupField;
     private JTextArea actionValueField;
     
-    private TitledBorder selectFileBorder;
-    private JComboBox deviceSelectAVF;
-    private JComboBox channelSelectAVF;
+    private JComboBox<String> deviceSelectAVF;
+    private JComboBox<String> channelSelectAVF;
     private JComboBox<String> selectRuleGroupDropdown;
     private JTextField ccAVF;
     private JTextField valueAVF;
@@ -86,8 +59,6 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
 
     private JButton saveButton;
     private JButton deleteButton;
-    private JLabel data1Label;
-    private DefaultListModel<String> data1Options;
 
     public void actionPerformed(ActionEvent e)
     {
@@ -240,31 +211,31 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             eventModeList.add(MidiControlRule.eventModeToString(i));
         }
         
-        this.controlSelector = new JComboBox();
+        this.controlSelector = new JComboBox<MidiControl>();
         this.controlSelector.setEditable(false);
         this.controlSelector.addActionListener(this);
         Vector<MidiControl> ctrls = new Vector<MidiControl>();
-        for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();)
+        for (Enumeration<MidiControl> cenum = MidiTools.instance.midiControlsPanel.getControlsEnumeration(); cenum.hasMoreElements();)
             ctrls.add(cenum.nextElement());
         this.controlSelector.setModel(new DefaultComboBoxModel<MidiControl>(ctrls));
 
-        this.eventSelector = new JComboBox(eventModeList);
+        this.eventSelector = new JComboBox<String>(eventModeList);
         this.eventSelector.setEditable(false);
         this.eventSelector.addActionListener(this);
 
-        this.actionSelector = new JComboBox(actionList);
+        this.actionSelector = new JComboBox<String>(actionList);
         this.actionSelector.setEditable(false);
         this.actionSelector.addActionListener(this);
         
         
-        this.selectRuleGroupDropdown = new JComboBox(actionList);
+        this.selectRuleGroupDropdown = new JComboBox<String>(actionList);
         this.selectRuleGroupDropdown.setEditable(true);
         this.selectRuleGroupDropdown.addActionListener(this);
     
         this.nicknameField = new JTextField("");
         //this.nicknameField.setHorizontalAlignment(SwingConstants.CENTER);
 
-        this.ruleGroupField = new JComboBox();
+        this.ruleGroupField = new JComboBox<String>();
         this.ruleGroupField.setEditable(true);
         this.ruleGroupField.setModel(getRuleGroupModel());
         //this.ruleGroupField.setHorizontalAlignment(SwingConstants.CENTER);
@@ -305,7 +276,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.selectFilePanel.add(this.selectFileButton, BorderLayout.EAST);
 
         this.transmitMidiPanel = new JPanel(new GridBagLayout());
-        this.deviceSelectAVF = new JComboBox();
+        this.deviceSelectAVF = new JComboBox<String>();
         this.deviceSelectAVF.addActionListener(this);
         Vector<String> midiChannels = new Vector<String>();
         for(int i = 1; i < 17; i++)
@@ -343,7 +314,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                                                                     MidiControlRuleEditor.this.valueAVF.getText());
             }
         };
-        this.channelSelectAVF = new JComboBox(midiChannels);
+        this.channelSelectAVF = new JComboBox<String>(midiChannels);
         this.channelSelectAVF.addActionListener(this);
         this.ccAVF = new JTextField("{{cc}}");
         this.ccAVF.getDocument().addDocumentListener(xmitDL);

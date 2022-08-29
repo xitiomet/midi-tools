@@ -23,28 +23,18 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.ArrayList;
-import java.util.StringTokenizer;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.text.SimpleDateFormat;
-import javax.swing.JTextArea;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.awt.Font;
-import java.awt.Toolkit;
 import java.awt.Color;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
 import java.awt.Rectangle;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.DocumentEvent;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -60,12 +50,8 @@ import javax.swing.BoxLayout;
 import javax.swing.SwingUtilities;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.DefaultCaret;
-import javax.swing.text.html.HTMLEditorKit;
-import javax.swing.text.html.FormSubmitEvent;
 import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLFrameHyperlinkEvent;
 import javax.swing.text.html.HTML;
-import javax.swing.text.Document;
 import javax.swing.text.Element;
 import javax.swing.JToggleButton;
 import javax.swing.JButton;
@@ -77,7 +63,6 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private String name;
     private JTextPane viewArea;
     private JScrollPane midi_log_scroller;
-    private StringBuffer logBuffer;
     private JToggleButton autoscroll;
     private JToggleButton portControl;
     private String initBody = "<html><body style=\"padding: 4px 4px 4px 4px; margin: 0px 0px 0px 0px; color: white; background-color: #222222; font-size: 14px; font-family: \"terminal\", monospace;\"><table style=\"width: 100%; text-align: left;\" cellspacing=\"0\" cellpadding=\"0\"></table></body></html>";
@@ -115,7 +100,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                 if (!scrollBarAtBottom) {
                     //System.err.println("Need to scroll to bottom");
                     LoggerMidiPort.this.taskQueue.add(() -> {
-                        LoggerMidiPort.this.scrollToBottom(LoggerMidiPort.this.viewArea);
+                        LoggerMidiPort.scrollToBottom(LoggerMidiPort.this.viewArea);
                     });
                 } else {
                     //System.err.println("Dont need to scroll");
@@ -137,16 +122,12 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.taskQueue = new ArrayBlockingQueue<Runnable>(10000);
         this.buttonPanel = new JPanel();
         this.buttonPanel.setLayout(new BoxLayout(this.buttonPanel, BoxLayout.Y_AXIS));
-        this.logBuffer = new StringBuffer();
         this.viewArea = new JTextPane();
         this.viewArea.setContentType("text/html");
         this.viewArea.setEditable(false);
         this.viewArea.setBackground(new Color(34,34,34));
         this.viewArea.setText(this.initBody);
-        
-        Document document = this.viewArea.getDocument();
-        //document.addDocumentListener(new ScrollingDocumentListener());
-        
+           
         DefaultCaret caret = (DefaultCaret) this.viewArea.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
         this.midi_log_scroller = new JScrollPane(this.viewArea);
@@ -159,20 +140,21 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
             this.clearLog = new JButton(eraseIcon);
             this.clearLog.setActionCommand("clear");
             this.clearLog.addActionListener(this);
+            this.clearLog.setToolTipText("Clear Log");
         
             ImageIcon scrollIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/scroll.png")));
             this.autoscroll = new JToggleButton(scrollIcon);
             this.autoscroll.setSelected(true);
+            this.autoscroll.setToolTipText("Autoscroll");
             
             ImageIcon portIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/midi-small.png")));
             this.portControl = new JToggleButton(portIcon);
             this.portControl.setSelected(this.opened);
+            this.portControl.setToolTipText("Open this MIDI port (literally to the logger)");
             ChangeListener changeListener = new ChangeListener() {
               public void stateChanged(ChangeEvent changeEvent) {
                 AbstractButton abstractButton = (AbstractButton) changeEvent.getSource();
                 ButtonModel buttonModel = abstractButton.getModel();
-                boolean armed = buttonModel.isArmed();
-                boolean pressed = buttonModel.isPressed();
                 boolean selected = buttonModel.isSelected();
                 //System.out.println("Changed: " + armed + "/" + pressed + "/" + selected);
                 if (LoggerMidiPort.this.isOpened() != selected)
@@ -402,7 +384,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
             {
                 if (this.taskQueue.size() > 0)
                 {
-                    final ArrayList<Runnable> taskArray = new ArrayList();
+                    final ArrayList<Runnable> taskArray = new ArrayList<Runnable>();
                     this.taskQueue.drainTo(taskArray);
                     SwingUtilities.invokeLater(() -> {
                         for(Iterator<Runnable> taskIterator = taskArray.iterator(); taskIterator.hasNext();)

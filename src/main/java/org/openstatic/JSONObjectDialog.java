@@ -158,7 +158,7 @@ public class JSONObjectDialog extends JDialog implements ActionListener
         Vector<String> booleanInputs = new Vector<String>();
         booleanInputs.add("true");
         booleanInputs.add("false");
-        final JComboBox booleanInput = new JComboBox();
+        final JComboBox<String> booleanInput = new JComboBox<String>();
         booleanInput.setModel(new DefaultComboBoxModel<String>( ((Vector<String>)booleanInputs) ));
         if (value)
         {

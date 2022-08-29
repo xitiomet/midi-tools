@@ -243,7 +243,7 @@ public class RoutePutSessionManager
     }
 
     public void transmitStatus(RoutePutSession session) {
-        for (Enumeration<MidiControl> cenum = MidiTools.instance.controls.elements(); cenum.hasMoreElements();) {
+        for (Enumeration<MidiControl> cenum = MidiTools.instance.midiControlsPanel.getControlsEnumeration(); cenum.hasMoreElements();) {
             MidiControl mc = cenum.nextElement();
             RoutePutMessage event = new RoutePutMessage();
             event.put("event", "controlAdded");

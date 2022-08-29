@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Vector;
-import java.util.ResourceBundle.Control;
 
 import org.openstatic.midi.ports.JoystickMidiPort;
 import org.openstatic.midi.MidiPort;
@@ -13,7 +12,6 @@ import org.openstatic.midi.MidiPortProvider;
 import java.util.Iterator;
 
 import net.java.games.input.*;
-import net.java.games.input.Controller.PortType;
 
 public class JoystickMidiPortProvider implements MidiPortProvider 
 {

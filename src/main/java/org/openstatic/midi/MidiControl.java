@@ -257,10 +257,15 @@ public class MidiControl
     {
         return this.settled;
     }
+
+    public long getLastChangeAt()
+    {
+        return this.lastChangeAt;
+    }
     
     public void settle()
     {
-        if ((System.currentTimeMillis() - this.lastChangeAt) > 500)
+        if ((System.currentTimeMillis() - this.lastChangeAt) > 250)
         {
             this.settled = true;
             final int old_value = this.settled_value;

@@ -9,19 +9,26 @@ import org.openstatic.midi.providers.CollectionMidiPortProvider;
 import org.openstatic.midi.providers.DeviceMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
+import java.util.HashMap;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.Iterator;
 import java.util.List;
 
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
 
+import java.net.URL;
 import java.net.URI;
+import java.net.URLClassLoader;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -131,10 +138,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private MappingControlBox mappingControlBox;
     private RandomizerControlBox randomizerControlBox;
 
+    public HashMap<String, MidiToolsPlugin> plugins;
+    public JSONObject pluginSettings;
+
     public MidiTools()
     {
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
         MidiTools.instance = this;
+        this.plugins = new HashMap<String, MidiToolsPlugin>();
         this.options = new JSONObject();
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
         this.keep_running = true;
@@ -420,6 +431,28 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         });
         svcs.start();
         logIt("Finished MidiTools Constructor");
+        File plugin_root = new File("./plugins/");
+        if (plugin_root.exists())
+        {
+            try
+            {
+                File[] plug_files = plugin_root.listFiles();
+                for (int i = 0; i < plug_files.length; i++)
+                {
+                    if (plug_files[i].getName().endsWith(".jar"))
+                    {
+                        try
+                        {
+                            this.loadPlugin(plug_files[i]);
+                        } catch (Exception pl_ex) {
+                            pl_ex.printStackTrace(System.err);
+                        }
+                    }
+                }
+            } catch (Exception ex2) {
+                ex2.printStackTrace(System.err);
+            }
+        }
         centerWindow();
     }
 
@@ -778,14 +811,28 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             
     }
 
+    private long lastSecondAt = 0l;
     public void run()
     {
         while(this.keep_running)
         {
+            long ts = System.currentTimeMillis();
             try
             {
-                everySecond();
-                Thread.sleep(1000);
+                if (ts - this.lastSecondAt > 1000l)
+                {
+                    everySecond();
+                    this.lastSecondAt = ts;
+                }
+                for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
+                {
+                    MidiControl mc = mce.nextElement();
+                    if ((ts - mc.getLastChangeAt()) > 250l && !mc.isSettled())
+                    {
+                        mc.settle();
+                    }
+                }
+                Thread.sleep(50);
             } catch (Exception e) {
                 MidiTools.instance.midi_logger_b.printException(e);
             }
@@ -795,15 +842,10 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public void everySecond() throws Exception
     {
         repaintRules();
-        for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
-        {
-            MidiControl mc = mce.nextElement();
-            if (!mc.isSettled())
-                mc.settle();
-        }
         if (this.isShowing())
             this.windowLocation = this.getLocationOnScreen();
     }
+
 
     public void centerWindow()
     {
@@ -1105,6 +1147,21 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 JSONArray rulesArray = configJson.getJSONArray("randomizerRules");
                 this.randomizerPort.setAllRules(rulesArray);
             }
+            if (configJson.has("plugins"))
+            {
+                this.pluginSettings = configJson.getJSONObject("plugins");
+                Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
+                while(pIterator.hasNext())
+                {
+                    MidiToolsPlugin plugin = pIterator.next();
+                    JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
+                    if (pluginSettingData == null)
+                        pluginSettingData = new JSONObject();
+                    plugin.loadSettings(pluginSettingData);
+                }
+            } else {
+                this.pluginSettings = new JSONObject();
+            }
             this.setSize(windowWidth, windowHeight);
             if (newWindowLocation != null)
             {
@@ -1222,6 +1279,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             configJson.put("windowWidth", this.getWidth());
             configJson.put("windowHeight", this.getHeight());
             configJson.put("randomizerRules", this.randomizerPort.getAllRules());
+            JSONObject pluginSettingsToSave = new JSONObject();
+            Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
+            while(pIterator.hasNext())
+            {
+                MidiToolsPlugin plugin = pIterator.next();
+                pluginSettingsToSave.put(plugin.getTitle(), plugin.getSettings());
+            }
+            configJson.put("plugins", pluginSettingsToSave);
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);
@@ -1348,5 +1413,44 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
         } catch (Exception e) {}
         return return_mac;
+    }
+
+    public boolean loadPlugin(File jarfile)
+    {
+        try
+        {
+            if (!jarfile.exists())
+            {
+                System.err.println("no jar found");
+                return false;
+            }
+            URLClassLoader child = new URLClassLoader(new URL[] { jarfile.toURL() }, this.getClass().getClassLoader());
+            JarFile jf = new JarFile(jarfile);
+            Manifest mf = jf.getManifest();
+            Attributes at = mf.getMainAttributes();
+            String main_class = at.getValue("Main-Class");
+            Class<?> c = Class.forName(main_class, true, child);
+            Constructor<?> cons = c.getDeclaredConstructor();
+            final MidiToolsPlugin new_plugin = (MidiToolsPlugin) cons.newInstance();
+            Thread t = new Thread()
+            {
+                public void run()
+                {
+                    JPanel panel = new_plugin.getPanel();
+                    MidiTools.this.plugins.put(new_plugin.getTitle(), new_plugin);
+                    if (panel != null)
+                    {
+                        MidiTools.this.mainTabbedPane.addTab(new_plugin.getTitle(), new_plugin.getIcon(), panel);
+                    }
+                }
+            };
+            t.start();
+            logIt("Loaded: " + jarfile.toString());
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            logIt("Couldn't load plugin: " + jarfile.toString());
+            return false;
+        }
     }
 }

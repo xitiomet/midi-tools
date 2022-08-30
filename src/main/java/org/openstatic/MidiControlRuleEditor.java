@@ -39,6 +39,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private MidiControlRule rule;
     private JComboBox<String> eventSelector;
     private JComboBox<MidiControl> controlSelector;
+    private JComboBox<String> pluginSelector;
+    private JComboBox<String> pluginTargetSelector;
     private JComboBox<String> actionSelector;
     private JTextField nicknameField;
     private JComboBox<String> ruleGroupField;
@@ -82,6 +84,21 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     this.actionValueField.setText(filename);
                 }
             }
+        }
+
+        if (e.getSource() == this.pluginSelector)
+        {
+            String pluginName = this.pluginSelector.getSelectedItem().toString();
+            MidiToolsPlugin plugin = MidiTools.instance.plugins.get(pluginName);
+            this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
+            this.actionValueField.setText(plugin.getTitle() + "," + this.pluginTargetSelector.getSelectedItem().toString());
+        }
+
+        if (e.getSource() == this.pluginTargetSelector)
+        {
+            String pluginName = this.pluginSelector.getSelectedItem().toString();
+            MidiToolsPlugin plugin = MidiTools.instance.plugins.get(pluginName);
+            this.actionValueField.setText(plugin.getTitle() + "," + this.pluginTargetSelector.getSelectedItem().toString());
         }
         
         if (e.getSource() == this.actionSelector)
@@ -184,6 +201,32 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
             this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
+        } else if (i == 9) {
+            try
+            {
+                StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
+                this.actionValueLabel.setText("Plugin");
+                this.pluginSelector.setModel(this.getPluginModel());
+                if (st.countTokens() == 2)
+                {
+                    String pluginName = st.nextToken();
+                    String targetName = st.nextToken();
+                    MidiToolsPlugin plugin = MidiTools.instance.plugins.get(pluginName);
+                    this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
+                    this.pluginSelector.setSelectedItem(pluginName);
+                    this.pluginTargetSelector.setSelectedItem(targetName);
+                } else {
+                    String firstPlugin = this.pluginSelector.getSelectedItem().toString();
+                    MidiToolsPlugin plugin = MidiTools.instance.plugins.get(firstPlugin);
+                this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
+                    this.actionValueField.setText(firstPlugin + "," + this.pluginTargetSelector.getSelectedItem().toString());
+                }
+                this.actionValuePanel.add(this.pluginSelector, BorderLayout.CENTER);
+                this.actionValuePanel.add(this.pluginTargetSelector, BorderLayout.PAGE_END);
+            } catch (Exception e) {
+                this.actionValuePanel.removeAll();
+                this.actionValuePanel.add(this.actionValueField, BorderLayout.CENTER);
+            }
         }
         this.actionValuePanel.revalidate();
         this.actionValuePanel.repaint();
@@ -201,7 +244,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 9; i++)
+        for(int i = 0; i < 10; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }
@@ -227,6 +270,13 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.actionSelector.setEditable(false);
         this.actionSelector.addActionListener(this);
         
+        this.pluginSelector = new JComboBox<String>();
+        this.pluginSelector.setEditable(false);
+        this.pluginSelector.addActionListener(this);
+
+        this.pluginTargetSelector = new JComboBox<String>();
+        this.pluginTargetSelector.setEditable(false);
+        this.pluginTargetSelector.addActionListener(this);
         
         this.selectRuleGroupDropdown = new JComboBox<String>(actionList);
         this.selectRuleGroupDropdown.setEditable(true);
@@ -441,7 +491,38 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         return null;
     }
     
-    
+    public DefaultComboBoxModel<String> getPluginModel()
+    {
+        try
+        {
+            Vector<String> plugins = new Vector<String>();
+            // Check for new devices added
+            Iterator<MidiToolsPlugin> pIterator = MidiTools.instance.plugins.values().iterator();
+            while(pIterator.hasNext())
+            {
+                MidiToolsPlugin plugin = pIterator.next();
+                plugins.add(plugin.getTitle());
+            }
+            DefaultComboBoxModel<String> pluginModel = new DefaultComboBoxModel<String>(plugins);
+            return pluginModel;
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
+    }
+
+    public DefaultComboBoxModel<String> getPluginTargetModel(MidiToolsPlugin mtp)
+    {
+        try
+        {
+            Vector<String> pluginTargets = new Vector<String>(mtp.getRuleTargets());
+            DefaultComboBoxModel<String> pluginModel = new DefaultComboBoxModel<String>(pluginTargets);
+            return pluginModel;
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
+    }
 
     public JPanel labelComponent(String label, Component c)
     {

@@ -38,8 +38,10 @@ public class MidiControlRuleCellRenderer extends JCheckBox implements ListCellRe
       } else {
          this.setText("<html><body style=\"padding: 3px 3px 3px 3px;\">" + rule.toString() + "</body></html>");
       }
-      if ((System.currentTimeMillis() - rule.getLastTriggered()) < 1000l)
+      if ((System.currentTimeMillis() - rule.getLastFailed()) < 1000l)
       {
+         this.setBackground(new Color(255,102,102));
+      } else if ((System.currentTimeMillis() - rule.getLastTriggered()) < 1000l) {
          this.setBackground(new Color(102,255,102));
       } else {
          this.setBackground(Color.WHITE);

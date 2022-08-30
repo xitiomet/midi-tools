@@ -275,23 +275,30 @@ function createMappingElement(idx, mapping)
 
 function removeControlElement(control)
 {
-    var idPostfix = control.channel + '_' + control.cc;
+    var idPostfix = control.channel + '_' + control.cc + "_" + control.note;
     var trow = document.getElementById('ctrl_' + idPostfix);
     document.getElementById('controlsTable').removeChild(trow);
 }
 
 function createControlElement(control)
 {
-    var idPostfix = control.channel + '_' + control.cc;
+    var idPostfix = control.channel + '_' + control.cc + "_" + control.note;
     var rowId = 'ctrl_' + idPostfix;
     if (document.getElementById(rowId) == undefined)
     {
         var trow = document.createElement("tr");
         trow.id = rowId;
         trow.style.height = '48px';
-        trow.innerHTML = '<td><b id="nickname_' + idPostfix + '" style="font-size: 18px;">' + control.nickname + '</b><br /><i id="italic_' + idPostfix + '" style="font-size: 10px;">ch=' + control.channel + ' cc=' + control.cc + ' v=' + control.value + '</i></td>' +
-                         '<td><progress id="progress_' + idPostfix + '" style="min-width: 99%;" max="127" value="' + control.value + '"></progress><br />' +
-                         '<input style="min-width: 99%;" type="range" min="0" max="127" value="0" oninput="sendEvent({&quot;do&quot;:&quot;changeControlValue&quot;, &quot;channel&quot;: ' + control.channel + ', &quot;cc&quot;: ' + control.cc + ', &quot;value&quot;: parseInt(this.value)});" /></td>';
+        
+        if (control.cc >= 0)
+        {
+            trow.innerHTML = '<td><b id="nickname_' + idPostfix + '" style="font-size: 18px;">' + control.nickname + '</b><br /><i id="italic_' + idPostfix + '" style="font-size: 10px;">ch=' + control.channel + ' cc=' + control.cc + ' v=' + control.value + '</i></td>' +
+                         '<td><progress id="progress_' + idPostfix + '" style="min-width: 99%;" max="127" value="' + control.value + '"></progress><br />'+
+                        '<input style="min-width: 99%;" type="range" min="0" max="127" value="0" oninput="sendEvent({&quot;do&quot;:&quot;changeControlValue&quot;, &quot;channel&quot;: ' + control.channel + ', &quot;cc&quot;: ' + control.cc + ', &quot;value&quot;: parseInt(this.value)});" /></td>';
+        } else if (control.note >= 0) {
+            trow.innerHTML = '<td><b id="nickname_' + idPostfix + '" style="font-size: 18px;">' + control.nickname + '</b><br /><i id="italic_' + idPostfix + '" style="font-size: 10px;">ch=' + control.channel + ' v=' + control.value + '</i></td>' +
+                         '<td><progress id="progress_' + idPostfix + '" style="min-width: 99%;" max="127" value="' + control.value + '"></progress></td>';
+        }
         document.getElementById('controlsTable').appendChild(trow);
     }
 }
@@ -309,11 +316,14 @@ function logIt(message)
 function updateControl(event)
 {
     var control = event.control;
-    var idPostfix = control.channel + '_' + control.cc;
+    var idPostfix = control.channel + '_' + control.cc + "_" + control.note;
     var pb = document.getElementById('progress_' + idPostfix);
     var italic = document.getElementById('italic_' + idPostfix);
     pb.value = event.newValue;
-    italic.innerHTML = 'ch=' + control.channel + ' cc=' + control.cc + ' v=' + event.newValue;
+    if (control.cc >= 0)
+        italic.innerHTML = 'ch=' + control.channel + ' cc=' + control.cc + ' v=' + event.newValue;
+    else if (control.note >= 0)
+        italic.innerHTML = 'ch=' + control.channel + ' v=' + event.newValue;
 }
 
 function setupWebsocket()

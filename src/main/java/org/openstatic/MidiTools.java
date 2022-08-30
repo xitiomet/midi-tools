@@ -1279,14 +1279,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             configJson.put("windowWidth", this.getWidth());
             configJson.put("windowHeight", this.getHeight());
             configJson.put("randomizerRules", this.randomizerPort.getAllRules());
-            JSONObject pluginSettingsToSave = new JSONObject();
             Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
             while(pIterator.hasNext())
             {
                 MidiToolsPlugin plugin = pIterator.next();
-                pluginSettingsToSave.put(plugin.getTitle(), plugin.getSettings());
+                this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
             }
-            configJson.put("plugins", pluginSettingsToSave);
+            configJson.put("plugins", this.pluginSettings);
             saveJSONObject(file, configJson);
             if (remember)
                 this.setLastSavedFile(file);

@@ -40,6 +40,7 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
     private JPanel buttonPanel;
     private JToggleButton listenForMidiButton;
     private JButton createControlButton;
+    private JButton createRuleButton;
 
     public MidiControlsPanel()
     {
@@ -130,10 +131,17 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
             this.createControlButton.setActionCommand("new_control");
             this.createControlButton.addActionListener(this);
             this.createControlButton.setToolTipText("Create new control");
+
+            ImageIcon scriptIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/script32.png")));
+            this.createRuleButton = new JButton(scriptIcon);
+            this.createRuleButton.addActionListener(this);
+            this.createRuleButton.setActionCommand("create_rule");
+            this.createRuleButton.setToolTipText("Create rule for selected control");
         } catch (Exception e) {}
         this.listenForMidiButton.setSelected(false);
         this.buttonPanel.add(this.listenForMidiButton);
         this.buttonPanel.add(this.createControlButton);
+        this.buttonPanel.add(this.createRuleButton);
         this.add(buttonPanel, BorderLayout.WEST);
     }
 

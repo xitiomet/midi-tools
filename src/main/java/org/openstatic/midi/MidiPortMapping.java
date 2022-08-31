@@ -15,6 +15,7 @@ public class MidiPortMapping
     private Receiver receiver;
     private int messageCounter;
     private boolean opened;
+    private long lastActiveAt;
     
     private static synchronized String generateBigAlphaKey(int key_length)
     {
@@ -49,6 +50,7 @@ public class MidiPortMapping
             {
                 MidiPortMapping.this.destination.send(message, timeStamp);
                 MidiPortMapping.this.messageCounter++;
+                MidiPortMapping.this.lastActiveAt = System.currentTimeMillis();
             }
             
             public void close()
@@ -76,6 +78,7 @@ public class MidiPortMapping
                 {
                     MidiPortMapping.this.destination.send(message, timeStamp);
                     MidiPortMapping.this.messageCounter++;
+                    MidiPortMapping.this.lastActiveAt = System.currentTimeMillis();
                 }
             }
             
@@ -97,6 +100,11 @@ public class MidiPortMapping
         this.nickname = nickname;
     }
     
+    public long getLastActiveAt()
+    {
+        return this.lastActiveAt;
+    }
+
     public void close()
     {
         this.opened = false;

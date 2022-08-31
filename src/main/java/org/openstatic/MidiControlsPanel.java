@@ -270,7 +270,7 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
             SwingUtilities.invokeAndWait(() -> {
                 MidiControlsPanel.this.controls.removeElement(mc);
             });
-            for (Enumeration<MidiControlRule> re = MidiTools.instance.rules.elements(); re.hasMoreElements();)
+            for (Enumeration<MidiControlRule> re = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); re.hasMoreElements();)
             {
                 MidiControlRule rule = re.nextElement();
                 if (rule.getMidiControl() == mc)

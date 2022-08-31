@@ -19,7 +19,7 @@ public class MidiPortMappingCellRenderer extends JCheckBox implements ListCellRe
    public MidiPortMappingCellRenderer()
    {
        super();
-       this.setOpaque(false);
+       this.setOpaque(true);
        this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 3);
        this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 3);
 
@@ -33,12 +33,16 @@ public class MidiPortMappingCellRenderer extends JCheckBox implements ListCellRe
                                                  boolean cellHasFocus)
    {
       this.setText(mapping.toString());
+      if ((System.currentTimeMillis() -  mapping.getLastActiveAt()) < 1000l)
+      {
+         this.setBackground(new Color(102,255,102));
+      } else {
+         this.setBackground(Color.WHITE);
+      }
       if (isSelected)
       {
-         this.setBackground(list.getSelectionBackground());
          this.setForeground(list.getSelectionForeground());
       } else {
-         this.setBackground(list.getBackground());
          this.setForeground(list.getForeground());
       }
       this.setSelected(mapping.isOpened());

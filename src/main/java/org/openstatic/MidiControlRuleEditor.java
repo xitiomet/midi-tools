@@ -121,8 +121,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         
         if (e.getSource() == this.deleteButton)
         {
-            if (MidiTools.instance.rules.contains(this.rule))
-                MidiTools.instance.rules.removeElement(this.rule);
+            if (MidiTools.instance.midiControlRulePanel.contains(this.rule))
+                MidiTools.instance.midiControlRulePanel.removeElement(this.rule);
             MidiTools.removeListenerFromControls(this.rule);
             this.dispose();
         }
@@ -146,8 +146,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.rule.setMidiControl(null);
             else
                 this.rule.setMidiControl(MidiTools.getMidiControlByIndex(ci));
-            if (!MidiTools.instance.rules.contains(this.rule))
-                MidiTools.instance.rules.addElement(this.rule);
+            if (!MidiTools.instance.midiControlRulePanel.contains(this.rule))
+                MidiTools.instance.midiControlRulePanel.addElement(this.rule);
             this.rule.updateRule();
             this.dispose();
         }
@@ -476,7 +476,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         {
             Vector<String> ruleGroups = new Vector<String>();
             // Check for new devices added
-            for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.rules.elements(); newRuleEnum.hasMoreElements();)
+            for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); newRuleEnum.hasMoreElements();)
             {
                 MidiControlRule mcr = newRuleEnum.nextElement();
                 String groupName = mcr.getRuleGroup();

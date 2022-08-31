@@ -16,7 +16,6 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.Iterator;
-import java.util.List;
 
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
@@ -24,6 +23,9 @@ import net.glxn.qrgen.image.ImageType;
 import java.net.URL;
 import java.net.URI;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
@@ -37,7 +39,6 @@ import java.io.File;
 
 import javax.swing.JFrame;
 import javax.swing.JList;
-import javax.swing.DefaultListModel;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
@@ -46,7 +47,6 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
@@ -65,21 +65,15 @@ import java.awt.Point;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Color;
 import java.awt.Desktop;
-import java.awt.datatransfer.*;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDropEvent;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
 
-import javax.sound.midi.*;
 
 import org.json.*;
 
@@ -88,10 +82,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public static final String VERSION = "1.4";
     public static String LOCAL_SERIAL;
     private JList<MidiPort> midiList;
-    private JList<MidiControlRule> rulesList;
     private JPanel deviceQRPanel;
     private JLabel qrLabel;
-    protected MidiControlRuleCellRenderer midiControlRuleCellRenderer;
     private MidiPortCellRenderer midiRenderer;
     private MidiPortListModel midiListModel;
     public LoggerMidiPort midi_logger_a;
@@ -99,7 +91,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public MidiControlsPanel midiControlsPanel;
 
     private Thread mainThread;
-    protected DefaultListModel<MidiControlRule> rules;
     protected ArrayBlockingQueue<Runnable> taskQueue;
     private JMenuBar menuBar;
     private JMenu fileMenu;
@@ -118,13 +109,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     private JMenuItem exportConfigurationMenuItem;
     private JMenuItem importConfigurationMenuItem;
+    private JMenuItem loadPluginMenuItem;
     private JMenuItem saveMenuItem;
     private JMenuItem resetConfigurationMenuItem;
     private File lastSavedFile;
     private JMenuItem exitMenuItem;
     public static MidiTools instance;
     private boolean keep_running;
-    private long lastRuleClick;
     private long lastDeviceClick;
     private APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
@@ -136,6 +127,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public CollectionMidiPortProvider cmpp;
     private JMenuItem routeputConnectMenuItem;
     private MappingControlBox mappingControlBox;
+    protected MidiControlRulePanel midiControlRulePanel;
     private RandomizerControlBox randomizerControlBox;
 
     public HashMap<String, MidiToolsPlugin> plugins;
@@ -204,6 +196,11 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.importConfigurationMenuItem.setMnemonic(KeyEvent.VK_O);
         this.importConfigurationMenuItem.addActionListener(this);
         this.importConfigurationMenuItem.setActionCommand("import");
+
+        this.loadPluginMenuItem = new JMenuItem("Install Plugin");
+        this.loadPluginMenuItem.setMnemonic(KeyEvent.VK_P);
+        this.loadPluginMenuItem.addActionListener(this);
+        this.loadPluginMenuItem.setActionCommand("load_plugin");
         
         this.aboutMenuItem = new JMenuItem("About");
         this.aboutMenuItem.setMnemonic(KeyEvent.VK_B);
@@ -220,6 +217,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.fileMenu.add(this.exportConfigurationMenuItem);
         this.fileMenu.add(this.importConfigurationMenuItem);
         this.fileMenu.add(new JSeparator());
+        this.fileMenu.add(this.loadPluginMenuItem);
         this.fileMenu.add(this.aboutMenuItem);
         this.fileMenu.add(new JSeparator());
         this.fileMenu.add(this.exitMenuItem);
@@ -256,10 +254,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         
         this.setJMenuBar(this.menuBar);
         
-        this.rules = new DefaultListModel<MidiControlRule>();
         this.mainTabbedPane = new JTabbedPane();
 
-        this.midiControlRuleCellRenderer = new MidiControlRuleCellRenderer();
         
         this.midiControlsPanel = new MidiControlsPanel();
         //controlsScrollPane.setBorder(new TitledBorder("Midi Controls"));
@@ -273,37 +269,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
         JPanel toysAndPower = new JPanel(new BorderLayout());
         toysAndPower.add(this.mainTabbedPane, BorderLayout.CENTER);
-
-        // Setup rule list
-        this.rulesList = new JList(this.rules);
-        this.rulesList.setDropTarget(drop_targ);
-        this.rulesList.setCellRenderer(this.midiControlRuleCellRenderer);
-        JScrollPane ruleScrollPane = new JScrollPane(this.rulesList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ruleScrollPane.setBorder(new TitledBorder("Rules for Incoming Control Change Messages (right-click to edit, double-click to toggle, drop wav files for sound triggers)"));
-        this.rulesList.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent e)
-            {
-               int index = MidiTools.this.rulesList.locationToIndex(e.getPoint());
-
-               if (index != -1)
-               {
-                   MidiControlRule source = (MidiControlRule) MidiTools.this.rules.getElementAt(index);
-                   if (e.getButton() == MouseEvent.BUTTON1)
-                   {
-                       long cms = System.currentTimeMillis();
-                       if (cms - MidiTools.this.lastRuleClick < 500 && MidiTools.this.lastRuleClick > 0)
-                       {
-                          source.toggleEnabled();
-                       }
-                       MidiTools.this.lastRuleClick = cms;
-                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                      MidiControlRuleEditor editor = new MidiControlRuleEditor(source);
-                   }
-               }
-            }
-        });
-        
         this.add(toysAndPower, BorderLayout.CENTER);
 
         this.midiListModel = new MidiPortListModel();
@@ -345,7 +310,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.deviceQRPanel = new JPanel(new BorderLayout());
         this.deviceQRPanel.add(scrollPane2, BorderLayout.CENTER);
         
-        
         this.add(this.deviceQRPanel, BorderLayout.WEST);
         
         this.bottomTabbedPane = new JTabbedPane();
@@ -356,7 +320,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             scriptIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/script32.png"));
         } catch (Exception e) {}
         ImageIcon scriptIcon = new ImageIcon(scriptIconImage);
-        this.mainTabbedPane.addTab("Control Change Rules", scriptIcon, ruleScrollPane);
+        this.midiControlRulePanel = new MidiControlRulePanel();
+        this.mainTabbedPane.addTab("Control Change Rules", scriptIcon, this.midiControlRulePanel);
         
         // Setup rule list
         this.mappingControlBox = new MappingControlBox();
@@ -431,7 +396,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         });
         svcs.start();
         logIt("Finished MidiTools Constructor");
-        File plugin_root = new File("./plugins/");
+        File plugin_root = getPluginFolder();
         if (plugin_root.exists())
         {
             try
@@ -452,70 +417,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             } catch (Exception ex2) {
                 ex2.printStackTrace(System.err);
             }
+        } else {
+            plugin_root.mkdirs();
         }
         centerWindow();
     }
 
-    DropTarget drop_targ = new DropTarget()
-    {
-        public synchronized void drop(DropTargetDropEvent evt)
-        {
-            try
-            {
-                evt.acceptDrop(DnDConstants.ACTION_COPY);
-                final List<File> droppedFiles = (List<File>) evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                if (droppedFiles.size() == 1)
-                {
-                    try
-                    {
-                        final File droppedFile = droppedFiles.get(0);
-                        Thread t = new Thread(() -> {
-                            MidiTools.this.handleFileDrop(droppedFile);
-                        });
-                        t.start();
-                    } catch (Exception e) {
-                        e.printStackTrace(System.err);
-                    }
-                } else {
-                    for(int i = 0; i < droppedFiles.size(); i++)
-                    {
-                        final int fi = i;
-                        Thread t = new Thread(() -> {
-                            MidiTools.this.handleFileDrop(droppedFiles.get(fi));
-                        });
-                        t.start();
-                    }
-                }
-                System.err.println("Cleanly LEFT DROP Routine");
-                evt.dropComplete(true);
-            } catch (Exception ex) {
-                evt.dropComplete(true);
-                System.err.println("Exception During DROP Routine");
-                ex.printStackTrace();
-            }
-        }
-    };
-
-    public void handleFileDrop(File file)
-    {
-        System.err.println("File dropped: " + file.toString());
-        String filename = file.getName();
-        String filenameLower = filename.toLowerCase();
-        if (filenameLower.endsWith(".wav"))
-        {
-            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_INCREASE, MidiControlRule.ACTION_SOUND, file.getAbsolutePath());
-            newRule.setNickname(filename.substring(0, filename.length()-4));
-            if (!MidiTools.instance.rules.contains(newRule))
-                MidiTools.instance.rules.addElement(newRule);
-        }
-        if (filenameLower.endsWith(".exe") || filenameLower.endsWith(".bat") || filenameLower.endsWith(".cmd") || filenameLower.endsWith(".php"))
-        {
-            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_SETTLE, MidiControlRule.ACTION_PROC, file.getAbsolutePath() + ",{{value}}");
-            newRule.setNickname(filename.substring(0, filename.length()-4));
-            if (!MidiTools.instance.rules.contains(newRule))
-                MidiTools.instance.rules.addElement(newRule);
-        }
-    }
     
     public void start()
     {
@@ -605,7 +512,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             {
                 SwingUtilities.invokeAndWait(() -> {
                     MidiTools.this.midiControlsPanel.clear();
-                    MidiTools.this.rules.clear();
+                    MidiTools.this.midiControlRulePanel.clear();
                     MidiTools.this.mappingControlBox.clearMidiPortMappings();
                 });
             } catch (Exception e) {
@@ -633,9 +540,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         {
             if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 1)
             {
-                if (MidiTools.instance.rulesList != null)
+                if (MidiTools.instance.midiControlRulePanel != null)
                 {
-                    MidiTools.instance.rulesList.repaint();
+                    MidiTools.instance.midiControlRulePanel.repaint();
                 }
             }
         }
@@ -780,6 +687,27 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     loadConfigFrom(fileToLoad);
                 })).start();
             }
+        } else if (cmd.equals("load_plugin")) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Specify a file to open");   
+            FileNameExtensionFilter filter = new FileNameExtensionFilter("Java Archive", "jar");
+            fileChooser.setFileFilter(filter);
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION)
+            {
+                File fileToLoad = fileChooser.getSelectedFile();
+                final Path pathToLoad = fileToLoad.toPath();
+                final Path targetPluginPath = (new File(getPluginFolder(), fileToLoad.getName())).toPath();
+                (new Thread(() -> {
+                    try
+                    {
+                        Files.copy(pathToLoad, targetPluginPath, StandardCopyOption.REPLACE_EXISTING);
+                        loadPlugin(targetPluginPath.toFile());
+                    } catch (Exception eCopy) {
+                        eCopy.printStackTrace(System.err);
+                    }
+                })).start();
+            }
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
         }
@@ -842,6 +770,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public void everySecond() throws Exception
     {
         repaintRules();
+        repaintMappings();
         if (this.isShowing())
             this.windowLocation = this.getLocationOnScreen();
     }
@@ -894,7 +823,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         } else {
             MidiTools.instance.midi_logger_b.println("Rule Group Disabled " + groupName);
         }
-        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
             if (mcr.getRuleGroup().equals(groupName))
@@ -906,7 +835,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static void toggleRuleGroupEnabled(String groupName)
     {
-        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
             if (mcr.getRuleGroup().equals(groupName))
@@ -918,7 +847,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static MidiControlRule getMidiControlRuleById(String ruleId)
     {
-        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.rules.elements(); mcre.hasMoreElements();)
+        for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
             if (mcr.getRuleId().equals(ruleId))
@@ -1017,8 +946,23 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static File getConfigFile()
     {
-        File homeDir = new File(System.getProperty("user.home"));
-        return new File(homeDir, ".midi-tools.json");
+        return new File(getConfigFolder(), "midi-tools.json");
+    }
+
+    public static File getConfigFolder()
+    {
+        File configFolder = new File(System.getProperty("user.home"), ".midi-tools/");
+        if (!configFolder.exists())
+            configFolder.mkdirs();
+        return configFolder;
+    }
+
+    public static File getPluginFolder()
+    {
+        File pluginFolder = new File(getConfigFolder(), "plugins/");
+        if (!pluginFolder.exists())
+            pluginFolder.mkdirs();
+        return pluginFolder;
     }
     
     public void loadConfig()
@@ -1070,7 +1014,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 for (int m = 0; m < rulesArray.length(); m++)
                 {
                     MidiControlRule mcr = new MidiControlRule(rulesArray.getJSONObject(m));
-                    this.rules.addElement(mcr);
+                    this.midiControlRulePanel.addElement(mcr);
                 }
             }
             if (configJson.has("bootstrapSSL"))
@@ -1204,7 +1148,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public JSONArray rulesAsJSONArray()
     {
        JSONArray rulesArray = new JSONArray();
-        for (Enumeration<MidiControlRule> mcre = this.rules.elements(); mcre.hasMoreElements();)
+        for (Enumeration<MidiControlRule> mcre = this.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
             rulesArray.put(mcr.toJSONObject());

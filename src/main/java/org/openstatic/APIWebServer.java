@@ -415,7 +415,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     try {
                         JSONObject rule = readJSONObjectPOST(request);
                         MidiControlRule mcr = new MidiControlRule(rule);
-                        MidiTools.instance.rules.addElement(mcr);
+                        MidiTools.instance.midiControlRulePanel.addElement(mcr);
                         response.put("rule", mcr.toJSONObject());
                     } catch (Exception e) {
                         e.printStackTrace(System.err);

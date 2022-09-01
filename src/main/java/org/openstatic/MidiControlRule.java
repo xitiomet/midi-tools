@@ -156,7 +156,7 @@ public class MidiControlRule implements MidiControlListener
     {
         if (this.enabled)
         {
-            MidiTools.instance.midi_logger_b.println("CC Rule Triggered - " + this.toShortString());
+            MidiTools.instance.midi_logger_b.println("Rule Triggered - " + this.toShortString());
             boolean success = false;
             //System.err.println(this.toString() + " Recieved From " + control.toString());
             try
@@ -259,6 +259,17 @@ public class MidiControlRule implements MidiControlListener
             MidiTools.repaintRules();
         }
     }
+
+    public MidiToolsPlugin getSelectedPlugin()
+    {
+        if (this.getActionType() == MidiControlRule.ACTION_PLUGIN)
+        {
+            String[] avparsed2 = this.action_value.split(",");
+            return MidiTools.instance.plugins.get(avparsed2[0]);
+        } else {
+            return null;
+        }
+    }
     
     public boolean isEnabled()
     {
@@ -267,8 +278,15 @@ public class MidiControlRule implements MidiControlListener
     
     public void setEnabled(boolean b)
     {
-        this.enabled = b;
-        MidiTools.repaintRules();
+        if (b != this.enabled)
+        {
+            if (b)
+                MidiTools.instance.midi_logger_b.println("Rule Enabled - " + this.toShortString());
+            else
+                MidiTools.instance.midi_logger_b.println("Rule Disabled - " + this.toShortString());
+            this.enabled = b;
+            MidiTools.repaintRules();
+        }
     }
     
     public String getRuleGroup()
@@ -463,6 +481,15 @@ public class MidiControlRule implements MidiControlListener
             if (mcr != null)
                 targetText = mcr.toString();
         }
-        return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
+        if (this.getActionType() == MidiControlRule.ACTION_PLUGIN)
+        {
+            String[] avparsed2 = this.action_value.split(",");
+            if (avparsed2.length > 1)
+                return controlText + " [" + eventModeText + "] >> " + avparsed2[0] + " - " + avparsed2[1];
+            else
+                return controlText + " [" + eventModeText + "] >> " + avparsed2[0];
+        } else {
+            return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
+        }
     }
 }

@@ -528,9 +528,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.lastSavedFile = f;
         if (this.lastSavedFile != null)
         {
-            this.setTitle("MIDI Control Change Tool - [" + this.lastSavedFile.toString() + "]");
+            this.setTitle("MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.toString() + "]");
         } else {
-            this.setTitle("MIDI Control Change Tool");
+            this.setTitle("MIDI Control Change Tool v" + MidiTools.VERSION);
         }
     }
     

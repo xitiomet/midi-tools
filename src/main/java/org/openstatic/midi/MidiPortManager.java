@@ -271,11 +271,26 @@ public class MidiPortManager
     
     public static void removeMidiPortMapping(MidiPortMapping mpm)
     {
-        if (MidiPortManager.mappings.contains(mpm))
+        if (mpm != null)
         {
-            int idx = MidiPortManager.mappings.indexOf(mpm);
-            MidiPortManager.mappings.remove(mpm);
-            MidiPortManager.fireMappingRemoved(idx, mpm);
+            mpm.close();
+            if (MidiPortManager.mappings.contains(mpm))
+            {
+                int idx = MidiPortManager.mappings.indexOf(mpm);
+                MidiPortManager.mappings.remove(mpm);
+                MidiPortManager.fireMappingRemoved(idx, mpm);
+            }
+        }
+    }
+
+    public static void deleteAllMidiPortMappings()
+    {
+        Collection<MidiPortMapping> mappings = new Vector<MidiPortMapping>(MidiPortManager.getMidiPortMappings());
+        if (mappings != null)
+        {
+            mappings.forEach((mapping) -> {
+                MidiPortManager.removeMidiPortMapping(mapping);
+            });
         }
     }
     

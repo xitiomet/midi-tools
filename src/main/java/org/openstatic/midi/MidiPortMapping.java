@@ -107,9 +107,17 @@ public class MidiPortMapping
 
     public void close()
     {
-        this.opened = false;
-        source.removeReceiver(this.receiver);
-        MidiPortManager.fireMappingClosed(this);
+        if (this.isOpened())
+        {
+            try
+            {
+                this.opened = false;
+                source.removeReceiver(this.receiver);
+                MidiPortManager.fireMappingClosed(this);
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+        }
     }
     
     public void open()
@@ -127,6 +135,18 @@ public class MidiPortMapping
             this.opened = true;
             source.addReceiver(this.receiver);
             MidiPortManager.fireMappingOpened(this);
+        }
+    }
+
+    public void setOpen(boolean v)
+    {
+        if (v)
+        {
+            if (!this.isOpened())
+                this.open();
+        } else {
+            if (this.isOpened())
+                this.close();
         }
     }
     

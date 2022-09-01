@@ -510,11 +510,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
             try
             {
-                SwingUtilities.invokeAndWait(() -> {
-                    MidiTools.this.midiControlsPanel.clear();
-                    MidiTools.this.midiControlRulePanel.clear();
-                    MidiTools.this.mappingControlBox.clearMidiPortMappings();
-                });
+                // Clear rules first to prevent cascading triggers
+                MidiTools.this.midiControlRulePanel.clear();
+                // Now that there are no rules its safe to remove controls
+                MidiTools.this.midiControlsPanel.clear();
+                // finally lets clear mappings
+                MidiPortManager.deleteAllMidiPortMappings();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -638,7 +639,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         if (cmd.equals("reset"))
         {
             int n = JOptionPane.showConfirmDialog(null,
-            "Are you sure? This will clear all rules and controls",
+            "Are you sure? This will clear all rules, controls, and mappings",
             "Reset Confirmation",
             JOptionPane.YES_NO_OPTION);
             if(n == JOptionPane.YES_OPTION)

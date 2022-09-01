@@ -4,9 +4,10 @@ import org.openstatic.midi.*;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.util.Collection;
 import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Vector;
 import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
 import java.awt.BorderLayout;
@@ -14,84 +15,38 @@ import java.awt.BorderLayout;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import javax.swing.JList;
-import javax.swing.JMenuItem;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
-import javax.swing.JPopupMenu;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingUtilities;
 import javax.swing.JOptionPane;
 import javax.swing.JToggleButton;
+import javax.swing.ListSelectionModel;
 import javax.sound.midi.*;
 
 public class MidiControlsPanel extends JPanel implements ActionListener, Receiver
 {
-    private long lastControlClick;
     protected JList<MidiControl> controlList;
     protected MidiControlCellRenderer midiControlCellRenderer;
     protected DefaultListModel<MidiControl> controls;
-    private JPopupMenu controlMenuPopup;
-    private JMenuItem deleteControlMenuItem;
-    private JMenuItem renameControlMenuItem;
-    private JMenuItem createRuleMenuItem;
     private JPanel buttonPanel;
     private JToggleButton listenForMidiButton;
     private JButton createControlButton;
     private JButton createRuleButton;
     private JButton deleteButton;
+    private JButton labelButton;
 
     public MidiControlsPanel()
     {
         super(new BorderLayout());
-        this.controlMenuPopup = new JPopupMenu("control");
-        
-        this.deleteControlMenuItem = new JMenuItem("Delete Control");
-        this.deleteControlMenuItem.setMnemonic(KeyEvent.VK_D);
-        this.deleteControlMenuItem.addActionListener(this);
-        this.deleteControlMenuItem.setActionCommand("delete_control");
-        
-        this.renameControlMenuItem = new JMenuItem("Rename Control");
-        this.renameControlMenuItem.setMnemonic(KeyEvent.VK_R);
-        this.renameControlMenuItem.addActionListener(this);
-        this.renameControlMenuItem.setActionCommand("rename_control");
-        
-        this.createRuleMenuItem = new JMenuItem("Create Rule");
-        this.createRuleMenuItem.setMnemonic(KeyEvent.VK_C);
-        this.createRuleMenuItem.addActionListener(this);
-        this.createRuleMenuItem.setActionCommand("create_rule");
-        
-        this.controlMenuPopup.add(this.renameControlMenuItem);
-        this.controlMenuPopup.add(this.deleteControlMenuItem);
-        this.controlMenuPopup.add(this.createRuleMenuItem);
 
         this.midiControlCellRenderer = new MidiControlCellRenderer();
         this.controls = new DefaultListModel<MidiControl>();
         this.controlList = new JList<MidiControl>(this.controls);
         this.controlList.setCellRenderer(this.midiControlCellRenderer);
-        this.controlList.addMouseListener(new MouseAdapter()
-        {
-            public void mouseClicked(MouseEvent e)
-            {
-                int index = MidiControlsPanel.this.controlList.locationToIndex(e.getPoint());
-                if (index != -1)
-                {
-                   if (e.getButton() == MouseEvent.BUTTON1)
-                   {
-                       long cms = System.currentTimeMillis();
-                       if (cms - MidiControlsPanel.this.lastControlClick < 500 && MidiControlsPanel.this.lastControlClick > 0)
-                       {
-                            MidiControlsPanel.this.controlMenuPopup.show(MidiControlsPanel.this.controlList, e.getX(), e.getY()); 
-                       }
-                       MidiControlsPanel.this.lastControlClick = cms;
-                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                     MidiControlsPanel.this.controlMenuPopup.show(MidiControlsPanel.this.controlList, e.getX(), e.getY()); 
-                   }
-               }
-            }
-        });
+        this.controlList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         this.controlList.addKeyListener(new KeyListener() {
             @Override
             public void keyPressed(KeyEvent e)
@@ -137,18 +92,25 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
             this.createRuleButton = new JButton(scriptIcon);
             this.createRuleButton.addActionListener(this);
             this.createRuleButton.setActionCommand("create_rule");
-            this.createRuleButton.setToolTipText("Create rule for selected control");
+            this.createRuleButton.setToolTipText("Create rule for selected controls");
+
+            ImageIcon labelIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/label32.png")));
+            this.labelButton = new JButton(labelIcon);
+            this.labelButton.addActionListener(this);
+            this.labelButton.setActionCommand("label_control");
+            this.labelButton.setToolTipText("Rename selected controls");
 
             ImageIcon trashIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/trash32.png")));
             this.deleteButton = new JButton(trashIcon);
             this.deleteButton.addActionListener(this);
             this.deleteButton.setActionCommand("delete_control");
-            this.deleteButton.setToolTipText("Delete Selected Control");
+            this.deleteButton.setToolTipText("Delete Selected Controls");
         } catch (Exception e) {}
         this.listenForMidiButton.setSelected(false);
         this.buttonPanel.add(this.listenForMidiButton);
         this.buttonPanel.add(this.createControlButton);
         this.buttonPanel.add(this.createRuleButton);
+        this.buttonPanel.add(this.labelButton);
         this.buttonPanel.add(this.deleteButton);
         this.add(buttonPanel, BorderLayout.WEST);
     }
@@ -215,24 +177,59 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
     {
         String cmd = e.getActionCommand();
 
-        if (cmd.equals("create_rule")) {
-            MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
-            MidiControlRule newRule = new MidiControlRule(t, 1, 0, null);
-            MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
-        } else if (cmd.equals("rename_control")) {
-            MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
-            String s = (String) JOptionPane.showInputDialog(this,"Rename Control", t.getNickname());
-            if (s!= null && t != null)
+        if (cmd.equals("create_rule")) 
+        {
+            Collection<MidiControl> selectedControls = this.getSelectedControls();
+            if (selectedControls.size() == 0)
             {
-                t.setNickname(s);
+                
+            } else {
+                Iterator<MidiControl> controlIterator = selectedControls.iterator();
+                int defaultEventMode = 1;
+                int defaultActionType = 0;
+                String defaultRuleGroupName = "all";
+                String defaultActionValue = null;
+                while (controlIterator.hasNext())
+                {
+                    MidiControl control = controlIterator.next();
+                    MidiControlRule newRule = new MidiControlRule(control, defaultEventMode, defaultActionType, defaultActionValue);
+                    newRule.setRuleGroup(defaultRuleGroupName);
+                    MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
+                    defaultEventMode = newRule.getEventMode();
+                    defaultActionType = newRule.getActionType();
+                    defaultRuleGroupName = newRule.getRuleGroup();
+                    defaultActionValue = newRule.getActionValue();
+                }
+                MidiControlsPanel.this.repaint();
+            }
+        } else if (cmd.equals("label_control")) {
+            Collection<MidiControl> selectedControls = this.getSelectedControls();
+            if (selectedControls.size() == 0)
+            {
+                
+            } else {
+                Iterator<MidiControl> controlIterator = selectedControls.iterator();
+                while (controlIterator.hasNext())
+                {
+                    MidiControl control = controlIterator.next();
+                    String s = (String) JOptionPane.showInputDialog(this,"Rename Control " + control.toString(), control.getNickname());
+                    control.setNickname(s);
+                }
+                MidiControlsPanel.this.repaint();
             }
         } else if (cmd.equals("delete_control")) {
-            MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
-            if (t != null)
+            Collection<MidiControl> selectedControls = this.getSelectedControls();
+            if (selectedControls.size() == 0)
             {
-                (new Thread(() -> {
-                    removeMidiControl(t);
-                })).start();
+                
+            } else {
+                Iterator<MidiControl> controlIterator = selectedControls.iterator();
+                while (controlIterator.hasNext())
+                {
+                    MidiControl control = controlIterator.next();
+                    this.removeMidiControl(control);
+                }
+                MidiControlsPanel.this.repaint();
             }
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
@@ -259,6 +256,11 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
         }
     }
 
+    public Collection<MidiControl> getSelectedControls()
+    {
+        return this.controlList.getSelectedValuesList();
+    }
+
     public Enumeration<MidiControl> getControlsEnumeration()
     {
         return this.controls.elements();
@@ -275,16 +277,14 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
         try
         {
             mc.removeAllListeners();
-            SwingUtilities.invokeAndWait(() -> {
-                MidiControlsPanel.this.controls.removeElement(mc);
-            });
+            MidiControlsPanel.this.controls.removeElement(mc);
             for (Enumeration<MidiControlRule> re = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); re.hasMoreElements();)
             {
                 MidiControlRule rule = re.nextElement();
                 if (rule.getMidiControl() == mc)
                     rule.setMidiControl(null);
             }
-            this.repaint();
+            MidiTools.repaintControls();
         } catch (Exception e) {
             MidiTools.instance.midi_logger_b.printException(e);
         }
@@ -292,7 +292,15 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
 
     public void clear()
     {
-        this.controls.clear();
+        Enumeration<MidiControl> controlsEnum = this.controls.elements();
+        Vector<MidiControl> removalVector = new Vector<MidiControl>();
+        while(controlsEnum.hasMoreElements())
+        {
+            removalVector.add(controlsEnum.nextElement());
+        }
+        removalVector.forEach((control) -> {
+            this.removeMidiControl(control);
+        });
     }
 
     @Override

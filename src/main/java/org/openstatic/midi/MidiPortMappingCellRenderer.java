@@ -2,27 +2,30 @@ package org.openstatic.midi;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.BorderLayout;
 
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
 
 import javax.swing.border.Border;
 
-public class MidiPortMappingCellRenderer extends JCheckBox implements ListCellRenderer<MidiPortMapping>
+public class MidiPortMappingCellRenderer extends JPanel implements ListCellRenderer<MidiPortMapping>
 {
    private Border selectedBorder;
-   private Border regularBorder;
+   private JCheckBox checkBox;
 
    public MidiPortMappingCellRenderer()
    {
-       super();
+       super(new BorderLayout());
        this.setOpaque(true);
-       this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 3);
-       this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 3);
-
+       this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 1);
+       this.checkBox = new JCheckBox("");
+       this.checkBox.setOpaque(false);
+       this.add(this.checkBox, BorderLayout.CENTER);
    }
 
    @Override
@@ -32,26 +35,20 @@ public class MidiPortMappingCellRenderer extends JCheckBox implements ListCellRe
                                                  boolean isSelected,
                                                  boolean cellHasFocus)
    {
-      this.setText(mapping.toString());
+      this.checkBox.setText(mapping.toString());
       if ((System.currentTimeMillis() -  mapping.getLastActiveAt()) < 1000l)
       {
          this.setBackground(new Color(102,255,102));
       } else {
          this.setBackground(Color.WHITE);
       }
-      if (isSelected)
-      {
-         this.setForeground(list.getSelectionForeground());
-      } else {
-         this.setForeground(list.getForeground());
-      }
-      this.setSelected(mapping.isOpened());
+      this.checkBox.setSelected(mapping.isOpened());
       this.setFont(list.getFont());
       this.setEnabled(list.isEnabled());
-      if (isSelected && cellHasFocus)
+      if (isSelected)
          this.setBorder(this.selectedBorder);
       else
-         this.setBorder(this.regularBorder);
+         this.setBorder(null);
 
       return this;
    }

@@ -59,19 +59,11 @@ public class MidiControlCellRenderer extends JPanel implements ListCellRenderer<
                 valueBar.setValue(value);
             else
                 valueBar.setValue(0);
-            if (isSelected)
-            {
-                this.setBackground(list.getSelectionBackground());
-                this.setForeground(list.getSelectionForeground());
-            } else {
-                this.setBackground(list.getBackground());
-                this.setForeground(list.getForeground());
-            }
 
             this.setFont(list.getFont());
             this.setEnabled(list.isEnabled());
 
-            if (isSelected && cellHasFocus)
+            if (isSelected)
              this.setBorder(border);
             else
              this.setBorder(null);

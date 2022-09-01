@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Vector;
 import java.io.File;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -41,6 +42,7 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
     private JButton disableAllButton;
     private JButton enableAllButton;
     private JButton deleteButton;
+    private JButton labelButton;
 
     public MidiControlRulePanel()
     {
@@ -88,7 +90,13 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
             this.createRuleButton = new JButton(scriptIcon);
             this.createRuleButton.addActionListener(this);
             this.createRuleButton.setActionCommand("create_rule");
-            this.createRuleButton.setToolTipText("Create rule for selected control");
+            this.createRuleButton.setToolTipText("Create a new rule");
+
+            ImageIcon labelIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/label32.png")));
+            this.labelButton = new JButton(labelIcon);
+            this.labelButton.addActionListener(this);
+            this.labelButton.setActionCommand("edit_rules");
+            this.labelButton.setToolTipText("Edit selected Rules");
 
             ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
             this.selectAllButton = new JButton(selectAllIcon);
@@ -100,21 +108,22 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
             this.disableAllButton = new JButton(disableIcon);
             this.disableAllButton.addActionListener(this);
             this.disableAllButton.setActionCommand("disable_selected");
-            this.disableAllButton.setToolTipText("Disable selected rules");
+            this.disableAllButton.setToolTipText("Disable selected Rules");
 
             ImageIcon enableIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/enable32.png")));
             this.enableAllButton = new JButton(enableIcon);
             this.enableAllButton.addActionListener(this);
             this.enableAllButton.setActionCommand("enable_selected");
-            this.enableAllButton.setToolTipText("Enable selected rules");
+            this.enableAllButton.setToolTipText("Enable selected Rules");
 
             ImageIcon trashIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/trash32.png")));
             this.deleteButton = new JButton(trashIcon);
             this.deleteButton.addActionListener(this);
             this.deleteButton.setActionCommand("delete_selected");
-            this.deleteButton.setToolTipText("Delete Selected Rules");
+            this.deleteButton.setToolTipText("Delete selected Rules");
         } catch (Exception e) {}
         this.buttonPanel.add(this.createRuleButton);
+        this.buttonPanel.add(this.labelButton);
         this.buttonPanel.add(this.selectAllButton);
         this.buttonPanel.add(this.disableAllButton);
         this.buttonPanel.add(this.enableAllButton);
@@ -237,6 +246,19 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
             for(int i = 0; i < rs; i++)
                 indices[i] = i;
             this.rulesList.setSelectedIndices(indices);
+        } else if (cmd.equals("edit_rules")) {
+            Collection<MidiControlRule> selectedRules = this.getSelectedRules();
+            if (selectedRules.size() == 0)
+            {
+                
+            } else {
+                Iterator<MidiControlRule> rIterator = selectedRules.iterator();
+                while (rIterator.hasNext())
+                {
+                    MidiControlRule rule = rIterator.next();
+                    MidiControlRuleEditor editor = new MidiControlRuleEditor(rule);
+                }
+            }
         }
         
     }
@@ -268,6 +290,8 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
 
     public boolean removeElement(MidiControlRule rule)
     {
+        rule.setEnabled(false);
+        MidiTools.removeListenerFromControls(rule);
         return this.rules.removeElement(rule);
     }
 
@@ -278,6 +302,14 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
 
     public void clear()
     {
-        this.rules.clear();
+        Enumeration<MidiControlRule> rulesEnum = this.rules.elements();
+        Vector<MidiControlRule> removalVector = new Vector<MidiControlRule>();
+        while(rulesEnum.hasMoreElements())
+        {
+            removalVector.add(rulesEnum.nextElement());
+        }
+        removalVector.forEach((rule) -> {
+            this.removeElement(rule);
+        });
     }
 }

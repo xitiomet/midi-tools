@@ -11,39 +11,43 @@ import javax.swing.ButtonModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JList;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
+import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Collection;
+import java.util.Iterator;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class RandomizerControlBox extends JPanel implements ActionListener, MidiPortListener
+public class RandomizerControlBox extends JPanel implements ActionListener
 {
     private JList<JSONObject> randomizerRuleList;
     private RandomizerRuleCellRenderer randomizerRuleCellRenderer;
     private long lastMappingClick;
     private JPanel buttonPanel;
-    private JButton clearMappingsButton;
-    private JToggleButton connectButton;
     private JButton createRuleButton;
     private MidiRandomizerPort randomizerPort;
+    private JButton selectAllButton;
+    private JButton disableAllButton;
+    private JButton enableAllButton;
+    private JButton deleteButton;
 
     public RandomizerControlBox(MidiRandomizerPort randomizerPort)
     {
         super(new BorderLayout());
-        MidiPortManager.addMidiPortListener(this);
         this.randomizerPort = randomizerPort;
         this.randomizerRuleCellRenderer = new RandomizerRuleCellRenderer();
         this.randomizerRuleList = new JList<JSONObject>(new RandomizerListModel(this.randomizerPort));
+        this.randomizerRuleList.setOpaque(true);
+        this.randomizerRuleList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         this.randomizerRuleList.setCellRenderer(this.randomizerRuleCellRenderer);
         this.randomizerRuleList.addMouseListener(new MouseAdapter()
         {
@@ -62,21 +66,12 @@ public class RandomizerControlBox extends JPanel implements ActionListener, Midi
                           RandomizerControlBox.this.randomizerPort.toggleRandomRule(index);
                        }
                        RandomizerControlBox.this.lastMappingClick = cms;
-                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                      int n = JOptionPane.showConfirmDialog(null, "Delete this randomizer rule?\n" + rule.toString(),
-                        "Port Mapping",
-                        JOptionPane.YES_NO_OPTION);
-                        if(n == JOptionPane.YES_OPTION)
-                        {
-                            RandomizerControlBox.this.randomizerPort.removeRandomRule(rule);
-                        }
                    }
                    RandomizerControlBox.this.repaint();
                }
             }
         });
         JScrollPane mappingScrollPane = new JScrollPane(this.randomizerRuleList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        mappingScrollPane.setBorder(new TitledBorder("Randomizer Port Rules (right-click to delete, double-click to toggle)"));
         this.buttonPanel = new JPanel();
         this.buttonPanel.setLayout(new BoxLayout(this.buttonPanel, BoxLayout.Y_AXIS));
         try
@@ -84,37 +79,37 @@ public class RandomizerControlBox extends JPanel implements ActionListener, Midi
             ImageIcon diceIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/dice32.png")));
             this.createRuleButton = new JButton(diceIcon);
             this.createRuleButton.setActionCommand("create");
+            this.createRuleButton.setToolTipText("Create a new rule for the Randomizer Device");
             this.createRuleButton.addActionListener(this);
             this.buttonPanel.add(this.createRuleButton);
 
-            ImageIcon plugInIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
-            this.connectButton = new JToggleButton(plugInIcon);
-            this.connectButton.setSelected(this.randomizerPort.isOpened());
-            ChangeListener changeListener = new ChangeListener() {
-              public void stateChanged(ChangeEvent changeEvent) {
-                AbstractButton abstractButton = (AbstractButton) changeEvent.getSource();
-                ButtonModel buttonModel = abstractButton.getModel();
-                boolean selected = buttonModel.isSelected();
-                //System.out.println("Changed: " + armed + "/" + pressed + "/" + selected);
-                if (RandomizerControlBox.this.randomizerPort.isOpened() != selected)
-                {
-                    if (selected)
-                    {
-                        RandomizerControlBox.this.randomizerPort.open();
-                    } else {
-                        RandomizerControlBox.this.randomizerPort.close();
-                    }
-                }
-              }
-            };
-            this.connectButton.addChangeListener(changeListener);
-            this.buttonPanel.add(this.connectButton);
+            ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
+            this.selectAllButton = new JButton(selectAllIcon);
+            this.selectAllButton.addActionListener(this);
+            this.selectAllButton.setActionCommand("select_all");
+            this.selectAllButton.setToolTipText("Select All");
+            this.buttonPanel.add(this.selectAllButton);
 
-            ImageIcon eraseIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/erase.png")));
-            this.clearMappingsButton = new JButton(eraseIcon);
-            this.clearMappingsButton.setActionCommand("clear");
-            this.clearMappingsButton.addActionListener(this);
-            this.buttonPanel.add(this.clearMappingsButton);
+            ImageIcon disableIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/disable32.png")));
+            this.disableAllButton = new JButton(disableIcon);
+            this.disableAllButton.addActionListener(this);
+            this.disableAllButton.setActionCommand("disable_selected");
+            this.disableAllButton.setToolTipText("Disable selected mappings");
+            this.buttonPanel.add(this.disableAllButton);
+
+            ImageIcon enableIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/enable32.png")));
+            this.enableAllButton = new JButton(enableIcon);
+            this.enableAllButton.addActionListener(this);
+            this.enableAllButton.setActionCommand("enable_selected");
+            this.enableAllButton.setToolTipText("Enable selected mappings");
+            this.buttonPanel.add(this.enableAllButton);
+
+            ImageIcon trashIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/trash32.png")));
+            this.deleteButton = new JButton(trashIcon);
+            this.deleteButton.addActionListener(this);
+            this.deleteButton.setActionCommand("delete_selected");
+            this.deleteButton.setToolTipText("Delete Selected mappings");
+            this.buttonPanel.add(this.deleteButton);
 
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -125,17 +120,7 @@ public class RandomizerControlBox extends JPanel implements ActionListener, Midi
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == this.clearMappingsButton)
-        {
-            int n = JOptionPane.showConfirmDialog(null,
-            "Are you sure you wish to clear all randomizer rules?",
-            "Reset Mappings",
-            JOptionPane.YES_NO_OPTION);
-            if(n == JOptionPane.YES_OPTION)
-            {
-                this.randomizerPort.clearAllRules();
-            }
-        } else if (e.getSource() == this.createRuleButton) {
+        if (e.getSource() == this.createRuleButton) {
             JSONObject newRule = MidiRandomizerPort.defaultRuleJSONObject();
             JSONObjectDialog jod = new JSONObjectDialog("New Randomizer Rule", newRule);
             JSONObject returnRule = jod.getJSONObject();
@@ -145,67 +130,60 @@ public class RandomizerControlBox extends JPanel implements ActionListener, Midi
             } else {
                 System.err.println("Return rule was null");
             }
-        }
-        
-    }
-
-    @Override
-    public void portAdded(int idx, MidiPort port) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void portRemoved(int idx, MidiPort port) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void portOpened(MidiPort port) {
-        // TODO Auto-generated method stub
-        if (port.equals(this.randomizerPort))
-        {
-            if (port.isOpened() != this.connectButton.isSelected())
+        } else if (e.getSource() == this.enableAllButton) {
+            Collection<JSONObject> selectedMappings = this.getSelectedRules();
+            if (selectedMappings.size() == 0)
             {
-                this.connectButton.setSelected(port.isOpened());
+                
+            } else {
+                Iterator<JSONObject> mIterator = selectedMappings.iterator();
+                while (mIterator.hasNext())
+                {
+                    JSONObject rule = mIterator.next();
+                    rule.put("enabled", true);
+                }
+                RandomizerControlBox.this.repaint();
             }
-        }
-    }
-
-    @Override
-    public void portClosed(MidiPort port) {
-        // TODO Auto-generated method stub
-        if (port.equals(this.randomizerPort))
-        {
-            if (port.isOpened() != this.connectButton.isSelected())
+        } else if (e.getSource() == this.disableAllButton) {
+            Collection<JSONObject> selectedRules = this.getSelectedRules();
+            if (selectedRules.size() == 0)
             {
-                this.connectButton.setSelected(port.isOpened());
+                
+            } else {
+                Iterator<JSONObject> mIterator = selectedRules.iterator();
+                while (mIterator.hasNext())
+                {
+                    JSONObject rule = mIterator.next();
+                    rule.put("enabled", false);
+                }
+                RandomizerControlBox.this.repaint();
             }
+        } else if (e.getSource() == this.deleteButton) {
+            Collection<JSONObject> selectedRules = this.getSelectedRules();
+            if (selectedRules.size() == 0)
+            {
+                
+            } else {
+                Iterator<JSONObject> rIterator = selectedRules.iterator();
+                while (rIterator.hasNext())
+                {
+                    JSONObject rule = rIterator.next();
+                    this.randomizerPort.removeRandomRule(rule);
+                }
+                RandomizerControlBox.this.repaint();
+            }
+        } else if (e.getSource() == this.selectAllButton) {
+            int rs = randomizerPort.getAllRules().length();
+            int[] indices = new int[rs];
+            for(int i = 0; i < rs; i++)
+                indices[i] = i;
+            this.randomizerRuleList.setSelectedIndices(indices);
         }
-    }
-
-    @Override
-    public void mappingAdded(int idx, MidiPortMapping mapping) {
-        // TODO Auto-generated method stub
         
     }
 
-    @Override
-    public void mappingRemoved(int idx, MidiPortMapping mapping) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void mappingOpened(MidiPortMapping mapping) {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void mappingClosed(MidiPortMapping mapping) {
-        // TODO Auto-generated method stub
-        
+    public Collection<JSONObject> getSelectedRules()
+    {
+        return this.randomizerRuleList.getSelectedValuesList();
     }
 }

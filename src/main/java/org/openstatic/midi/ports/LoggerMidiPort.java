@@ -282,10 +282,22 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     {
         return true;
     }
+
+    public static short toShort(byte msb, byte lsb) 
+    {
+        return (short) ((0xff00 & (short) (msb << 8)) | (0x00ff & (short) lsb));
+    }
+
+    public static short toShort(byte[] data) {
+        if ((data == null) || (data.length != 2)) {
+            return 0x0;
+        }
+        return (short) ((0xff & data[0]) << 8 | (0xff & data[1]));
+    }
     
     public static String shortMessageToString(ShortMessage msg)
     {
-        String channelText = "Channel = " + String.valueOf(msg.getChannel()+1);
+        String channelText = " Channel = " + String.valueOf(msg.getChannel()+1);
         String commandText = "";
         String data1Name = "?";
         String data1Value = "?";
@@ -297,21 +309,60 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
             int bendValue = (msg.getData2() << 7) | msg.getData1();
             data1Value = String.valueOf(bendValue - 8192);
             commandText = "<b style=\"color: orange;\">PITCH BEND</b>";
+            String data1Text = data1Name + " = " + data1Value;
+            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == ShortMessage.CONTROL_CHANGE) {
             data1Name = "CC";
             data1Value = String.valueOf(msg.getData1());
             commandText = "<b style=\"color: yellow;\">CONTROL CHANGE</b>";
+            String data1Text = data1Name + " = " + data1Value;
+            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == ShortMessage.NOTE_ON) {
             data1Name = "Note";
             data1Value = MidiPortManager.noteNumberToString(msg.getData1());
             commandText = "<b style=\"color: green;\">NOTE ON</b>";
+            String data1Text = data1Name + " = " + data1Value;
+            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == ShortMessage.NOTE_OFF) {
             data1Name = "Note";
             data1Value = MidiPortManager.noteNumberToString(msg.getData1());
             commandText = "<b style=\"color: red;\">NOTE OFF</b>";
+            String data1Text = data1Name + " = " + data1Value;
+            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
+        } else if (msg.getCommand() == 240) {
+            byte[] data = msg.getMessage();
+            data1Value = String.valueOf(Byte.toUnsignedInt(data[0]));
+            for(int i = 1; i < msg.getLength(); i++)
+            {
+                data1Value += ", " + String.valueOf(Byte.toUnsignedInt(data[i]));
+            }
+            commandText = "<b style=\"color: purple;\">SYSTEM EXCLUSIVE</b> [" + data1Value + "]";
+            int command = Byte.toUnsignedInt(data[0]);
+            if (command == ShortMessage.CONTINUE)
+            {
+                commandText = "<b style=\"color: purple;\">SYSEX CONTINUE</b>";
+            } else if (command == ShortMessage.STOP) {
+                commandText = "<b style=\"color: purple;\">SYSEX STOP</b>";
+            } else if (command == ShortMessage.START) {
+                commandText = "<b style=\"color: purple;\">SYSEX START</b>";
+            } else if (command == ShortMessage.SONG_SELECT) {
+                commandText = "<b style=\"color: purple;\">SYSEX SONG SELECT</b>";
+            } else if (command == ShortMessage.SONG_POSITION_POINTER) {
+                short result = toShort(data[1], data[2]); // MSB / LSB
+                commandText = "<b style=\"color: purple;\">SYSEX SONG POSITION</b> = " + String.valueOf(result) + " beats, " + String.valueOf(result / 1024) + " seconds";
+            }
+            return commandText;
+        } else {
+            commandText = "<b style=\"color: purple;\">MIDI COMMAND " + String.valueOf(msg.getCommand()) + "</b>";
+            byte[] data = msg.getMessage();
+            data1Value = "[" + String.valueOf(Byte.toUnsignedInt(data[0]));
+            for(int i = 1; i < msg.getLength(); i++)
+            {
+                data1Value += ", " + String.valueOf(Byte.toUnsignedInt(data[i]));
+            }
+            data1Value += "]";
+            return commandText + channelText + ", " + data1Value;
         }
-        String data1Text = data1Name + " = " + data1Value;
-        return commandText + " " + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
     }
 
     public void printException(Exception e)

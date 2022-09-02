@@ -42,6 +42,7 @@ import javax.swing.JList;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+import javax.swing.ListSelectionModel;
 import javax.swing.JScrollPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -275,6 +276,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.midiRenderer = new MidiPortCellRenderer();
         
         this.midiList = new JList<MidiPort>(this.midiListModel);
+        this.midiList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         this.midiList.addMouseListener(new MouseAdapter()
         {
             public void mousePressed(MouseEvent e)
@@ -286,26 +288,21 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                   MidiPort source = (MidiPort) MidiTools.this.midiListModel.getElementAt(index);
                   if (e.getButton() == MouseEvent.BUTTON1)
                   {
-                    long cms = System.currentTimeMillis();
-                    if (cms - MidiTools.this.lastDeviceClick < 500 && MidiTools.this.lastDeviceClick > 0)
+                    if (source.isOpened())
                     {
-                      if (source.isOpened())
-                      {
-                          source.close();
-                          source.removeReceiver(MidiTools.this.midiControlsPanel);
-                      } else {
-                          source.open();
-                          source.addReceiver(MidiTools.this.midiControlsPanel);
-                      }
+                        source.close();
+                        source.removeReceiver(MidiTools.this.midiControlsPanel);
+                    } else {
+                        source.open();
+                        source.addReceiver(MidiTools.this.midiControlsPanel);
                     }
-                    MidiTools.this.lastDeviceClick = cms;
                   }
                }
             }
         });
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane2.setBorder(new TitledBorder("MIDI Devices (double-click to toggle)"));
+        scrollPane2.setBorder(new TitledBorder("MIDI Devices"));
         
         this.deviceQRPanel = new JPanel(new BorderLayout());
         this.deviceQRPanel.add(scrollPane2, BorderLayout.CENTER);
@@ -804,7 +801,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         System.err.println("main() midi-tools");
         try
         {
-            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+            //UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             
         }

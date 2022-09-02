@@ -262,11 +262,11 @@ public class JSONObjectDialog extends JDialog implements ActionListener
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
         int wWidth = 400;
-        int wHeight = 250;
+        int wHeight = 350;
         int x = (int) ((WIDTH/2f) - ( ((float)wWidth) /2f ));
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
         this.setBounds(x, y, wWidth, wHeight);
-        this.setResizable(false);
+        this.setResizable(true);
         this.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         this.setVisible(true);
     }

@@ -6,7 +6,7 @@ Each "Control" can have rules associated with it that will execute "Actions" bas
 
 Possible "Actions" are executing a script or program, calling a url or api, playing a sound, or Transmitting a midi message to another device.
 
-![](https://openstatic.org/projects/miditools/miditools3.gif)
+![](https://openstatic.org/projects/miditools/miditools8.gif)
 
 ### How do I use it? ###
 Simply launch the app and check off what MIDI devices you want to listen to, as you play with the physical controls on your device, those controls will appear in the "Midi Controls" section. Each control represents a channel and a control change number. Simply double-click or right click on a control to change its name, and create rules.
@@ -29,10 +29,11 @@ Simply launch the app and check off what MIDI devices you want to listen to, as 
 	- onSettledDecrease - whenever the value settles lower then the previous value
 - Action Type - What Kind of action do you want to take?
 	- CALL URL - Make a request to a URL (response is ignored)
+	- PLUGIN - Make a call to a MidiTools Plugin
 	- Action Type: specify a url http://www.domain.com/program.php?v={{value}}
 	- RUN PROGRAM - Execute a program
 	  Action Type: specify a program c:\program.exe {{value}}
-	- PLAY SOUND - Play a wav file
+	- PLAY SOUND - Play a wav file (volume will adjust with value)
 	  Action Type: you may specify a url or local path to a wav file
 	- TRANSMIT MIDI - Send a MIDI Message
 	  Action Type: Device Name,channel#,cc#,{{value}}

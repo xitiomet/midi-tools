@@ -23,6 +23,7 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Toolkit;
 import java.awt.Dimension;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.Component;
@@ -157,25 +158,25 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     {
         this.actionValuePanel.removeAll();
         //System.err.println("changeActionSelector: " + String.valueOf(i));
-        if (i == 0 || i == 7 || i == 8)
+        if (i == MidiControlRule.ACTION_URL || i == MidiControlRule.LOGGER_A_MESSAGE || i == MidiControlRule.LOGGER_B_MESSAGE)
         {
             this.actionValuePanel.add(this.actionValueField, BorderLayout.CENTER);
-            if (i == 0)
+            if (i == MidiControlRule.ACTION_URL)
             {
                 this.actionValueLabel.setText("URL");
-            } else if (i == 7 || i == 8) {
+            } else if (i == MidiControlRule.LOGGER_A_MESSAGE || i == MidiControlRule.LOGGER_B_MESSAGE) {
                 this.actionValueLabel.setText("Message to display");
             }
-        } else if (i == 1 || i == 2) {
-            if (i == 1)
+        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND) {
+            if (i == MidiControlRule.ACTION_PROC)
             {
                 this.actionValueLabel.setText("Program");
-            } else if (i == 2) {
+            } else if (i == MidiControlRule.ACTION_SOUND) {
                 this.actionValueLabel.setText("Filename or URL");
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setText(this.actionValueField.getText());
-        } else if (i == 3) {
+        } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");
             refreshDevices();
             StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
@@ -196,12 +197,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.valueAVF.setText("{{value}}");                
             }
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
-        } else if (i >= 4 && i <= 6) {
+        } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
             this.actionValueLabel.setText("Rule Group");
             this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
             this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
-        } else if (i == 9) {
+        } else if (i == MidiControlRule.ACTION_PLUGIN) {
             try
             {
                 StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
@@ -257,6 +258,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.controlSelector = new JComboBox<MidiControl>();
         this.controlSelector.setEditable(false);
         this.controlSelector.addActionListener(this);
+        this.controlSelector.setBackground(Color.WHITE);
         Vector<MidiControl> ctrls = new Vector<MidiControl>();
         for (Enumeration<MidiControl> cenum = MidiTools.instance.midiControlsPanel.getControlsEnumeration(); cenum.hasMoreElements();)
             ctrls.add(cenum.nextElement());
@@ -265,22 +267,29 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.eventSelector = new JComboBox<String>(eventModeList);
         this.eventSelector.setEditable(false);
         this.eventSelector.addActionListener(this);
+        this.eventSelector.setBackground(Color.WHITE);
 
         this.actionSelector = new JComboBox<String>(actionList);
         this.actionSelector.setEditable(false);
+        this.actionSelector.setRenderer(new RuleActionCellRenderer());
         this.actionSelector.addActionListener(this);
+        this.actionSelector.setBackground(Color.WHITE);
         
         this.pluginSelector = new JComboBox<String>();
         this.pluginSelector.setEditable(false);
         this.pluginSelector.addActionListener(this);
+        this.pluginSelector.setBackground(Color.WHITE);
 
         this.pluginTargetSelector = new JComboBox<String>();
         this.pluginTargetSelector.setEditable(false);
         this.pluginTargetSelector.addActionListener(this);
+        this.pluginTargetSelector.setBackground(Color.WHITE);
+
         
         this.selectRuleGroupDropdown = new JComboBox<String>(actionList);
         this.selectRuleGroupDropdown.setEditable(true);
         this.selectRuleGroupDropdown.addActionListener(this);
+        this.selectRuleGroupDropdown.setBackground(Color.WHITE);
     
         this.nicknameField = new JTextField("");
         //this.nicknameField.setHorizontalAlignment(SwingConstants.CENTER);
@@ -288,11 +297,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.ruleGroupField = new JComboBox<String>();
         this.ruleGroupField.setEditable(true);
         this.ruleGroupField.setModel(getRuleGroupModel());
+        this.ruleGroupField.setBackground(Color.WHITE);
+
         //this.ruleGroupField.setHorizontalAlignment(SwingConstants.CENTER);
 
         this.actionValueField = new JTextArea("");
         this.actionValueField.setLineWrap(true);
         this.actionValueField.setBorder(new EtchedBorder());
+        this.actionValueField.setBackground(Color.WHITE);
 
         this.selectFilePanel = new JPanel(new BorderLayout());
         this.selectFilePanel.setBorder(new EtchedBorder());

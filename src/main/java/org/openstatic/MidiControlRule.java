@@ -26,12 +26,13 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_PROC = 1;
     public static final int ACTION_SOUND = 2;
     public static final int ACTION_TRANSMIT = 3;
-    public static final int ACTION_ENABLE_RULE_GROUP = 4;
-    public static final int ACTION_DISABLE_RULE_GROUP = 5;
-    public static final int ACTION_TOGGLE_RULE_GROUP = 6;
-    public static final int LOGGER_A_MESSAGE = 7;
-    public static final int LOGGER_B_MESSAGE = 8;
-    public static final int ACTION_PLUGIN = 9;
+    public static final int ACTION_PLUGIN = 4;
+    public static final int LOGGER_A_MESSAGE = 5;
+    public static final int LOGGER_B_MESSAGE = 6;
+    public static final int ACTION_ENABLE_RULE_GROUP = 7;
+    public static final int ACTION_DISABLE_RULE_GROUP = 8;
+    public static final int ACTION_TOGGLE_RULE_GROUP = 9;
+
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;

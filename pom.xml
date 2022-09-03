@@ -228,7 +228,7 @@
                               <type>file</type>
                               <mapper>
                                 <type>perm</type>
-                                <prefix>/usr/lib/jni</prefix>
+                                <prefix>/usr/lib</prefix>
                                 <user>loader</user>
                                 <group>loader</group>
                                 <filemode>755</filemode>

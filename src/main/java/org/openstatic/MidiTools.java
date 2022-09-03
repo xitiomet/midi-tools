@@ -785,14 +785,25 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public static void main(String[] args)
     {
         MidiPortManager.init();
+        final String os_name = System.getProperty("os.name").toLowerCase();
+
         MidiTools.LOCAL_SERIAL = MidiTools.getLocalMAC();
         System.err.println("main() midi-tools");
-        try
+        if (os_name.contains("linux")) 
         {
-            //UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            
+            try
+            {
+                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+            } catch (Exception e) {
+                
+            }
+        } else {
+            try
+            {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                
+            }
         }
         MidiTools mlb = new MidiTools();
         mlb.start();

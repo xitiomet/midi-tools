@@ -104,7 +104,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JCheckBoxMenuItem bootstrapSSLItem;
 
     private JMenuItem openInBrowserItem;
-    private JMenuItem createNewControlItem;
     private JMenuItem aboutMenuItem;
     
     private JMenuItem exportConfigurationMenuItem;
@@ -119,7 +118,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
     private RTPMidiPort rtpMidiPort;
-    private JSONObject options;
     private Point windowLocation;
     private RoutePutClient routeputClient;
     private RoutePutSessionManager routeputSessionManager;
@@ -137,7 +135,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
         MidiTools.instance = this;
         this.plugins = new HashMap<String, MidiToolsPlugin>();
-        this.options = new JSONObject();
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
         this.keep_running = true;
         this.apiServer = new APIWebServer();
@@ -165,7 +162,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.bootstrapSSLItem.addActionListener(this);
         this.bootstrapSSLItem.setActionCommand("bootstrap_ssl");
         
-        this.openInBrowserItem = new JMenuItem("Open in Browser");
+        this.openInBrowserItem = new JMenuItem("Open API in Default Browser");
         this.openInBrowserItem.setEnabled(false);
         this.openInBrowserItem.setMnemonic(KeyEvent.VK_B);
         this.openInBrowserItem.addActionListener(this);
@@ -224,16 +221,10 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.actionsMenu = new JMenu("Actions");
         this.actionsMenu.setMnemonic(KeyEvent.VK_A);
 
-        this.createNewControlItem = new JMenuItem("Create Control");
-        this.createNewControlItem.setActionCommand("new_control");
-        this.createNewControlItem.addActionListener(this);
-        this.createNewControlItem.setMnemonic(KeyEvent.VK_C);
-
         this.routeputConnectMenuItem = new JMenuItem("Connect to MIDIChannel.net Room");
         this.routeputConnectMenuItem.setActionCommand("midichannel_net_connect");
         this.routeputConnectMenuItem.addActionListener(this);
         
-        this.actionsMenu.add(this.createNewControlItem);
         this.actionsMenu.add(this.routeputConnectMenuItem);
         this.actionsMenu.add(this.openInBrowserItem);
         
@@ -604,7 +595,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         if (e.getSource() == this.apiServerEnable)
         {
             boolean state = this.apiServerEnable.getState();
-            this.options.put("apiServer", state);
             changeAPIState(state);
             return;
         } else if (e.getSource() == this.showQrItem) {
@@ -1023,10 +1013,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 boolean apiEnable = configJson.optBoolean("apiServer", false);
                 changeAPIState(apiEnable);
             }
-            if (configJson.has("options"))
-            {
-                this.options = configJson.getJSONObject("options");
-            }
             if (configJson.has("windowX"))
             {
                 newWindowLocation.x = configJson.optInt("windowX", 0);
@@ -1101,12 +1087,16 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     plugin.loadSettings(pluginSettingData);
                 }
             } else {
-                this.pluginSettings = new JSONObject();
+                if (this.pluginSettings == null)
+                    this.pluginSettings = new JSONObject();
             }
-            this.setSize(windowWidth, windowHeight);
-            if (newWindowLocation != null)
+            if (!remember)
             {
-                this.setLocation(newWindowLocation);
+                this.setSize(windowWidth, windowHeight);
+                if (newWindowLocation != null)
+                {
+                    this.setLocation(newWindowLocation);
+                }
             }
         } catch (Exception e) {
             MidiTools.instance.midi_logger_b.printException(e);
@@ -1208,17 +1198,22 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             JSONObject configJson = new JSONObject();
             configJson.put("controls", this.controlsAsJSONArray());
             configJson.put("rules", this.rulesAsJSONArray());
-            configJson.put("options", this.options);
-            configJson.put("apiServer", this.apiServerEnable.getState());
-            configJson.put("bootstrapSSL", this.bootstrapSSLItem.getState());
+            if (!remember)
+            {
+                configJson.put("apiServer", this.apiServerEnable.getState());
+                configJson.put("bootstrapSSL", this.bootstrapSSLItem.getState());
+            }
             configJson.put("showQr", this.showQrItem.getState());
             configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
             configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
             configJson.put("mappings", this.mappingsAsJSONArray());
-            configJson.put("windowX", this.windowLocation.x);
-            configJson.put("windowY", this.windowLocation.y);
-            configJson.put("windowWidth", this.getWidth());
-            configJson.put("windowHeight", this.getHeight());
+            if (!remember)
+            {
+                configJson.put("windowX", this.windowLocation.x);
+                configJson.put("windowY", this.windowLocation.y);
+                configJson.put("windowWidth", this.getWidth());
+                configJson.put("windowHeight", this.getHeight());
+            }
             configJson.put("randomizerRules", this.randomizerPort.getAllRules());
             Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
             while(pIterator.hasNext())

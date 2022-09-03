@@ -879,14 +879,28 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public static MidiControl createMidiControlFromJSON(JSONObject jo, int index)
     {
         int channel = jo.optInt("channel", 0);
-        int cc = jo.optInt("cc", 0);
-        MidiControl mc = getMidiControlByChannelCC(channel, cc);
-        if (mc == null)
+        int cc = jo.optInt("cc", -1);
+        int note = jo.optInt("note", -1);
+        if (cc >= 0)
         {
-            mc = new MidiControl(jo);
-            handleNewMidiControl(mc, index);
+            MidiControl mc = getMidiControlByChannelCC(channel, cc);
+            if (mc == null)
+            {
+                mc = new MidiControl(jo);
+                handleNewMidiControl(mc, index);
+            }
+            return mc;
+        } else if (note >= 0) {
+            MidiControl mc = getMidiControlByChannelNote(channel, note);
+            if (mc == null)
+            {
+                mc = new MidiControl(jo);
+                handleNewMidiControl(mc, index);
+            }
+            return mc;
+        } else {
+            return null;
         }
-        return mc;
     }
     
     public static void removeMidiControl(MidiControl mc)

@@ -5,6 +5,7 @@ import java.io.File;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 
@@ -22,6 +23,7 @@ public class SoundFile
     private File soundFile;
     private Thread downloadThread;
     private AudioInputStream audioStream;
+    private float volume;
 
     private File saveUrlAsWav(String urlString) throws Exception
     {
@@ -72,6 +74,7 @@ public class SoundFile
 
     public SoundFile(String strFilename)
     {
+        this.volume = 1.0f;
         //System.err.println("New Sound: " + strFilename);
         try
         {
@@ -102,8 +105,14 @@ public class SoundFile
 
     public SoundFile(File file)
     {
+        this.volume = 1.0f;
         //System.err.println("New Sound: " + file.toString());
         this.soundFile = file;
+    }
+
+    public void setVolume(float volume)
+    {
+        this.volume = volume;
     }
 
     public void play()
@@ -137,7 +146,7 @@ public class SoundFile
         //System.err.println("Playing Sound: " + this.soundFile.toString());
         try
         {
-            audioStream = AudioSystem.getAudioInputStream(this.soundFile);
+            this.audioStream = AudioSystem.getAudioInputStream(this.soundFile);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -146,7 +155,10 @@ public class SoundFile
         try
         {
             clip = (Clip) AudioSystem.getLine(info);
-            clip.open(audioStream);
+            clip.open(this.audioStream);
+            FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            //System.err.println("Setting Volume: " + String.valueOf(this.volume));
+            gainControl.setValue(this.volume);
             clip.start();
             Thread.sleep(100);
             while(clip.isActive())

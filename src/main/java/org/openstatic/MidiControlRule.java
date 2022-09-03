@@ -194,6 +194,8 @@ public class MidiControlRule implements MidiControlListener
                     } else if (this.getActionType() == MidiControlRule.ACTION_SOUND) {
                         if (MidiControlRule.this.sound != null)
                         {
+                            float volume = mapFloat(Float.valueOf(new_value).floatValue(), 0f, 127f, -40f, 0f);
+                            MidiControlRule.this.sound.setVolume(volume);
                             MidiControlRule.this.sound.play();
                             success = true;
                         }
@@ -258,6 +260,11 @@ public class MidiControlRule implements MidiControlListener
                 this.lastFailed = System.currentTimeMillis();
             MidiTools.repaintRules();
         }
+    }
+
+    public static float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+    {
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
     public MidiToolsPlugin getSelectedPlugin()

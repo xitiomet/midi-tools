@@ -75,7 +75,6 @@ import java.awt.Desktop;
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
 
-
 import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener

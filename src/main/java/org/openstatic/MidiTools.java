@@ -117,7 +117,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JMenuItem exitMenuItem;
     public static MidiTools instance;
     private boolean keep_running;
-    private long lastDeviceClick;
     private APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
     private RTPMidiPort rtpMidiPort;

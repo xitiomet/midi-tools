@@ -32,7 +32,6 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_RULE_GROUP = 7;
     public static final int ACTION_DISABLE_RULE_GROUP = 8;
     public static final int ACTION_TOGGLE_RULE_GROUP = 9;
-
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;

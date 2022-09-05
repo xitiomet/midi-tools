@@ -409,6 +409,10 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         centerWindow();
     }
 
+    public boolean isAlive()
+    {
+        return this.keep_running && this.mainThread.isAlive();
+    }
     
     public void start()
     {
@@ -808,8 +812,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         MidiTools mlb = new MidiTools();
         mlb.start();
         logIt("loading config");
-        mlb.setVisible(true);
         mlb.loadConfig();
+        mlb.setVisible(true);
         logIt("finished config load");
     }
 

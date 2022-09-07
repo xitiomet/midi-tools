@@ -15,6 +15,8 @@ import javax.swing.ImageIcon;
 
 import javax.swing.border.Border;
 
+import org.openstatic.midi.MidiToolsPlugin;
+
 public class MidiControlRuleCellRenderer extends JPanel implements ListCellRenderer<MidiControlRule>
 {
    private Border selectedBorder;
@@ -83,11 +85,17 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
       } else if (rule.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
          this.checkBox.setIcon(this.toggleIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_PLUGIN) {
-         Icon pluginSelfIcon = rule.getSelectedPlugin().getIcon();
-         if (pluginSelfIcon != null)
-            this.checkBox.setIcon(pluginSelfIcon);
-         else
+         MidiToolsPlugin plugin = rule.getSelectedPlugin();
+         if (plugin != null)
+         {
+            Icon pluginSelfIcon = plugin.getIcon();
+            if (pluginSelfIcon != null)
+               this.checkBox.setIcon(pluginSelfIcon);
+            else
+               this.checkBox.setIcon(this.pluginIcon);
+         } else {
             this.checkBox.setIcon(this.pluginIcon);
+         }
       } else if (rule.getActionType() == MidiControlRule.ACTION_PROC) {
          this.checkBox.setIcon(this.gearsIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_URL) {

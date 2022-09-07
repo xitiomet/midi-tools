@@ -25,6 +25,14 @@ public class MidiPortManager
         if (MidiPortManager.taskThread == null)
         {
             //refresh();
+            Runtime.getRuntime().addShutdownHook(new Thread() 
+            { 
+                public void run() 
+                { 
+                    MidiPortManager.taskThread = null;
+                    System.out.println("Shutdown MidiPortManager!"); 
+                } 
+            }); 
             MidiPortManager.taskThread = new Thread()
             {
                 public void run()

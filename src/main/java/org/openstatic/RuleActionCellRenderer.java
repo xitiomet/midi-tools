@@ -4,7 +4,6 @@ import java.awt.Component;
 import java.awt.BorderLayout;
 
 import javax.imageio.ImageIO;
-import javax.lang.model.util.ElementScanner14;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JList;

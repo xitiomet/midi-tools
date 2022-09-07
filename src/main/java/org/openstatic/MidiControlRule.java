@@ -63,6 +63,7 @@ public class MidiControlRule implements MidiControlListener
     
     public MidiControlRule(JSONObject jo)
     {
+        System.err.println("READING RULE: " + jo.toString());
         this.ruleId = jo.optString("ruleId", generateBigAlphaKey(24));
         this.ruleGroup = jo.optString("ruleGroup", "all");
         this.event_mode = jo.optInt("eventMode", 0);
@@ -93,6 +94,9 @@ public class MidiControlRule implements MidiControlListener
             }
             this.control = mc;
             this.updateRule();
+        } else {
+            // will fire with update rule, only do it when no control
+            this.actionValueChanged();
         }
     }
     
@@ -105,6 +109,7 @@ public class MidiControlRule implements MidiControlListener
         this.action_type = action_type;
         this.action_value = action_value;
         this.enabled = true;
+        this.actionValueChanged();
     }
     
     public void controlValueChanged(MidiControl control, int old_value, int new_value)
@@ -314,6 +319,7 @@ public class MidiControlRule implements MidiControlListener
     public void setMidiControl(MidiControl mc)
     {
         this.control = mc;
+        this.updateRule();
     }
     
     public MidiControl getMidiControl()
@@ -339,6 +345,7 @@ public class MidiControlRule implements MidiControlListener
     public void setActionValue(String action_value)
     {
         this.action_value = action_value;
+        this.actionValueChanged();
     }
     
     public int getActionType()
@@ -410,18 +417,20 @@ public class MidiControlRule implements MidiControlListener
         }
         return "";
     }
-    
-    public void updateRule()
+
+    private void actionValueChanged()
     {
         if (this.getActionType() == MidiControlRule.ACTION_SOUND && this.action_value != null)
         {
-            if (this.sound == null)
-            {
-                this.sound = new SoundFile(this.action_value);
-            } else if (!this.sound.getSoundUrl().equals(this.action_value)) {
-                this.sound = new SoundFile(this.action_value);
-            }
+            this.sound = new SoundFile(this.action_value);
+        } else {
+            this.sound = null;
         }
+    }
+    
+    public void updateRule()
+    {
+        this.actionValueChanged();
         MidiTools.removeListenerFromControls(this);
         if (this.control != null)
         {

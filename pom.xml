@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.openstatic</groupId>
   <artifactId>midi-tools</artifactId>
-  <version>1.4</version>
+  <version>1.5</version>
   <packaging>jar</packaging>
   <name>Midi Control Change Tools</name>
   <url>http://openstatic.org/</url>
@@ -86,7 +86,7 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>routeput</artifactId>
-        <version>1.2021.0919</version>
+        <version>1.2022.0907</version>
     </dependency>
     
   </dependencies>
@@ -310,6 +310,12 @@
                               <opt>-Djava.library.path=./natives/</opt>
                             </opts>
                         </jre>
+                        <splash>
+                          <file>${project.basedir}/src/main/resources/splash.bmp</file>
+                          <waitForWindow>true</waitForWindow>
+                          <timeout>60</timeout>
+                          <timeoutErr>false</timeoutErr>
+                        </splash>
                         <versionInfo>
                             <fileVersion>1.0.0.0</fileVersion>
                             <txtFileVersion>1.0.0.0</txtFileVersion>

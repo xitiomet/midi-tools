@@ -23,7 +23,6 @@ import javax.swing.JButton;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
-import javax.swing.border.TitledBorder;
 
 import java.awt.datatransfer.*;
 import java.awt.dnd.DnDConstants;

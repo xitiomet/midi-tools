@@ -25,8 +25,10 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
    private JCheckBox checkBox;
    private ImageIcon speakerIcon;
    private ImageIcon gearsIcon;
-   private ImageIcon urlIcon;
+   private ImageIcon fileIcon;
    private ImageIcon folderIcon;
+   private ImageIcon imageIcon;
+
    
    public FileCellRenderer()
    {
@@ -41,8 +43,9 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
       {
          this.speakerIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/speaker32.png")));
          this.gearsIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/gears32.png")));
-         this.urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
          this.folderIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/folder32.png")));
+         this.imageIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
+         this.fileIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/file32.png")));
       } catch (Exception e) {
 
       }
@@ -66,8 +69,12 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
          this.checkBox.setIcon(this.folderIcon);
       } else if (exten.equals(".wav")) {
          this.checkBox.setIcon(this.speakerIcon);
-      } else {
+      } else if (exten.equals(".gif") || exten.equals(".png") || exten.equals(".jpg") || exten.equals(".jpeg") || exten.equals(".bmp")) {
+         this.checkBox.setIcon(this.imageIcon);
+      } else if (exten.equals(".exe") || exten.equals(".cmd") || exten.equals(".bat") || exten.equals(".sh") || exten.equals(".php") || exten.equals(".py")) {
          this.checkBox.setIcon(this.gearsIcon);
+      } else {
+         this.checkBox.setIcon(this.fileIcon);
       }
       if (isSelected)
       {

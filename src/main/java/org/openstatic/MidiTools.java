@@ -10,6 +10,7 @@ import org.openstatic.midi.providers.DeviceMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.jar.Attributes;
@@ -370,6 +371,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MidiTools.this.keep_running = false;
             //System.out.println("Shutdown Hook is running!"); 
             saveConfig();
+            eraseAssets();
           } 
         }); 
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -746,13 +748,26 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return new File(getAssetFolder(), filename);
     }
 
-    public static ComboBoxModel<String> getAssetComboBoxModel()
+    public static ComboBoxModel<String> getAssetComboBoxModel(ArrayList<String> extens)
     {
         Vector<String> assetNames = new Vector<String>();
         Iterator<File> files = MidiTools.instance.assetManagerPanel.getAllAssets().iterator();
         while (files.hasNext())
         {
-            assetNames.add(files.next().getName());
+            File file = files.next();
+            String filename = file.getName();
+            String filenameLower = filename.toLowerCase();
+            if (extens == null)
+            {
+                assetNames.add(filename);
+            } else {
+                for (String string : extens) {
+                    if (filenameLower.endsWith(string))
+                    {
+                        assetNames.add(filename);
+                    }
+                }
+            }
         }
         ComboBoxModel<String> rm = new DefaultComboBoxModel<String>(assetNames);
         return rm;
@@ -870,6 +885,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 
             }
         }
+        MidiTools.eraseAssets();
         MidiTools mlb = new MidiTools();
         mlb.start();
         //logIt("loading config");
@@ -1292,9 +1308,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             FileOutputStream fout = new FileOutputStream(file);
             ZipOutputStream zout = new ZipOutputStream(fout);
             ZipEntry ze = new ZipEntry("project.json");
-            zout.putNextEntry(ze);
-            zout.write(configJson.toString(2).getBytes());
-            zout.closeEntry();
 
             File[] assets = getAssetFolder().listFiles();
             for(int i = 0; i < assets.length; i++)
@@ -1312,6 +1325,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 fis.close();
                 zout.closeEntry();
             }
+            zout.putNextEntry(ze);
+            zout.write(configJson.toString(2).getBytes());
+            zout.closeEntry();
 
             zout.close();
             this.setLastSavedFile(file);
@@ -1329,89 +1345,17 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             try
             {
                 ZipFile zip = new ZipFile(file);
-            
+                JSONObject configJson = new JSONObject();
                 for (Enumeration<? extends ZipEntry> zEnumeration = zip.entries(); zEnumeration.hasMoreElements();)
                 {
                     ZipEntry entry = zEnumeration.nextElement();
                     String entryName = entry.getName();
                     if (entryName.equals("project.json"))
                     {
-                        JSONObject configJson = readJSONObject(zip.getInputStream(entry));
-                        if (configJson.has("controls"))
-                        {
-                            JSONArray controlsArray = configJson.getJSONArray("controls");
-                            for (int m = 0; m < controlsArray.length(); m++)
-                            {
-                                createMidiControlFromJSON(controlsArray.getJSONObject(m),m);
-                            }
-                        }
-                        if (configJson.has("rules"))
-                        {
-                            JSONArray rulesArray = configJson.getJSONArray("rules");
-                            for (int m = 0; m < rulesArray.length(); m++)
-                            {
-                                MidiControlRule mcr = new MidiControlRule(rulesArray.getJSONObject(m));
-                                this.midiControlRulePanel.addElement(mcr);
-                            }
-                        }
-                        if (configJson.has("openReceivingPorts"))
-                        {
-                            JSONArray portsArray = configJson.getJSONArray("openReceivingPorts");
-                            for (int m = 0; m < portsArray.length(); m++)
-                            {
-                                String portName = portsArray.getString(m);
-                                MidiPort p = MidiPortManager.findReceivingPortByName(portName);
-                                if (p != null)
-                                {
-                                    System.err.println("Found Receiving Port " + p.getName());
-                                    p.open();
-                                    p.addReceiver(MidiTools.this.midiControlsPanel);
-                                }
-                            }
-                        }
-                        if (configJson.has("openTransmittingPorts"))
-                        {
-                            JSONArray portsArray = configJson.getJSONArray("openTransmittingPorts");
-                            for (int m = 0; m < portsArray.length(); m++)
-                            {
-                                String portName = portsArray.getString(m);
-                                MidiPort p = MidiPortManager.findTransmittingPortByName(portName);
-                                if (p != null)
-                                {
-                                    System.err.println("Found Transmitting Port " + p.getName());
-                                    p.open();
-                                }
-                            }
-                        }
-                        if (configJson.has("mappings"))
-                        {
-                            JSONArray mappingsArray = configJson.getJSONArray("mappings");
-                            for (int m = 0; m < mappingsArray.length(); m++)
-                            {
-                                JSONObject mappingObj = mappingsArray.getJSONObject(m);
-                                MidiPortMapping mpm = new MidiPortMapping(mappingObj);
-                                MidiPortManager.addMidiPortMapping(mpm);
-                            }
-                        }
-                        if (configJson.has("randomizerRules"))
-                        {
-                            JSONArray rulesArray = configJson.getJSONArray("randomizerRules");
-                            this.randomizerPort.setAllRules(rulesArray);
-                        }
-                        if (configJson.has("plugins"))
-                        {
-                            this.pluginSettings = configJson.getJSONObject("plugins");
-                            Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
-                            while(pIterator.hasNext())
-                            {
-                                MidiToolsPlugin plugin = pIterator.next();
-                                JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
-                                if (pluginSettingData != null)
-                                    plugin.loadSettings(MidiTools.this, pluginSettingData);
-                            }
-                        }
+                        configJson = readJSONObject(zip.getInputStream(entry));
                     } else if (entryName.startsWith("assets/")) {
                         String outFilename = entryName.substring(7);
+                        logIt("Extracting Asset: " + outFilename);
                         File outFile = new File(getAssetFolder(), outFilename);
                         if (!outFile.exists())
                         {
@@ -1429,6 +1373,79 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     }
                 }
                 zip.close();
+                if (configJson.has("controls"))
+                {
+                    JSONArray controlsArray = configJson.getJSONArray("controls");
+                    for (int m = 0; m < controlsArray.length(); m++)
+                    {
+                        createMidiControlFromJSON(controlsArray.getJSONObject(m),m);
+                    }
+                }
+                if (configJson.has("rules"))
+                {
+                    JSONArray rulesArray = configJson.getJSONArray("rules");
+                    for (int m = 0; m < rulesArray.length(); m++)
+                    {
+                        MidiControlRule mcr = new MidiControlRule(rulesArray.getJSONObject(m));
+                        this.midiControlRulePanel.addElement(mcr);
+                    }
+                }
+                if (configJson.has("openReceivingPorts"))
+                {
+                    JSONArray portsArray = configJson.getJSONArray("openReceivingPorts");
+                    for (int m = 0; m < portsArray.length(); m++)
+                    {
+                        String portName = portsArray.getString(m);
+                        MidiPort p = MidiPortManager.findReceivingPortByName(portName);
+                        if (p != null)
+                        {
+                            System.err.println("Found Receiving Port " + p.getName());
+                            p.open();
+                            p.addReceiver(MidiTools.this.midiControlsPanel);
+                        }
+                    }
+                }
+                if (configJson.has("openTransmittingPorts"))
+                {
+                    JSONArray portsArray = configJson.getJSONArray("openTransmittingPorts");
+                    for (int m = 0; m < portsArray.length(); m++)
+                    {
+                        String portName = portsArray.getString(m);
+                        MidiPort p = MidiPortManager.findTransmittingPortByName(portName);
+                        if (p != null)
+                        {
+                            System.err.println("Found Transmitting Port " + p.getName());
+                            p.open();
+                        }
+                    }
+                }
+                if (configJson.has("mappings"))
+                {
+                    JSONArray mappingsArray = configJson.getJSONArray("mappings");
+                    for (int m = 0; m < mappingsArray.length(); m++)
+                    {
+                        JSONObject mappingObj = mappingsArray.getJSONObject(m);
+                        MidiPortMapping mpm = new MidiPortMapping(mappingObj);
+                        MidiPortManager.addMidiPortMapping(mpm);
+                    }
+                }
+                if (configJson.has("randomizerRules"))
+                {
+                    JSONArray rulesArray = configJson.getJSONArray("randomizerRules");
+                    this.randomizerPort.setAllRules(rulesArray);
+                }
+                if (configJson.has("plugins"))
+                {
+                    this.pluginSettings = configJson.getJSONObject("plugins");
+                    Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
+                    while(pIterator.hasNext())
+                    {
+                        MidiToolsPlugin plugin = pIterator.next();
+                        JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
+                        if (pluginSettingData != null)
+                            plugin.loadSettings(MidiTools.this, pluginSettingData);
+                    }
+                }
                 this.setLastSavedFile(file);
             } catch (Exception e) {
                 MidiTools.instance.midi_logger_b.printException(e);

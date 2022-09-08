@@ -29,6 +29,7 @@ import java.awt.event.ActionListener;
 import java.awt.Component;
 
 import java.util.Vector;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.StringTokenizer;
@@ -175,14 +176,21 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.actionValueLabel.setText("Message to display");
             }
         } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND) {
+            ArrayList<String> extens = new ArrayList<String>();
             if (i == MidiControlRule.ACTION_PROC)
             {
                 this.actionValueLabel.setText("Program");
+                extens.add(".cmd");
+                extens.add(".bat");
+                extens.add(".php");
+                extens.add(".sh");
+                extens.add(".exe");
             } else if (i == MidiControlRule.ACTION_SOUND) {
-                this.actionValueLabel.setText("Filename or URL");
+                this.actionValueLabel.setText("Asset Filename");
+                extens.add(".wav");
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
-            this.selectFileField.setModel(MidiTools.getAssetComboBoxModel());
+            this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
             this.selectFileField.setSelectedItem(this.actionValueField.getText());
         } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");

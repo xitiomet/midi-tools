@@ -19,21 +19,23 @@ public class SoundFile
 
     public SoundFile(String strFilename)
     {
+        this.clipTrackedDuration = 0;
+        this.clipQueue = new LinkedBlockingQueue<Clip>();
+        this.volume = 1.0f;
+        this.queueSize = 3;
         File potentialFile = new File(strFilename);
         if (!potentialFile.exists())
         {
             potentialFile = MidiTools.resolveProjectAsset(strFilename);
         }
-        if (potentialFile.exists())
+        this.soundFile = potentialFile;
+        if (this.soundFile.exists())
         {
-            this.clipTrackedDuration = 0;
-            this.clipQueue = new LinkedBlockingQueue<Clip>();
-            this.volume = 1.0f;
-            this.queueSize = 3;
-            System.err.println("New Sound: " + potentialFile.toString());
-            this.soundFile = potentialFile;
+            System.err.println("New Sound: " + this.soundFile.toString());
             this.loadAudioFileAsClip();
             this.forceClipFirstLoad();
+        } else {
+            System.err.println("Sound doesn't exist: " + this.soundFile.toString());
         }
     }
 

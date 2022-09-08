@@ -4,6 +4,7 @@ import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -143,6 +144,19 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             for(int i = 0; i < rs; i++)
                 indices[i] = i;
             this.assetJList.setSelectedIndices(indices);
+        } else if (e.getSource() == this.addFileButton) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Specify a file to import");   
+            fileChooser.setMultiSelectionEnabled(true);
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION)
+            {
+                File[] selectedFiles = fileChooser.getSelectedFiles();
+                for(int i = 0; i < selectedFiles.length; i++)
+                {
+                    this.addAsset(selectedFiles[i]);
+                }
+            }
         }
         
     }

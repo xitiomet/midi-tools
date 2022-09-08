@@ -178,7 +178,7 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
         String filenameLower = filename.toLowerCase();
         if (filenameLower.endsWith(".wav"))
         {
-            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_INCREASE, MidiControlRule.ACTION_SOUND, file.getAbsolutePath());
+            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_INCREASE, MidiControlRule.ACTION_SOUND, MidiTools.addProjectAsset(file).getName());
             newRule.setNickname(filename.substring(0, filename.length()-4));
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);

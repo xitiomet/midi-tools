@@ -491,12 +491,6 @@ public class MidiControlRule implements MidiControlListener
         String actionText = actionNumberToString(this.getActionType());
         String eventModeText = eventModeToString(this.getEventMode());
         String targetText = this.getActionValue();
-        if (this.getActionType() >= 4 && this.getActionType() <= 6)
-        {
-            MidiControlRule mcr = MidiTools.getMidiControlRuleById(this.getActionValue());
-            if (mcr != null)
-                targetText = mcr.toString();
-        }
         if (this.getActionType() == MidiControlRule.ACTION_PLUGIN)
         {
             String[] avparsed2 = this.action_value.split(",");

@@ -19,6 +19,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import java.util.Iterator;
+import java.util.Vector;
 
 import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
@@ -60,6 +61,8 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JOptionPane;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 
 import javax.imageio.ImageIO;
@@ -130,6 +133,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private MappingControlBox mappingControlBox;
     protected MidiControlRulePanel midiControlRulePanel;
     private RandomizerControlBox randomizerControlBox;
+    private AssetManagerPanel assetManagerPanel;
 
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
@@ -343,6 +347,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.randomizerControlBox = new RandomizerControlBox(this.randomizerPort);
         this.mainTabbedPane.addTab("Randomizer", diceIcon, this.randomizerControlBox);
 
+        BufferedImage folderIconImage = null;
+        try
+        {
+            folderIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/folder32.png"));
+        } catch (Exception e) {}
+        ImageIcon folderIcon = new ImageIcon(folderIconImage);
+        this.assetManagerPanel = new AssetManagerPanel(getAssetFolder());
+        this.mainTabbedPane.addTab("Project Assets", folderIcon, this.assetManagerPanel);
 
         this.bottomTabbedPane.addTab("Logger B", this.midi_logger_b);
         this.bottomTabbedPane.setSelectedIndex(0);
@@ -496,27 +508,36 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     protected void resetConfiguration()
     {
         logIt("Reset Configuration");
-        (new Thread (() -> {
-            for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
-            {
-                MidiControl mc = mce.nextElement();
-                mc.removeAllListeners();
-            }
-            try
-            {
-                // Clear rules first to prevent cascading triggers
-                MidiTools.this.midiControlRulePanel.clear();
-                // Now that there are no rules its safe to remove controls
-                MidiTools.this.midiControlsPanel.clear();
-                // finally lets clear mappings
-                MidiPortManager.deleteAllMidiPortMappings();
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-            this.setLastSavedFile(null);
-        })).start();
+        for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
+        {
+            MidiControl mc = mce.nextElement();
+            mc.removeAllListeners();
+        }
+        try
+        {
+            // Clear rules first to prevent cascading triggers
+            MidiTools.this.midiControlRulePanel.clear();
+            // Now that there are no rules its safe to remove controls
+            MidiTools.this.midiControlsPanel.clear();
+            // finally lets clear mappings
+            MidiPortManager.deleteAllMidiPortMappings();
+
+            MidiTools.eraseAssets();
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        this.setLastSavedFile(null);
     }
 
+    public static void eraseAssets()
+    {
+        File[] assets = getAssetFolder().listFiles();
+        for(int i = 0; i < assets.length; i++)
+        {
+            File asset = assets[i];
+            asset.delete();
+        }
+    }
     
     public void setLastSavedFile(File f)
     {
@@ -684,6 +705,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
                 final File fileToLoad = fileChooser.getSelectedFile();
+                resetConfiguration();
                 (new Thread(() -> {
                     loadProject(fileToLoad);
                 })).start();
@@ -712,6 +734,28 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
         }
+    }
+
+    public static File addProjectAsset(File file)
+    {
+        return MidiTools.instance.assetManagerPanel.addAsset(file);
+    }
+
+    public static File resolveProjectAsset(String filename)
+    {
+        return new File(getAssetFolder(), filename);
+    }
+
+    public static ComboBoxModel<String> getAssetComboBoxModel()
+    {
+        Vector<String> assetNames = new Vector<String>();
+        Iterator<File> files = MidiTools.instance.assetManagerPanel.getAllAssets().iterator();
+        while (files.hasNext())
+        {
+            assetNames.add(files.next().getName());
+        }
+        ComboBoxModel<String> rm = new DefaultComboBoxModel<String>(assetNames);
+        return rm;
     }
 
     private void setShowQR(boolean value)
@@ -770,6 +814,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
     private void everySecond() throws Exception
     {
+        try
+        {
+            this.assetManagerPanel.refresh();
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
         repaintRules();
         repaintMappings();
         if (this.isShowing())
@@ -992,6 +1042,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         if (!configFolder.exists())
             configFolder.mkdirs();
         return configFolder;
+    }
+
+    public static File getAssetFolder()
+    {
+        File assetFolder = new File(getConfigFolder(), "assets/");
+        if (!assetFolder.exists())
+            assetFolder.mkdirs();
+        return assetFolder;
     }
 
     public static File getPluginFolder()
@@ -1237,6 +1295,24 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             zout.putNextEntry(ze);
             zout.write(configJson.toString(2).getBytes());
             zout.closeEntry();
+
+            File[] assets = getAssetFolder().listFiles();
+            for(int i = 0; i < assets.length; i++)
+            {
+                File asset = assets[i];
+                ZipEntry zipEntry = new ZipEntry("assets/" + asset.getName());
+                zout.putNextEntry(zipEntry);
+                FileInputStream fis = new FileInputStream(asset);
+                byte[] buffer = new byte[4092];
+                int byteCount = 0;
+                while ((byteCount = fis.read(buffer)) != -1)
+                {
+                    zout.write(buffer, 0, byteCount);
+                }
+                fis.close();
+                zout.closeEntry();
+            }
+
             zout.close();
             this.setLastSavedFile(file);
         } catch (Exception e) {
@@ -1333,6 +1409,22 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                                 if (pluginSettingData != null)
                                     plugin.loadSettings(MidiTools.this, pluginSettingData);
                             }
+                        }
+                    } else if (entryName.startsWith("assets/")) {
+                        String outFilename = entryName.substring(7);
+                        File outFile = new File(getAssetFolder(), outFilename);
+                        if (!outFile.exists())
+                        {
+                            InputStream is = zip.getInputStream(entry);
+                            FileOutputStream fos = new FileOutputStream(outFile);
+                            byte[] buffer = new byte[4092];
+                            int byteCount = 0;
+                            while ((byteCount = is.read(buffer)) != -1)
+                            {
+                                fos.write(buffer, 0, byteCount);
+                            }
+                            fos.close();
+                            is.close();
                         }
                     }
                 }

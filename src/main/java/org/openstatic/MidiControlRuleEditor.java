@@ -56,7 +56,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
 
     private JPanel selectFilePanel;
     private JButton selectFileButton;
-    private JTextArea selectFileField;
+    private JComboBox<String> selectFileField;
     private JLabel actionValueLabel;
     private JPanel actionValuePanel;
 
@@ -80,8 +80,9 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 File fileToLoad = fileChooser.getSelectedFile();
                 if (fileToLoad != null)
                 {
-                    String filename = fileToLoad.toString();
-                    this.selectFileField.setText(filename);
+                    File assetFile = MidiTools.addProjectAsset(fileToLoad);
+                    String filename = assetFile.getName();
+                    this.selectFileField.setSelectedItem(filename);
                     this.actionValueField.setText(filename);
                 }
             }
@@ -93,6 +94,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             MidiToolsPlugin plugin = MidiTools.instance.plugins.get(pluginName);
             this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
             this.actionValueField.setText(plugin.getTitle() + "," + this.pluginTargetSelector.getSelectedItem().toString());
+        }
+
+        if (e.getSource() == this.selectFileField)
+        {
+            String fileName = this.selectFileField.getSelectedItem().toString();
+            this.actionValueField.setText(fileName);
         }
 
         if (e.getSource() == this.pluginTargetSelector)
@@ -175,7 +182,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.actionValueLabel.setText("Filename or URL");
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
-            this.selectFileField.setText(this.actionValueField.getText());
+            this.selectFileField.setModel(MidiTools.getAssetComboBoxModel());
+            this.selectFileField.setSelectedItem(this.actionValueField.getText());
         } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");
             refreshDevices();
@@ -219,12 +227,18 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 } else {
                     String firstPlugin = this.pluginSelector.getSelectedItem().toString();
                     MidiToolsPlugin plugin = MidiTools.instance.plugins.get(firstPlugin);
-                this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
-                    this.actionValueField.setText(firstPlugin + "," + this.pluginTargetSelector.getSelectedItem().toString());
+                    this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
+                    try
+                    {
+                        this.actionValueField.setText(firstPlugin + "," + this.pluginTargetSelector.getSelectedItem().toString());
+                    } catch (Exception e2) {
+                        e2.printStackTrace(System.err);
+                    }
                 }
                 this.actionValuePanel.add(this.pluginSelector, BorderLayout.CENTER);
                 this.actionValuePanel.add(this.pluginTargetSelector, BorderLayout.PAGE_END);
             } catch (Exception e) {
+                MidiTools.instance.midi_logger_a.printException(e);
                 this.actionValuePanel.removeAll();
                 this.actionValuePanel.add(this.actionValueField, BorderLayout.CENTER);
             }
@@ -308,30 +322,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
 
         this.selectFilePanel = new JPanel(new BorderLayout());
         this.selectFilePanel.setBorder(new EtchedBorder());
-        this.selectFileField = new JTextArea("");
-        this.selectFileField.setLineWrap(true);
-        this.selectFileField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void removeUpdate(DocumentEvent e)
-            {
-                //System.err.println("Remove update");
-                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getText());
-            }
-
-            @Override
-            public void insertUpdate(DocumentEvent e) 
-            {
-                //System.err.println("Insert update");
-                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getText());
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent arg0)
-            {
-                //System.err.println("Change update");
-                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getText());
-            }
-        });
+        this.selectFileField = new JComboBox<String>();
+        this.selectFileField.setEditable(true);
+        this.selectFileField.addActionListener(this);
+        this.selectFileField.setSelectedItem(this.actionValueField.getText());
+        
         this.selectFileButton = new JButton("...");
         this.selectFileButton.addActionListener(this);
         this.selectFilePanel.add(this.selectFileField, BorderLayout.CENTER);
@@ -532,8 +527,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             return pluginModel;
         } catch (Exception e) {
             e.printStackTrace(System.err);
+            Vector<String> pluginTargets = new Vector<String>();
+            pluginTargets.add("");
+            DefaultComboBoxModel<String> pluginModel = new DefaultComboBoxModel<String>(pluginTargets);
+            return pluginModel;
         }
-        return null;
     }
 
     public JPanel labelComponent(String label, Component c)

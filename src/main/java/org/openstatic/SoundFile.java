@@ -19,19 +19,22 @@ public class SoundFile
 
     public SoundFile(String strFilename)
     {
-        this(new File(strFilename));
-    }
-
-    public SoundFile(File file)
-    {
-        this.clipTrackedDuration = 0;
-        this.clipQueue = new LinkedBlockingQueue<Clip>();
-        this.volume = 1.0f;
-        this.queueSize = 3;
-        System.err.println("New Sound: " + file.toString());
-        this.soundFile = file;
-        this.loadAudioFileAsClip();
-        this.forceClipFirstLoad();
+        File potentialFile = new File(strFilename);
+        if (!potentialFile.exists())
+        {
+            potentialFile = MidiTools.resolveProjectAsset(strFilename);
+        }
+        if (potentialFile.exists())
+        {
+            this.clipTrackedDuration = 0;
+            this.clipQueue = new LinkedBlockingQueue<Clip>();
+            this.volume = 1.0f;
+            this.queueSize = 3;
+            System.err.println("New Sound: " + potentialFile.toString());
+            this.soundFile = potentialFile;
+            this.loadAudioFileAsClip();
+            this.forceClipFirstLoad();
+        }
     }
 
     public void forceClipFirstLoad()
@@ -52,7 +55,7 @@ public class SoundFile
                         Thread.sleep(1000);
                         this.clipTrackedDuration++;
                     }
-                    System.err.println("Sound Test Finished: " + this.soundFile.toString() + " " + String.valueOf(this.clipTrackedDuration) + "s");
+                    //System.err.println("Sound Test Finished: " + this.soundFile.toString() + " " + String.valueOf(this.clipTrackedDuration) + "s");
                     clip.flush();
                     clip.close();
                 }

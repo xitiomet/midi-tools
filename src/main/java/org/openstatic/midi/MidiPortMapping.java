@@ -175,6 +175,11 @@ public class MidiPortMapping
         else
             return this.nickname;
     }
+
+    public JSONObject toSavableJSONObject()
+    {
+        return this.toJSONObject();
+    }
     
     public JSONObject toJSONObject()
     {

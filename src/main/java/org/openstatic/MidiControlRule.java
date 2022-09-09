@@ -459,6 +459,21 @@ public class MidiControlRule implements MidiControlListener
         return jo;
     }
 
+    public JSONObject toSavableJSONObject()
+    {
+        JSONObject jo = new JSONObject();
+        jo.put("ruleId", this.ruleId);
+        jo.put("ruleGroup", this.ruleGroup);
+        if (this.control != null)
+            jo.put("control", this.control.toSavableJSONObject());
+        jo.put("actionType", this.action_type);
+        jo.put("eventMode", this.event_mode);
+        jo.put("actionValue", this.action_value);
+        jo.put("nickname", this.nickname);
+        jo.put("enabled", this.enabled);
+        return jo;
+    }
+
     public long getLastTriggered()
     {
         return this.lastTriggered;

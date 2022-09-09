@@ -296,6 +296,20 @@ public class MidiControl
         jo.put("lastChangeAt", this.lastChangeAt);
         return jo;
     }
+
+    public JSONObject toSavableJSONObject()
+    {
+        JSONObject jo = new JSONObject();
+        if (this.cc >= 0)
+            jo.put("cc", this.cc);
+        if (this.note >= 0)
+            jo.put("note", this.note);
+        jo.put("channel", this.channel);
+        jo.put("nickname", this.nickname);
+        jo.put("value", this.value);
+        jo.put("settledValue", this.settled_value);
+        return jo;
+    }
     
     public void setNickname(String nickname)
     {

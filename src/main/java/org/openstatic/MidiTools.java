@@ -77,6 +77,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.Color;
 import java.awt.Desktop;
 
@@ -135,6 +137,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     protected MidiControlRulePanel midiControlRulePanel;
     private RandomizerControlBox randomizerControlBox;
     private AssetManagerPanel assetManagerPanel;
+    public JSONObject loadedProjectJSON;
 
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
@@ -146,6 +149,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.plugins = new HashMap<String, MidiToolsPlugin>();
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
         this.keep_running = true;
+        this.loadedProjectJSON = new JSONObject();
         this.apiServer = new APIWebServer();
         MidiPortManager.addProvider(this.apiServer);
         this.midi_logger_a = new LoggerMidiPort("Logger A");
@@ -373,9 +377,50 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             saveConfig();
             eraseAssets();
           } 
-        }); 
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.cmpp = new CollectionMidiPortProvider();
+        });
+        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        this.addWindowListener(new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                MidiTools.this.tryToExit();
+            }
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void windowActivated(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+                // TODO Auto-generated method stub
+                
+            }
+        });        this.cmpp = new CollectionMidiPortProvider();
         MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
@@ -425,6 +470,49 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             plugin_root.mkdirs();
         }
         centerWindow();
+    }
+
+    public void tryToExit()
+    {
+        if (MidiTools.this.hasUnsavedProjectChanges() && MidiTools.this.lastSavedFile != null)
+        {
+            if (!this.lastSavedFile.getName().contains("Untitled.mtz"))
+            {
+                int answer = showUnsavedMessage();
+            
+                switch (answer) {
+                    case JOptionPane.YES_OPTION:
+                        saveProjectAs(MidiTools.this.lastSavedFile);
+                        System.exit(0);
+                        break;
+                        
+                    case JOptionPane.NO_OPTION:
+                        System.exit(0);
+                        break;
+                        
+                    case JOptionPane.CANCEL_OPTION:
+                        break;
+                }
+            } else {
+                System.exit(0);
+            }
+        } else {
+            System.exit(0);
+        }
+    }
+
+    private int showUnsavedMessage() {
+        String[] buttonLabels = new String[] {"Yes", "No", "Cancel"};
+        String defaultOption = buttonLabels[0];
+         
+        return JOptionPane.showOptionDialog(this,
+                "You have made changes to this project, do you want to save them before closing?",
+                "Warning",
+                JOptionPane.YES_NO_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                buttonLabels,
+                defaultOption);    
     }
 
     public boolean isAlive()
@@ -525,6 +613,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MidiPortManager.deleteAllMidiPortMappings();
 
             MidiTools.eraseAssets();
+            this.loadedProjectJSON = null;
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -544,17 +633,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public void setLastSavedFile(File f)
     {
         this.lastSavedFile = f;
-        if (this.keep_running)
-        {
-            if (this.lastSavedFile != null)
-            {
-                this.setTitle("MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.toString() + "]");
-            } else {
-                this.setTitle("MIDI Control Change Tool v" + MidiTools.VERSION);
-            }
-        } else {
-            System.err.println("Not messing with title!");
-        }
     }
     
     public static void repaintRules()
@@ -668,7 +746,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 resetConfiguration();
             }
         } else if (cmd.equals("exit")) {
-            System.exit(0);
+            tryToExit();
         } else if (cmd.equals("new_random_rule")) {
             JSONObject newRule = MidiRandomizerPort.defaultRuleJSONObject();
             JSONObjectDialog jod = new JSONObjectDialog("New Randomizer Rule", newRule);
@@ -832,6 +910,24 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         try
         {
             this.assetManagerPanel.refresh();
+            if (this.keep_running)
+            {
+                String newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION;
+                if (this.lastSavedFile != null)
+                {
+                    boolean unsavedProjectChanges = MidiTools.this.hasUnsavedProjectChanges();
+                    if (unsavedProjectChanges)
+                    {
+                        newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [*" + this.lastSavedFile.getName() + "]";
+                    } else {
+                        newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.getName() + "]";
+                    }
+                }
+                if (!newTitle.equals(this.getTitle()))
+                    this.setTitle(newTitle);
+            } else {
+                System.err.println("Not messing with title!");
+            }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
@@ -841,6 +937,22 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             this.windowLocation = this.getLocationOnScreen();
     }
 
+    public boolean hasUnsavedProjectChanges()
+    {
+        if (this.loadedProjectJSON != null)
+        {
+            String loadedConfig = this.loadedProjectJSON.toString();
+            String possibleConfig = compileProjectJSON().toString();
+            if (!possibleConfig.equals(loadedConfig))
+            {
+                //System.err.println("loaded:" + loadedConfig + "\npossible:" + possibleConfig);
+                return true;
+            }
+        } else {
+            return true;
+        }
+        return false;
+    }
 
     private void centerWindow()
     {
@@ -1102,7 +1214,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         for (Enumeration<MidiControlRule> mcre = this.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
-            rulesArray.put(mcr.toJSONObject());
+            rulesArray.put(mcr.toSavableJSONObject());
         }
         return rulesArray;
     }
@@ -1113,7 +1225,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         for (Iterator<MidiPortMapping> mpme = MidiPortManager.getMidiPortMappings().iterator(); mpme.hasNext();)
         {
             MidiPortMapping mpm = mpme.next();
-            mappingArray.put(mpm.toJSONObject());
+            mappingArray.put(mpm.toSavableJSONObject());
         }
         return mappingArray;
     }
@@ -1125,7 +1237,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
         {
             MidiControl mc = mce.nextElement();
-            controlsArray.put(mc.toJSONObject());
+            controlsArray.put(mc.toSavableJSONObject());
         }
         return controlsArray;
     }
@@ -1284,26 +1396,32 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         }
     }
 
+    public JSONObject compileProjectJSON()
+    {
+        JSONObject configJson = new JSONObject();
+        configJson.put("controls", this.controlsAsJSONArray());
+        configJson.put("rules", this.rulesAsJSONArray());
+        configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
+        configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
+        configJson.put("mappings", this.mappingsAsJSONArray());
+        configJson.put("randomizerRules", this.randomizerPort.getAllRules());
+        Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
+        while(pIterator.hasNext())
+        {
+            MidiToolsPlugin plugin = pIterator.next();
+            this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
+        }
+        configJson.put("plugins", this.pluginSettings);
+        configJson.put("assets", new JSONArray(this.assetManagerPanel.getAllAssets()));
+        return configJson;
+    }
+
     public void saveProjectAs(File file)
     {
         logIt("Saving Project: " + file.getName());
         try
         {
-            JSONObject configJson = new JSONObject();
-            configJson.put("controls", this.controlsAsJSONArray());
-            configJson.put("rules", this.rulesAsJSONArray());
-            configJson.put("showQr", this.showQrItem.getState());
-            configJson.put("openReceivingPorts", this.openReceivingPortsAsJSONArray());
-            configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
-            configJson.put("mappings", this.mappingsAsJSONArray());
-            configJson.put("randomizerRules", this.randomizerPort.getAllRules());
-            Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
-            while(pIterator.hasNext())
-            {
-                MidiToolsPlugin plugin = pIterator.next();
-                this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
-            }
-            configJson.put("plugins", this.pluginSettings);
+            JSONObject configJson = compileProjectJSON();
 
             FileOutputStream fout = new FileOutputStream(file);
             ZipOutputStream zout = new ZipOutputStream(fout);
@@ -1330,6 +1448,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             zout.closeEntry();
 
             zout.close();
+            this.loadedProjectJSON = configJson;
             this.setLastSavedFile(file);
         } catch (Exception e) {
             e.printStackTrace(System.err);
@@ -1446,6 +1565,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                             plugin.loadSettings(MidiTools.this, pluginSettingData);
                     }
                 }
+                this.loadedProjectJSON = configJson;
                 this.setLastSavedFile(file);
             } catch (Exception e) {
                 MidiTools.instance.midi_logger_b.printException(e);

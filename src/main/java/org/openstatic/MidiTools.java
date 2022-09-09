@@ -613,6 +613,19 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MidiPortManager.deleteAllMidiPortMappings();
 
             MidiTools.eraseAssets();
+
+            Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
+            while(pIterator.hasNext())
+            {
+                MidiToolsPlugin plugin = pIterator.next();
+                try
+                {
+                    plugin.loadProject(new JSONObject());
+                } catch (Throwable pluginEx) {
+                    System.err.println("TRAPPED PLUGIN THROWABLE....");
+                    pluginEx.printStackTrace(System.err);
+                }
+            }
             this.loadedProjectJSON = null;
         } catch (Exception e) {
             e.printStackTrace(System.err);

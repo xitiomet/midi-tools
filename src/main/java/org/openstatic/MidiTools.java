@@ -84,7 +84,7 @@ import java.awt.Desktop;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
-
+import org.eclipse.jetty.util.ajax.JSON;
 import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener
@@ -1405,13 +1405,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         configJson.put("openTransmittingPorts", this.openTransmittingPortsAsJSONArray());
         configJson.put("mappings", this.mappingsAsJSONArray());
         configJson.put("randomizerRules", this.randomizerPort.getAllRules());
+        JSONObject projectPluginJson = new JSONObject();
         Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
         while(pIterator.hasNext())
         {
             MidiToolsPlugin plugin = pIterator.next();
-            this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
+            projectPluginJson.put(plugin.getTitle(), plugin.getProject());
         }
-        configJson.put("plugins", this.pluginSettings);
+        configJson.put("plugins", projectPluginJson);
         configJson.put("assets", new JSONArray(this.assetManagerPanel.getAllAssets()));
         return configJson;
     }
@@ -1555,14 +1556,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 }
                 if (configJson.has("plugins"))
                 {
-                    this.pluginSettings = configJson.getJSONObject("plugins");
+                    JSONObject pluginProjectSettings = configJson.getJSONObject("plugins");
                     Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
                     while(pIterator.hasNext())
                     {
                         MidiToolsPlugin plugin = pIterator.next();
-                        JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
+                        JSONObject pluginSettingData = pluginProjectSettings.optJSONObject(plugin.getTitle());
                         if (pluginSettingData != null)
-                            plugin.loadSettings(MidiTools.this, pluginSettingData);
+                            plugin.loadProject(pluginSettingData);
                     }
                 }
                 this.loadedProjectJSON = configJson;

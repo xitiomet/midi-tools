@@ -19,9 +19,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.awt.Desktop;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.datatransfer.*;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
@@ -34,9 +37,11 @@ public class AssetManagerPanel extends JPanel implements ActionListener
     private JButton selectAllButton;
     private JButton deleteButton;
     private JButton addFileButton;
+    private JButton extractFileButton;
     private FolderListModel folderListModel;
     private FileCellRenderer fileCellRenderer;
     private File root;
+    private long lastAssetClick;
     
     public AssetManagerPanel(File directory)
     {
@@ -49,6 +54,32 @@ public class AssetManagerPanel extends JPanel implements ActionListener
         this.assetJList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         this.assetJList.setCellRenderer(this.fileCellRenderer);
         this.assetJList.setDropTarget(this.drop_targ);
+        this.assetJList.addMouseListener(new MouseAdapter()
+        {
+            public void mouseClicked(MouseEvent e)
+            {
+                int index = AssetManagerPanel.this.assetJList.locationToIndex(e.getPoint());
+
+                if (index != -1)
+                {
+                    File file = (File) AssetManagerPanel.this.folderListModel.getElementAt(index);
+                    if (e.getButton() == MouseEvent.BUTTON1)
+                    {
+                        long cms = System.currentTimeMillis();
+                        if (cms - AssetManagerPanel.this.lastAssetClick < 500 && AssetManagerPanel.this.lastAssetClick > 0)
+                        {
+                            try
+                            {
+                                Desktop.getDesktop().open(file);
+                            } catch (Exception dex) {
+                                dex.printStackTrace(System.err);
+                            }
+                        }
+                        AssetManagerPanel.this.lastAssetClick = cms;
+                    }
+                }
+            }
+        });
         JScrollPane mappingScrollPane = new JScrollPane(this.assetJList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         this.buttonPanel = new JPanel();
         this.buttonPanel.setLayout(new BoxLayout(this.buttonPanel, BoxLayout.Y_AXIS));
@@ -57,15 +88,22 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             ImageIcon diceIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/addfile32.png")));
             this.addFileButton = new JButton(diceIcon);
             this.addFileButton.setActionCommand("addfile");
-            this.addFileButton.setToolTipText("Add File to this project");
+            this.addFileButton.setToolTipText("Add File to this project's assets");
             this.addFileButton.addActionListener(this);
             this.buttonPanel.add(this.addFileButton);
+
+            ImageIcon eportIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/extract32.png")));
+            this.extractFileButton = new JButton(eportIcon);
+            this.extractFileButton.setActionCommand("exportfile");
+            this.extractFileButton.setToolTipText("Export Selected File");
+            this.extractFileButton.addActionListener(this);
+            this.buttonPanel.add(this.extractFileButton);
 
             ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
             this.selectAllButton = new JButton(selectAllIcon);
             this.selectAllButton.addActionListener(this);
             this.selectAllButton.setActionCommand("select_all");
-            this.selectAllButton.setToolTipText("Select All");
+            this.selectAllButton.setToolTipText("Select All Files");
             this.buttonPanel.add(this.selectAllButton);
 
 
@@ -73,7 +111,7 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             this.deleteButton = new JButton(trashIcon);
             this.deleteButton.addActionListener(this);
             this.deleteButton.setActionCommand("delete_selected");
-            this.deleteButton.setToolTipText("Delete Selected mappings");
+            this.deleteButton.setToolTipText("Delete Selected File");
             this.buttonPanel.add(this.deleteButton);
 
         } catch (Exception e) {
@@ -157,6 +195,20 @@ public class AssetManagerPanel extends JPanel implements ActionListener
                     this.addAsset(selectedFiles[i]);
                 }
             }
+        } else if (e.getSource() == this.extractFileButton) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Specify a location to export selected files");
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            int userSelection = fileChooser.showOpenDialog(this);
+            if (userSelection == JFileChooser.APPROVE_OPTION)
+            {
+                Iterator<File> fIterator = this.getSelectedFiles().iterator();
+                while(fIterator.hasNext())
+                {
+                    File file = fIterator.next();
+                    this.exportAsset(file, fileChooser.getSelectedFile());
+                }
+            }
         }
         
     }
@@ -175,6 +227,20 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             }
         })).start();
         return targetPath.toFile();
+    }
+
+    public void exportAsset(File file, File directory)
+    {
+        final Path fileToExport = file.toPath();
+        final Path targetPath = (new File(directory, file.getName())).toPath();
+        (new Thread(() -> {
+            try
+            {
+                Files.copy(fileToExport, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (Exception eCopy) {
+                eCopy.printStackTrace(System.err);
+            }
+        })).start();
     }
 
     public void refresh()

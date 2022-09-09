@@ -1295,7 +1295,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             while(pIterator.hasNext())
             {
                 MidiToolsPlugin plugin = pIterator.next();
-                this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
+                try
+                {
+                    this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
+                } catch (Throwable pluginEx) {
+                    System.err.println("TRAPPED PLUGIN THROWABLE....");
+                    pluginEx.printStackTrace(System.err);
+                }
             }
             configJson.put("plugins", this.pluginSettings);
             saveJSONObject(file, configJson);
@@ -1363,7 +1369,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
                     if (pluginSettingData == null)
                         pluginSettingData = new JSONObject();
-                    plugin.loadSettings(MidiTools.this, pluginSettingData);
+                    try
+                    {
+                        plugin.loadSettings(MidiTools.this, pluginSettingData);
+                    } catch (Throwable plugEx) {
+                        System.err.println("TRAPPED PLUGIN THROWABLE....");
+                        plugEx.printStackTrace(System.err);
+                    }
                 }
             } else {
                 if (this.pluginSettings == null)
@@ -1410,7 +1422,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         while(pIterator.hasNext())
         {
             MidiToolsPlugin plugin = pIterator.next();
-            projectPluginJson.put(plugin.getTitle(), plugin.getProject());
+            try
+            {
+                projectPluginJson.put(plugin.getTitle(), plugin.getProject());
+            } catch (Throwable pluginEx) {
+                System.err.println("TRAPPED PLUGIN THROWABLE....");
+                pluginEx.printStackTrace(System.err);
+            }
         }
         configJson.put("plugins", projectPluginJson);
         configJson.put("assets", new JSONArray(this.assetManagerPanel.getAllAssets()));
@@ -1563,7 +1581,15 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         MidiToolsPlugin plugin = pIterator.next();
                         JSONObject pluginSettingData = pluginProjectSettings.optJSONObject(plugin.getTitle());
                         if (pluginSettingData != null)
-                            plugin.loadProject(pluginSettingData);
+                        {
+                            try
+                            {
+                                plugin.loadProject(pluginSettingData);
+                            } catch (Throwable pluginEx) {
+                                System.err.println("TRAPPED PLUGIN THROWABLE....");
+                                pluginEx.printStackTrace(System.err);
+                            }
+                        }
                     }
                 }
                 this.loadedProjectJSON = configJson;
@@ -1745,7 +1771,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         {
                             MidiTools.this.mainTabbedPane.addTab(pluginTitle, new_plugin.getIcon(), panel);
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         e.printStackTrace(System.err);
                     }
                 }

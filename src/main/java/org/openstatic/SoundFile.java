@@ -16,9 +16,11 @@ public class SoundFile
     private LinkedBlockingQueue<Clip> clipQueue;
     private int queueSize;
     private int clipTrackedDuration;
+    private String createdWithFilename;
 
     public SoundFile(String strFilename)
     {
+        this.createdWithFilename = strFilename;
         this.clipTrackedDuration = 0;
         this.clipQueue = new LinkedBlockingQueue<Clip>();
         this.volume = 1.0f;
@@ -105,6 +107,16 @@ public class SoundFile
                     e.printStackTrace(System.err);
                 }
             }
+        }
+    }
+
+    public boolean wasCreatedWith(String filename)
+    {
+        if (filename != null)
+        {
+            return filename.equals(this.createdWithFilename);
+        } else {
+            return false;
         }
     }
 

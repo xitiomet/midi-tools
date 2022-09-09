@@ -422,7 +422,15 @@ public class MidiControlRule implements MidiControlListener
     {
         if (this.getActionType() == MidiControlRule.ACTION_SOUND && this.action_value != null)
         {
-            this.sound = new SoundFile(this.action_value);
+            if (this.sound != null)
+            {
+                if (!this.sound.wasCreatedWith(this.action_value))
+                {
+                    this.sound = new SoundFile(this.action_value);
+                }
+            } else {
+                this.sound = new SoundFile(this.action_value);
+            }
         } else {
             this.sound = null;
         }

@@ -113,6 +113,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JCheckBoxMenuItem bootstrapSSLItem;
 
     private JMenuItem openInBrowserItem;
+    private JMenuItem openCanvasBrowserItem;
     private JMenuItem aboutMenuItem;
     
     private JMenuItem exportConfigurationMenuItem;
@@ -180,6 +181,11 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.openInBrowserItem.addActionListener(this);
         this.openInBrowserItem.setActionCommand("open_api");
     
+        this.openCanvasBrowserItem = new JMenuItem("Open Image Canvas in Default Browser");
+        this.openCanvasBrowserItem.setEnabled(false);
+        this.openCanvasBrowserItem.setMnemonic(KeyEvent.VK_C);
+        this.openCanvasBrowserItem.addActionListener(this);
+        this.openCanvasBrowserItem.setActionCommand("open_canvas");
         
         this.menuBar = new JMenuBar();
         
@@ -239,6 +245,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         
         this.actionsMenu.add(this.routeputConnectMenuItem);
         this.actionsMenu.add(this.openInBrowserItem);
+        this.actionsMenu.add(this.openCanvasBrowserItem);
         
         this.apiServerEnable = new JCheckBoxMenuItem("Enable API Server");
         this.apiServerEnable.addActionListener(this);
@@ -587,6 +594,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             this.setShowQR(false);
         }
         this.openInBrowserItem.setEnabled(apiEnable);
+        this.openCanvasBrowserItem.setEnabled(apiEnable);
         this.apiServer.setState(apiEnable);
         if (this.bootstrapSSLItem.getState() && apiEnable)
         {
@@ -785,6 +793,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             browseTo("http://openstatic.org/projects/miditools/");
         } else if (cmd.equals("open_api")) {
             browseTo(getWebInterfaceURL());
+        } else if (cmd.equals("open_canvas")) {
+            browseTo(getCanvasURL());
         } else if (cmd.equals("save")) {
             saveProjectAs(this.lastSavedFile);
         } else if (cmd.equals("export")) {
@@ -899,6 +909,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         else
             return "https://" + localIP + ":6124/";
             
+    }
+
+    public String getCanvasURL()
+    {
+        String localIP = MidiTools.getLocalIP() ;
+        return "https://" + localIP + ":6123/canvas.html";
     }
 
     private long lastSecondAt = 0l;

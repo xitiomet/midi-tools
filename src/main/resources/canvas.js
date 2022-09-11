@@ -28,11 +28,17 @@ function updateImage(imageName, opacity)
     imgElement.style.opacity = (opacity / 100);
 }
 
+function playSound(file, volume)
+{
+    var audio = new Audio('/assets/' + file);
+    audio.volume = (volume / 100);
+    audio.play();
+}
+
 function setupWebsocket()
 {
     try
     {
-        
         if (hostname == '')
         {
             debugMode = true;
@@ -61,6 +67,10 @@ function setupWebsocket()
             if (jsonObject.hasOwnProperty("image"))
             {
                 updateImage(jsonObject.image, jsonObject.opacity);
+            }
+            if (jsonObject.hasOwnProperty("sound"))
+            {
+                playSound(jsonObject.sound, jsonObject.volume);
             }
         };
         

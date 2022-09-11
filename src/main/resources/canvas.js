@@ -5,6 +5,7 @@ var hostname = location.hostname;
 var protocol = location.protocol;
 var port = location.port;
 var wsProtocol = 'ws';
+var sounds = new Map();
         
 function sendEvent(wsEvent)
 {
@@ -30,9 +31,16 @@ function updateImage(imageName, opacity)
 
 function playSound(file, volume)
 {
-    var audio = new Audio('/assets/' + file);
-    audio.volume = (volume / 100);
-    audio.play();
+    var audio2;
+    if (sounds.has(file))
+    {
+        audio2 = sounds.get(file).cloneNode();
+    } else {
+        audio2 = new Audio('/assets/' + file);
+        sounds.set(file, audio2)
+    }
+    audio2.volume = (volume / 100);
+    audio2.play();
 }
 
 function setupWebsocket()

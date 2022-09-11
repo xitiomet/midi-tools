@@ -22,6 +22,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
     private ImageIcon toggleIcon;
     private ImageIcon urlIcon;
     private ImageIcon pluginIcon;
+    private ImageIcon imageIcon;
 
     public RuleActionCellRenderer()
     {
@@ -39,7 +40,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.toggleIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/toggle32.png")));
             this.urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
             this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
-
+            this.imageIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
         } catch (Exception e) {
 
         }
@@ -70,6 +71,8 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.label.setIcon(this.logIcon);
         } else if ("PLUGIN".equals(value)) {
             this.label.setIcon(this.pluginIcon);
+        } else if ("SHOW IMAGE".equals(value)) {
+            this.label.setIcon(this.imageIcon);
         } else {
             this.label.setIcon(this.gearsIcon);
         }

@@ -45,18 +45,23 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
 {
     private Server httpServer;
     protected ArrayList<WebSocketSession> wsSessions;
+    protected ArrayList<WebSocketSession> wsCanvasSessions;
+
     protected static APIWebServer instance;
     private String staticRoot;
     private LinkedHashMap<String, MidiAPIPort> virtualPorts = new LinkedHashMap<String, MidiAPIPort>();
 
-    public APIWebServer() {
+    public APIWebServer()
+    {
         APIWebServer.instance = this;
         this.wsSessions = new ArrayList<WebSocketSession>();
+        this.wsCanvasSessions = new ArrayList<WebSocketSession>();
         httpServer = new Server(6123);
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
         context.addServlet(ApiServlet.class, "/api/*");
+        context.addServlet(CanvasWebSocketServlet.class, "/canvas/*");
         context.addServlet(EventsWebSocketServlet.class, "/events/*");
         try {
 
@@ -96,7 +101,8 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
         MidiPortManager.addMidiPortListener(this);
     }
 
-    public void handleWebSocketEvent(JSONObject j, WebSocketSession session) {
+    public void handleWebSocketEvent(JSONObject j, WebSocketSession session) 
+    {
         if (j.has("do")) {
             String doCmd = j.optString("do", "");
             if (doCmd.equals("registerMidiDevice")) {
@@ -277,7 +283,8 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
         broadcastJSONObject(event);
     }
 
-    public void broadcastJSONObject(JSONObject jo) {
+    public void broadcastJSONObject(JSONObject jo) 
+    {
         String message = jo.toString();
         for (Session s : this.wsSessions) {
             try {
@@ -285,6 +292,26 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
             } catch (Exception e) {
 
             }
+        }
+    }
+
+    public void broadcastCanvasJSONObject(JSONObject jo) 
+    {
+        String message = jo.toString();
+        for (Session s : this.wsCanvasSessions) {
+            try {
+                s.getRemote().sendStringByFuture(message);
+            } catch (Exception e) {
+
+            }
+        }
+    }
+
+    public static class CanvasWebSocketServlet extends WebSocketServlet {
+        @Override
+        public void configure(WebSocketServletFactory factory) {
+            // factory.getPolicy().setIdleTimeout(10000);
+            factory.register(CanvasWebSocket.class);
         }
     }
 
@@ -376,6 +403,45 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     }
                     return false;
                 });
+            }
+        }
+
+    }
+
+    @WebSocket
+    public static class CanvasWebSocket {
+
+        @OnWebSocketMessage
+        public void onText(Session session, String message) throws IOException {
+            try {
+                JSONObject jo = new JSONObject(message);
+                if (session instanceof WebSocketSession) {
+                    WebSocketSession wssession = (WebSocketSession) session;
+                } else {
+                    System.err.println("not instance of WebSocketSession");
+                }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+        }
+
+        @OnWebSocketConnect
+        public void onConnect(Session session) throws IOException {
+            if (session instanceof WebSocketSession) {
+                WebSocketSession wssession = (WebSocketSession) session;
+                System.out.println(wssession.getRemoteAddress().getHostString() + " connected to canvas!");
+                APIWebServer.instance.wsCanvasSessions.add(wssession);
+
+            } else {
+                System.err.println("Not an instance of WebSocketSession");
+            }
+        }
+
+        @OnWebSocketClose
+        public void onClose(Session session, int status, String reason) {
+            if (session instanceof WebSocketSession) {
+                WebSocketSession wssession = (WebSocketSession) session;
+                APIWebServer.instance.wsCanvasSessions.remove(wssession);
             }
         }
 

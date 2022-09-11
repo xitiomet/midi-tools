@@ -36,6 +36,7 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_RULE_GROUP = 7;
     public static final int ACTION_DISABLE_RULE_GROUP = 8;
     public static final int ACTION_TOGGLE_RULE_GROUP = 9;
+    public static final int ACTION_SHOW_IMAGE = 10;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;
@@ -231,6 +232,16 @@ public class MidiControlRule implements MidiControlListener
                             MidiControlRule.this.sound.play();
                             success = true;
                         }
+                        JSONObject canvasEvent = new JSONObject();
+                        canvasEvent.put("sound", this.action_value);
+                        canvasEvent.put("volume", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 100f));
+                        MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
+                    } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
+                        JSONObject canvasEvent = new JSONObject();
+                        canvasEvent.put("image", avparsed);
+                        canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 100f));
+                        MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
+                        success = true;
                     } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
                         StringTokenizer st = new StringTokenizer(avparsed, ",");
                         if (st.countTokens() == 4)
@@ -441,6 +452,8 @@ public class MidiControlRule implements MidiControlListener
             return "LOGGER B MESSAGE";
         } else if (n == MidiControlRule.ACTION_PLUGIN) {
             return "PLUGIN";
+        } else if (n == MidiControlRule.ACTION_SHOW_IMAGE) {
+            return "SHOW IMAGE";
         }
         return "";
     }

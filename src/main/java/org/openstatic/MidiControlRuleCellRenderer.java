@@ -31,6 +31,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
    private ImageIcon toggleIcon;
    private ImageIcon urlIcon;
    private ImageIcon pluginIcon;
+   private ImageIcon imageIcon;
    
    public MidiControlRuleCellRenderer()
    {
@@ -52,7 +53,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.toggleIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/toggle32.png")));
          this.urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
          this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
-
+         this.imageIcon = new  ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
       } catch (Exception e) {
 
       }
@@ -100,6 +101,8 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.gearsIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_URL) {
          this.checkBox.setIcon(this.urlIcon);
+      } else if (rule.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
+         this.checkBox.setIcon(this.imageIcon);
       } else {
          this.checkBox.setIcon(this.gearsIcon);
       }

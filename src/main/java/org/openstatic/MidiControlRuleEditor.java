@@ -175,7 +175,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             } else if (i == MidiControlRule.LOGGER_A_MESSAGE || i == MidiControlRule.LOGGER_B_MESSAGE) {
                 this.actionValueLabel.setText("Message to display");
             }
-        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND) {
+        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_SHOW_IMAGE) {
             ArrayList<String> extens = new ArrayList<String>();
             if (i == MidiControlRule.ACTION_PROC)
             {
@@ -188,6 +188,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             } else if (i == MidiControlRule.ACTION_SOUND) {
                 this.actionValueLabel.setText("Asset Filename");
                 extens.add(".wav");
+            } else if (i == MidiControlRule.ACTION_SHOW_IMAGE) {
+                this.actionValueLabel.setText("Asset Filename");
+                extens.add(".png");
+                extens.add(".gif");
+                extens.add(".jpg");
+                extens.add(".jpeg");
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
@@ -267,7 +273,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 10; i++)
+        for(int i = 0; i < 11; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }

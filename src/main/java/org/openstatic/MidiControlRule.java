@@ -180,7 +180,7 @@ public class MidiControlRule implements MidiControlListener
     {
         if (this.enabled)
         {
-            MidiTools.instance.midi_logger_b.println("Rule Triggered - " + this.toShortString());
+            //MidiTools.instance.midi_logger_a.println("Rule Triggered - " + this.toShortString());
             boolean success = false;
             //System.err.println(this.toString() + " Recieved From " + control.toString());
             try

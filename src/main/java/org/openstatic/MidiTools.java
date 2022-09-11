@@ -914,7 +914,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public String getCanvasURL()
     {
         String localIP = MidiTools.getLocalIP() ;
-        return "https://" + localIP + ":6123/canvas.html";
+        return "http://" + localIP + ":6123/canvas.html";
     }
 
     private long lastSecondAt = 0l;

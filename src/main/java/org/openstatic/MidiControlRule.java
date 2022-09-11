@@ -1,10 +1,14 @@
 package org.openstatic;
 
 import org.openstatic.midi.*;
+
 import org.json.*;
 import javax.sound.midi.*;
 import java.util.concurrent.TimeUnit;
 import java.util.StringTokenizer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.regex.*;
 
@@ -156,6 +160,20 @@ public class MidiControlRule implements MidiControlListener
         m.appendTail(s);
         return s.toString();
     }
+
+    private static String[] mergeArrays(String[] first, String[] second) {
+        List<String> both = new ArrayList<String>(first.length + second.length);
+        Collections.addAll(both, first);
+        Collections.addAll(both, second);
+        return both.toArray(new String[both.size()]);
+    }
+
+    private static String[] prependArray(String first, String[] second) {
+        List<String> both = new ArrayList<String>(1 + second.length);
+        both.add(first);
+        Collections.addAll(both, second);
+        return both.toArray(new String[both.size()]);
+    }
     
     public void executeAction(MidiControl control, int old_value, int new_value)
     {
@@ -182,12 +200,21 @@ public class MidiControlRule implements MidiControlListener
                     {
                         PendingURLFetch puf = new PendingURLFetch(avparsed);
                         puf.run();
+                        //MidiTools.instance.midi_logger_a.println(this.toShortString() + " returned: " + puf.getResponse());
                         success = true;
                     } else if (this.getActionType() == MidiControlRule.ACTION_PROC) {
                         try
                         {
                             String[] avparsed2 = avparsed.split(",");
-                            Process process = new ProcessBuilder(avparsed2).start();
+                            if (avparsed2[0].endsWith(".cmd") || avparsed2[0].endsWith(".bat"))
+                            {
+                                avparsed2 = prependArray(System.getenv("windir") + "\\system32\\cmd.exe", avparsed2);
+                            } else if (avparsed2[0].endsWith(".sh") || avparsed2[0].endsWith(".bash")) {
+                                avparsed2 = prependArray("/bin/bash", avparsed2);
+                            }
+                            ProcessBuilder pb = new ProcessBuilder(avparsed2);
+                            pb.directory(MidiTools.getAssetFolder());
+                            Process process = pb.start();
                             if (!process.waitFor(10, TimeUnit.SECONDS))
                             {
                                 process.destroyForcibly();
@@ -426,6 +453,7 @@ public class MidiControlRule implements MidiControlListener
             {
                 if (!this.sound.wasCreatedWith(this.action_value))
                 {
+                    this.sound.close();
                     this.sound = new SoundFile(this.action_value);
                 }
             } else {

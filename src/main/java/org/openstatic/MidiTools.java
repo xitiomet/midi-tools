@@ -57,7 +57,6 @@ import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JSeparator;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
-import javax.swing.SwingUtilities;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -652,11 +651,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 1)
+            if (MidiTools.instance.isVisible())
             {
-                if (MidiTools.instance.midiControlRulePanel != null)
+                if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 1)
                 {
-                    MidiTools.instance.midiControlRulePanel.repaint();
+                    if (MidiTools.instance.midiControlRulePanel != null)
+                    {
+                        MidiTools.instance.midiControlRulePanel.repaint();
+                    }
                 }
             }
         }
@@ -666,11 +668,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 0)
+            if (MidiTools.instance.isVisible())
             {
-                if (MidiTools.instance.midiControlsPanel != null)
+                if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 0)
                 {
-                    MidiTools.instance.midiControlsPanel.repaint();
+                    if (MidiTools.instance.midiControlsPanel != null)
+                    {
+                        MidiTools.instance.midiControlsPanel.repaint();
+                    }
                 }
             }
         }
@@ -680,9 +685,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.midiList != null)
+            if (MidiTools.instance.isVisible())
             {
-                MidiTools.instance.midiList.repaint();
+                if (MidiTools.instance.midiList != null)
+                {
+                    MidiTools.instance.midiList.repaint();
+                }
             }
         }
     }
@@ -691,11 +699,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 2)
+            if (MidiTools.instance.isVisible())
             {
-                if (MidiTools.instance.mappingControlBox != null)
+                if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 2)
                 {
-                    MidiTools.instance.mappingControlBox.repaint();
+                    if (MidiTools.instance.mappingControlBox != null)
+                    {
+                        MidiTools.instance.mappingControlBox.repaint();
+                    }
                 }
             }
         }
@@ -751,7 +762,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         if (cmd.equals("reset"))
         {
             int n = JOptionPane.showConfirmDialog(null,
-            "Are you sure? This will clear all rules, controls, and mappings",
+            "Are you sure? This will clear all rules, controls, assets, and mappings",
             "Reset Confirmation",
             JOptionPane.YES_NO_OPTION);
             if(n == JOptionPane.YES_OPTION)
@@ -1132,7 +1143,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static void removeMidiControl(MidiControl mc)
     {
-        logIt("Removed Midi Control: " + mc.getNickname());
         try
         {
             MidiTools.instance.midiControlsPanel.removeMidiControl(mc);
@@ -1153,12 +1163,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static void handleNewMidiControl(final MidiControl mc, int index)
     {
-        logIt("Added Midi Control: " + mc.getNickname());
         try
         {
-            SwingUtilities.invokeAndWait(() -> {
-                MidiTools.instance.midiControlsPanel.insertElementAt(mc, index);
-            });
+            MidiTools.instance.midiControlsPanel.insertElementAt(mc, index);
             mc.addMidiControlListener(MidiTools.instance.apiServer);
             mc.addMidiControlListener(MidiTools.instance.routeputSessionManager);
             JSONObject event = new JSONObject();
@@ -1450,7 +1457,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
     public void saveProjectAs(File file)
     {
-        logIt("Saving Project: " + file.getName());
         try
         {
             JSONObject configJson = compileProjectJSON();
@@ -1482,6 +1488,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             zout.close();
             this.loadedProjectJSON = configJson;
             this.setLastSavedFile(file);
+            logIt("Project Saved: " + file.getName());
         } catch (Exception e) {
             e.printStackTrace(System.err);
             //MidiTools.instance.midi_logger_b.printException(e);
@@ -1492,7 +1499,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (file.exists())
         {
-            logIt("Loading Project: " + file.getName());
             try
             {
                 ZipFile zip = new ZipFile(file);
@@ -1607,6 +1613,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 }
                 this.loadedProjectJSON = configJson;
                 this.setLastSavedFile(file);
+                logIt("Project Loaded: " + file.getName());
             } catch (Exception e) {
                 MidiTools.instance.midi_logger_b.printException(e);
             }
@@ -1790,7 +1797,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 }
             };
             t.start();
-            logIt("Loaded: " + jarfile.toString());
+            logIt("Loaded Plugin: " + jarfile.toString());
             return true;
         } catch (Exception e) {
             e.printStackTrace();

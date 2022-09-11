@@ -70,7 +70,18 @@ public class AssetManagerPanel extends JPanel implements ActionListener
                         {
                             try
                             {
-                                Desktop.getDesktop().open(file);
+                                String lowerName = file.getName().toLowerCase();
+                                if (lowerName.endsWith(".wav"))
+                                {
+                                    final SoundFile sf = new SoundFile(file.getName());
+                                    Thread t = new Thread(() -> {
+                                        sf.playAndWait();
+                                        sf.close();
+                                    });
+                                    t.start();
+                                } else {
+                                    Desktop.getDesktop().open(file);
+                                }
                             } catch (Exception dex) {
                                 dex.printStackTrace(System.err);
                             }

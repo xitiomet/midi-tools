@@ -1,10 +1,13 @@
 package org.openstatic;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.Line;
@@ -12,6 +15,7 @@ import javax.sound.sampled.Line;
 public class SoundFile
 {
     private File soundFile;
+    private File tempSoundFile;
     private float volume;
     private LinkedBlockingQueue<Clip> clipQueue;
     private int queueSize;
@@ -31,6 +35,16 @@ public class SoundFile
             potentialFile = MidiTools.resolveProjectAsset(strFilename);
         }
         this.soundFile = potentialFile;
+        try
+        {
+            // Make a copy of the wave as a temp file to prevent file locking
+            this.tempSoundFile = File.createTempFile("snd", ".wav");
+            Files.copy(this.soundFile.toPath(), this.tempSoundFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            this.tempSoundFile.deleteOnExit();
+            this.soundFile = this.tempSoundFile;
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
         if (this.soundFile.exists())
         {
             System.err.println("New Sound: " + this.soundFile.toString());
@@ -50,8 +64,10 @@ public class SoundFile
                 if (clip != null)
                 {
                     FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+                    BooleanControl muteControl = (BooleanControl) clip.getControl(BooleanControl.Type.MUTE);
                     //play the clip silently to force the system audio to load it.
                     gainControl.setValue(-80f);
+                    muteControl.setValue(true);
                     clip.start();
                     Thread.sleep(100);
                     while(clip.isActive())
@@ -153,6 +169,25 @@ public class SoundFile
             this.loadAudioFileAsClip();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void close()
+    {
+        try
+        {
+            Clip clip = this.clipQueue.poll();
+            while (clip != null)
+            {
+                clip.close();
+                clip = this.clipQueue.poll();
+            }
+            if (this.tempSoundFile != null)
+            {
+                this.tempSoundFile.delete();
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
         }
     }
 }

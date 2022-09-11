@@ -6,9 +6,9 @@ import org.json.*;
 
 import java.io.IOException;
 import java.io.BufferedReader;
-
 import java.net.URL;
-
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -59,10 +59,21 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
         context.addServlet(ApiServlet.class, "/api/*");
         context.addServlet(EventsWebSocketServlet.class, "/events/*");
         try {
+
+            DefaultServlet assetServlet = new DefaultServlet();
+            ServletHolder holderAssets = new ServletHolder("assets", assetServlet);
+            String assetsPath = MidiTools.getAssetFolder().toPath().toUri().toASCIIString();
+            System.err.println("Assets Path: " + assetsPath);
+            holderAssets.setInitParameter("resourceBase", assetsPath);
+            holderAssets.setInitParameter("dirAllowed","true");
+            holderAssets.setInitParameter("pathInfoOnly","true");
+            context.addServlet(holderAssets, "/assets/*");
+
             URL url = MidiTools.class.getResource("/midi-tools-res/index.html");
             this.staticRoot = url.toString().replaceAll("index.html", "");
             DefaultServlet defaultServlet = new DefaultServlet();
             ServletHolder holderPwd = new ServletHolder("default", defaultServlet);
+            System.err.println("Static Root Path: " + this.staticRoot);
             holderPwd.setInitParameter("resourceBase", this.staticRoot);
             context.addServlet(holderPwd, "/*");
 

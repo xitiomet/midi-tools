@@ -6,7 +6,19 @@ var protocol = location.protocol;
 var port = location.port;
 var wsProtocol = 'ws';
 var sounds = new Map();
-        
+
+function getParameterByName(name, url = window.location.href) 
+{
+    name = name.replace(/[\[\]]/g, '\\$&');
+    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+        results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+}
+
+var canvasName = getParameterByName("canvas");
+
 function sendEvent(wsEvent)
 {
     var out_event = JSON.stringify(wsEvent);
@@ -26,7 +38,7 @@ function updateImage(imageName, opacity)
     var imgElement = document.getElementById('imgTag');
     imgElement.src = imgUrl;
     imgElement.style.display = 'inline-block';
-    imgElement.style.opacity = (opacity / 100);
+    imgElement.style.opacity = opacity;
 }
 
 function playSound(file, volume)
@@ -39,8 +51,14 @@ function playSound(file, volume)
         audio2 = new Audio('/assets/' + file);
         sounds.set(file, audio2)
     }
-    audio2.volume = (volume / 100);
+    audio2.volume = volume;
     audio2.play();
+}
+
+function startcanvas()
+{
+    document.getElementById('selectCanvasDiv').style.display = "none";
+    canvasName = document.getElementById('selectCanvas').value;
 }
 
 function setupWebsocket()
@@ -72,6 +90,30 @@ function setupWebsocket()
             if (debugMode)
                 console.log("Receive: " + e.data);
             var jsonObject = JSON.parse(e.data);
+            if (jsonObject.hasOwnProperty("canvasList") && canvasName == null)
+            {
+                var canvasSelect = document.getElementById('selectCanvas');
+                var canvasNames = jsonObject.canvasList;
+                for (const s of canvasNames) { 
+                    if (s != "(ALL)" && s != "(NONE)")
+                    {
+                        var option = document.createElement("option");
+                        option.value = s;
+                        option.innerHTML = s;
+                        canvasSelect.appendChild(option);
+                    }
+                }
+                document.getElementById('selectCanvasDiv').style.display = "block";
+            }
+
+            if (jsonObject.hasOwnProperty("canvas"))
+            {
+                if (jsonObject.canvas != canvasName && jsonObject.canvas != "(ALL)")
+                    return;
+            } else if (canvasName != null) {
+                return;
+            }
+
             if (jsonObject.hasOwnProperty("image"))
             {
                 updateImage(jsonObject.image, jsonObject.opacity);

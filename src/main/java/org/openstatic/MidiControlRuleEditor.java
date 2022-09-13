@@ -46,6 +46,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> actionSelector;
     private JTextField nicknameField;
     private JComboBox<String> ruleGroupField;
+    private JComboBox<String> canvasSelectorField;
+
     private JTextArea actionValueField;
     
     private JComboBox<String> deviceSelectAVF;
@@ -146,6 +148,15 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.rule.setRuleGroup(this.ruleGroupField.getSelectedItem().toString());
             else
                 this.rule.setRuleGroup("all");
+            if (this.canvasSelectorField.getSelectedItem() != null)
+            {
+                if (!"".equals(this.canvasSelectorField.getSelectedItem()))
+                    this.rule.setCanvasName(this.canvasSelectorField.getSelectedItem().toString());
+                else
+                    this.rule.setCanvasName(null);
+            } else {
+                this.rule.setCanvasName(null);
+            }
             if (!"".equals(this.actionValueField.getText()))
                 this.rule.setActionValue(this.actionValueField.getText());
             else
@@ -175,6 +186,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             } else if (i == MidiControlRule.LOGGER_A_MESSAGE || i == MidiControlRule.LOGGER_B_MESSAGE) {
                 this.actionValueLabel.setText("Message to display");
             }
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
         } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_SHOW_IMAGE) {
             ArrayList<String> extens = new ArrayList<String>();
             if (i == MidiControlRule.ACTION_PROC)
@@ -188,12 +201,16 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             } else if (i == MidiControlRule.ACTION_SOUND) {
                 this.actionValueLabel.setText("Asset Filename");
                 extens.add(".wav");
+                this.canvasSelectorField.setEnabled(true);
+                this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
             } else if (i == MidiControlRule.ACTION_SHOW_IMAGE) {
                 this.actionValueLabel.setText("Asset Filename");
                 extens.add(".png");
                 extens.add(".gif");
                 extens.add(".jpg");
                 extens.add(".jpeg");
+                this.canvasSelectorField.setEnabled(true);
+                this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
@@ -219,11 +236,15 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.valueAVF.setText("{{value}}");                
             }
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
         } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
             this.actionValueLabel.setText("Rule Group");
             this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
             this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
         } else if (i == MidiControlRule.ACTION_PLUGIN) {
             try
             {
@@ -256,6 +277,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.actionValuePanel.removeAll();
                 this.actionValuePanel.add(this.actionValueField, BorderLayout.CENTER);
             }
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
         }
         this.actionValuePanel.revalidate();
         this.actionValuePanel.repaint();
@@ -326,6 +349,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.ruleGroupField.setEditable(true);
         this.ruleGroupField.setModel(getRuleGroupModel());
         this.ruleGroupField.setBackground(Color.WHITE);
+        this.ruleGroupField.setToolTipText("Assign this rule to a named group");
+
+        this.canvasSelectorField = new JComboBox<String>();
+        this.canvasSelectorField.setEditable(true);
+        this.canvasSelectorField.setModel(getCanvasSelectorModel());
+        this.canvasSelectorField.setBackground(Color.WHITE);
+        this.canvasSelectorField.setToolTipText("Select the Canvas to display this media, select (NONE) for local");
+
 
         //this.ruleGroupField.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -340,6 +371,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.selectFileField.setEditable(true);
         this.selectFileField.addActionListener(this);
         this.selectFileField.setSelectedItem(this.actionValueField.getText());
+        this.selectFileField.setToolTipText("Select a file from the project's assets");
         
         this.selectFileButton = new JButton("...");
         this.selectFileButton.addActionListener(this);
@@ -419,10 +451,13 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
 
         formPanel.add(new JLabel("Action Type", SwingConstants.LEFT), gbc(1, 5, .4d));
         formPanel.add(this.actionSelector, gbc(2, 5, .6d));
+
+        formPanel.add(new JLabel("Target Canvas", SwingConstants.LEFT), gbc(1, 6, .4d));
+        formPanel.add(this.canvasSelectorField, gbc(2, 6, .6d));
         
         this.actionValueLabel = new JLabel("Action Value", SwingConstants.LEFT);
-        formPanel.add(this.actionValueLabel, gbc(1, 6, .4d));
-        formPanel.add(this.actionValuePanel, gbc(2, 6, .6d));
+        formPanel.add(this.actionValueLabel, gbc(1, 7, .4d));
+        formPanel.add(this.actionValuePanel, gbc(2, 7, .6d));
         
         
         
@@ -454,7 +489,10 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.ruleGroupField.setSelectedItem(this.rule.getRuleGroup());
         if (this.rule.getActionValue() != null)
             this.actionValueField.setText(this.rule.getActionValue());
-        
+        if (this.rule.getCanvasName() != null)
+            this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
+        else
+            this.canvasSelectorField.setSelectedItem("");
         int avi = this.rule.getActionType();
         this.actionSelector.setSelectedIndex(avi);
         this.changeActionSelector(avi);
@@ -506,6 +544,18 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             DefaultComboBoxModel<String> ruleGroupModel = new DefaultComboBoxModel<String>(ruleGroups);
             return ruleGroupModel;
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        return null;
+    }
+
+    public DefaultComboBoxModel<String> getCanvasSelectorModel()
+    {
+        try
+        {
+            DefaultComboBoxModel<String> canvasGroupModel = new DefaultComboBoxModel<String>(MidiTools.getCanvasNames());
+            return canvasGroupModel;
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }

@@ -18,6 +18,7 @@ public class MidiControlRule implements MidiControlListener
     private int action_type;
     private String ruleId;
     private String ruleGroup;
+    private String canvasName;
     private String action_value;
     private int event_mode;
     private MidiControl control;
@@ -75,6 +76,7 @@ public class MidiControlRule implements MidiControlListener
         this.action_type = jo.optInt("actionType", 0);
         this.action_value = jo.optString("actionValue", null);
         this.nickname = jo.optString("nickname", null);
+        this.canvasName = jo.optString("canvas", "(NONE)");
         this.enabled = jo.optBoolean("enabled", true);
         this.lastTriggered = jo.optLong("lastTriggered", 0l);
         this.lastFailed = jo.optLong("lastFailed", 0l);
@@ -113,6 +115,7 @@ public class MidiControlRule implements MidiControlListener
         this.event_mode = event_mode;
         this.action_type = action_type;
         this.action_value = action_value;
+        this.canvasName = "(NONE)";
         this.enabled = true;
         this.actionValueChanged();
     }
@@ -225,23 +228,33 @@ public class MidiControlRule implements MidiControlListener
                             e.printStackTrace(System.err);
                         }
                     } else if (this.getActionType() == MidiControlRule.ACTION_SOUND) {
-                        if (MidiControlRule.this.sound != null)
+                        if (!"(NONE)".equals(this.canvasName) && canvasName != null)
                         {
-                            float volume = mapFloat(Float.valueOf(new_value).floatValue(), 0f, 127f, -40f, 0f);
-                            MidiControlRule.this.sound.setVolume(volume);
-                            MidiControlRule.this.sound.play();
+                            JSONObject canvasEvent = new JSONObject();
+                            canvasEvent.put("sound", this.action_value);
+                            canvasEvent.put("canvas", this.canvasName);
+                            canvasEvent.put("volume", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            success = true;
+                            MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
+                        } else {
+                            if (MidiControlRule.this.sound != null)
+                            {
+                                float volume = mapFloat(Float.valueOf(new_value).floatValue(), 0f, 127f, -40f, 0f);
+                                MidiControlRule.this.sound.setVolume(volume);
+                                MidiControlRule.this.sound.play();
+                                success = true;
+                            }
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
+                        if (!"(NONE)".equals(this.canvasName) && canvasName != null)
+                        {
+                            JSONObject canvasEvent = new JSONObject();
+                            canvasEvent.put("image", avparsed);
+                            canvasEvent.put("canvas", this.canvasName);
+                            canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
                             success = true;
                         }
-                        JSONObject canvasEvent = new JSONObject();
-                        canvasEvent.put("sound", this.action_value);
-                        canvasEvent.put("volume", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 100f));
-                        MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
-                    } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
-                        JSONObject canvasEvent = new JSONObject();
-                        canvasEvent.put("image", avparsed);
-                        canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 100f));
-                        MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
-                        success = true;
                     } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
                         StringTokenizer st = new StringTokenizer(avparsed, ",");
                         if (st.countTokens() == 4)
@@ -390,6 +403,16 @@ public class MidiControlRule implements MidiControlListener
     {
         return this.action_type;
     }
+
+    public void setCanvasName(String val)
+    {
+        this.canvasName = val;
+    }
+
+    public String getCanvasName()
+    {
+        return this.canvasName;
+    }
     
     public String getActionValue()
     {
@@ -503,6 +526,7 @@ public class MidiControlRule implements MidiControlListener
         jo.put("eventMode", this.event_mode);
         jo.put("actionValue", this.action_value);
         jo.put("nickname", this.nickname);
+        jo.put("canvas", this.canvasName);
         jo.put("enabled", this.enabled);
         jo.put("lastTriggered", this.lastTriggered);
         return jo;
@@ -519,6 +543,7 @@ public class MidiControlRule implements MidiControlListener
         jo.put("eventMode", this.event_mode);
         jo.put("actionValue", this.action_value);
         jo.put("nickname", this.nickname);
+        jo.put("canvas", this.canvasName);
         jo.put("enabled", this.enabled);
         return jo;
     }

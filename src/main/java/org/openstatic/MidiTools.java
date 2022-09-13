@@ -47,6 +47,7 @@ import javax.swing.JFrame;
 import javax.swing.JList;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JTabbedPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.JScrollPane;
@@ -58,9 +59,11 @@ import javax.swing.JSeparator;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JOptionPane;
+import javax.swing.ButtonGroup;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
@@ -90,6 +93,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 {
     public static final String VERSION = "1.5";
     public static String LOCAL_SERIAL;
+    public static long appLaunchTime;
+    public static boolean windowWentVisible = false;
     private JList<MidiPort> midiList;
     private JPanel deviceQRPanel;
     private JLabel qrLabel;
@@ -105,13 +110,18 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JMenu fileMenu;
     private JMenu actionsMenu;
     private JMenu optionsMenu;
+    private JMenu qrCodeMenu;
     private JTabbedPane bottomTabbedPane;
     private JTabbedPane mainTabbedPane;
 
     private JCheckBoxMenuItem apiServerEnable;
-    private JCheckBoxMenuItem showQrItem;
     private JCheckBoxMenuItem bootstrapSSLItem;
 
+    private JRadioButtonMenuItem localQrMenuItem;
+    private JRadioButtonMenuItem remoteQrMenuItem;
+    private JRadioButtonMenuItem canvasQrMenuItem;
+    private JRadioButtonMenuItem noneQrMenuItem;
+    
     private JMenuItem openInBrowserItem;
     private JMenuItem openCanvasBrowserItem;
     private JMenuItem aboutMenuItem;
@@ -145,6 +155,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public MidiTools()
     {
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
+        MidiTools.appLaunchTime = System.currentTimeMillis();
         MidiTools.instance = this;
         this.plugins = new HashMap<String, MidiToolsPlugin>();
         this.taskQueue = new ArrayBlockingQueue<Runnable>(1000);
@@ -163,11 +174,36 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             this.setIconImage(windowIcon);
         } catch (Exception iconException) {}
         
-        this.showQrItem = new JCheckBoxMenuItem("Show QR Code");
-        this.showQrItem.setEnabled(false);
-        this.showQrItem.setMnemonic(KeyEvent.VK_Q);
-        this.showQrItem.addActionListener(this);
-        this.showQrItem.setActionCommand("show_qr");
+
+        this.qrCodeMenu = new JMenu("QR Code");
+        this.qrCodeMenu.setMnemonic(KeyEvent.VK_Q);
+        
+        this.noneQrMenuItem = new JRadioButtonMenuItem("None");
+        this.noneQrMenuItem.addActionListener(this);
+        this.noneQrMenuItem.setSelected(true);
+
+        this.localQrMenuItem = new JRadioButtonMenuItem("Local Web Interface");
+        this.localQrMenuItem.addActionListener(this);
+        this.localQrMenuItem.setEnabled(false);
+
+        this.remoteQrMenuItem = new JRadioButtonMenuItem("Openstatic.org Web Interface");
+        this.remoteQrMenuItem.addActionListener(this);
+        this.remoteQrMenuItem.setEnabled(false);
+
+        this.canvasQrMenuItem = new JRadioButtonMenuItem("Canvas for Images/Sound");
+        this.canvasQrMenuItem.addActionListener(this);
+        this.canvasQrMenuItem.setEnabled(false);
+
+        this.qrCodeMenu.add(this.noneQrMenuItem);
+        this.qrCodeMenu.add(this.localQrMenuItem);
+        this.qrCodeMenu.add(this.remoteQrMenuItem);
+        this.qrCodeMenu.add(this.canvasQrMenuItem);
+
+        ButtonGroup qrButtonGroup = new ButtonGroup();
+        qrButtonGroup.add(this.noneQrMenuItem);
+        qrButtonGroup.add(this.localQrMenuItem);
+        qrButtonGroup.add(this.remoteQrMenuItem);
+        qrButtonGroup.add(this.canvasQrMenuItem);
         
         this.bootstrapSSLItem = new JCheckBoxMenuItem("Enable Openstatic.org Interface");
         this.bootstrapSSLItem.setEnabled(true);
@@ -254,8 +290,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.optionsMenu = new JMenu("Options");
         this.optionsMenu.setMnemonic(KeyEvent.VK_O);
         this.optionsMenu.add(this.apiServerEnable);
-        this.optionsMenu.add(this.showQrItem);
         this.optionsMenu.add(this.bootstrapSSLItem);
+        this.optionsMenu.add(this.qrCodeMenu);
 
         this.menuBar.add(this.fileMenu);
         this.menuBar.add(this.actionsMenu);
@@ -376,7 +412,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         //this.midi_logger.start();
         Runtime.getRuntime().addShutdownHook(new Thread() 
         { 
-          public void run() 
+          public void run()
           { 
             MidiTools.this.keep_running = false;
             //System.out.println("Shutdown Hook is running!"); 
@@ -388,8 +424,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.addWindowListener(new WindowListener() {
             @Override
             public void windowOpened(WindowEvent e) {
-                // TODO Auto-generated method stub
-                
+                System.err.println("Window Opened!");
+                MidiTools.windowWentVisible = true;
             }
 
             @Override
@@ -587,11 +623,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public void changeAPIState(boolean apiEnable)
     {
         this.apiServerEnable.setState(apiEnable);
-        this.showQrItem.setEnabled(apiEnable);
+        this.localQrMenuItem.setEnabled(apiEnable);
+        this.canvasQrMenuItem.setEnabled(apiEnable);
         if (!apiEnable)
         {
-            this.showQrItem.setState(false);
-            this.setShowQR(false);
+            if (this.localQrMenuItem.isSelected() || this.canvasQrMenuItem.isSelected())
+            {
+                setShowQR("none");
+            }
         }
         this.openInBrowserItem.setEnabled(apiEnable);
         this.openCanvasBrowserItem.setEnabled(apiEnable);
@@ -743,21 +782,33 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             boolean state = this.apiServerEnable.getState();
             changeAPIState(state);
             return;
-        } else if (e.getSource() == this.showQrItem) {
-            boolean state = this.showQrItem.getState();
-            this.setShowQR(state);
+        } else if (e.getSource() == this.noneQrMenuItem) {
+            if (this.noneQrMenuItem.isSelected())
+                this.setShowQR("none");
+            return;
+        } else if (e.getSource() == this.localQrMenuItem) {
+            if (this.localQrMenuItem.isSelected())
+                this.setShowQR("local");
+            return;
+        } else if (e.getSource() == this.remoteQrMenuItem) {
+            if (this.remoteQrMenuItem.isSelected())
+                this.setShowQR("remote");
+            return;
+        } else if (e.getSource() == this.canvasQrMenuItem) {
+            if (this.canvasQrMenuItem.isSelected())
+                this.setShowQR("canvas");
             return;
         } else if (e.getSource() == this.bootstrapSSLItem) {
-            if (this.showQrItem.getState())
-            {
-                this.setShowQR(false);
-                this.setShowQR(true);
-            }
+            this.remoteQrMenuItem.setEnabled(this.bootstrapSSLItem.getState());
             if (this.bootstrapSSLItem.getState())
             {
                 this.routeputClient.connect();
                 this.routeputClient.setAutoReconnect(true);
             } else {
+                if (this.remoteQrMenuItem.isSelected())
+                {
+                    this.setShowQR("none");
+                }
                 this.routeputClient.setAutoReconnect(false);
                 this.routeputClient.close();
             }
@@ -885,19 +936,62 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return rm;
     }
 
-    private void setShowQR(boolean value)
+    public String getShowQr()
     {
-        if (value)
+        if (this.noneQrMenuItem.isSelected())
         {
-            this.qrLabel = new JLabel(new ImageIcon(MidiTools.QRCode(getWebInterfaceURL())));
-            this.qrLabel.setBackground(Color.WHITE);
-            this.qrLabel.setOpaque(true);
-            this.deviceQRPanel.add(this.qrLabel, BorderLayout.SOUTH);
-            this.deviceQRPanel.revalidate();
-        } else if (this.qrLabel != null) {
+            return "none";
+        } else if (this.canvasQrMenuItem.isSelected()) {
+            return "canvas";
+        } else if (this.remoteQrMenuItem.isSelected()) {
+            return "remote";
+        } else if (this.localQrMenuItem.isSelected()) {
+            return "local";
+        } else {
+            return "";
+        }
+    }
+
+    private void setShowQR(String value)
+    {
+        if ("none".equals(value) && this.qrLabel != null) {
             this.deviceQRPanel.remove(this.qrLabel);
             this.qrLabel = null;
             this.deviceQRPanel.revalidate();
+            this.noneQrMenuItem.setSelected(true);
+        } else {
+            if (this.qrLabel != null)
+            {
+                this.deviceQRPanel.remove(this.qrLabel);
+                this.qrLabel = null;
+                this.deviceQRPanel.revalidate();
+            }
+            String url = "";
+            if ("local".equals(value))
+            {
+                String localIP = MidiTools.getLocalIP() ;
+                url = "https://" + localIP + ":6124/";
+                this.localQrMenuItem.setSelected(true);
+                System.err.println("LOCAL QR");
+            } else if ("remote".equals(value)) {
+                url = "https://openstatic.org/mcct/?s=midi-tools-" + MidiTools.LOCAL_SERIAL;
+                this.remoteQrMenuItem.setSelected(true);
+                System.err.println("REMOTE QR");
+            } else if ("canvas".equals(value)) {
+                url = getCanvasURL();
+                this.canvasQrMenuItem.setSelected(true);
+                System.err.println("CANVAS QR");
+            }
+            if (!"".equals(url) && url != null)
+            {
+                this.qrLabel = new JLabel(new ImageIcon(MidiTools.QRCode(url)));
+                this.qrLabel.setBackground(Color.WHITE);
+                this.qrLabel.setOpaque(true);
+                this.deviceQRPanel.add(this.qrLabel, BorderLayout.SOUTH);
+                this.deviceQRPanel.revalidate();
+            } else {
+                this.noneQrMenuItem.setSelected(true);
+            }
         }
     }
     
@@ -917,9 +1011,35 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return "http://" + localIP + ":6123/canvas.html";
     }
 
+    public static Vector<String> getCanvasNames()
+    {
+        Vector<String> canvasNames = new Vector<String>();
+        canvasNames.add("(ALL)");
+        canvasNames.add("(NONE)");
+        try
+        {
+            // Check for new devices added
+            for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); newRuleEnum.hasMoreElements();)
+            {
+                MidiControlRule mcr = newRuleEnum.nextElement();
+                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE)
+                {
+                    String canvasName = mcr.getCanvasName();
+                    if (canvasName != null && !canvasNames.contains(canvasName))
+                        canvasNames.add(canvasName);
+                }
+                
+            }
+        } catch (Exception e) {
+
+        }
+        return canvasNames;
+    }
+
     private long lastSecondAt = 0l;
     public void run()
     {
+        System.err.println("Launched Main Thread");
         while(this.keep_running)
         {
             long ts = System.currentTimeMillis();
@@ -927,15 +1047,19 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             {
                 if (ts - this.lastSecondAt > 1000l)
                 {
+                    //System.err.println("everySecond");
                     everySecond();
                     this.lastSecondAt = ts;
                 }
-                for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
+                if (MidiTools.windowWentVisible)
                 {
-                    MidiControl mc = mce.nextElement();
-                    if ((ts - mc.getLastChangeAt()) > 250l && !mc.isSettled())
+                    for (Enumeration<MidiControl> mce = this.midiControlsPanel.getControlsEnumeration(); mce.hasMoreElements();)
                     {
-                        mc.settle();
+                        MidiControl mc = mce.nextElement();
+                        if ((ts - mc.getLastChangeAt()) > 250l && !mc.isSettled())
+                        {
+                            mc.settle();
+                        }
                     }
                 }
                 Thread.sleep(50);
@@ -943,38 +1067,49 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 MidiTools.instance.midi_logger_b.printException(e);
             }
         }
+        System.err.println("Left Main Thread");
     }
 
     private void everySecond() throws Exception
     {
-        try
+        if ((System.currentTimeMillis() - MidiTools.appLaunchTime) > 60000l && !MidiTools.windowWentVisible)
         {
-            this.assetManagerPanel.refresh();
-            if (this.keep_running)
-            {
-                String newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION;
-                if (this.lastSavedFile != null)
-                {
-                    boolean unsavedProjectChanges = MidiTools.this.hasUnsavedProjectChanges();
-                    if (unsavedProjectChanges)
-                    {
-                        newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [*" + this.lastSavedFile.getName() + "]";
-                    } else {
-                        newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.getName() + "]";
-                    }
-                }
-                if (!newTitle.equals(this.getTitle()))
-                    this.setTitle(newTitle);
-            } else {
-                System.err.println("Not messing with title!");
-            }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
+            System.err.println("INTERNAL FAILURE");
+            System.exit(1);
         }
-        repaintRules();
-        repaintMappings();
-        if (this.isShowing())
-            this.windowLocation = this.getLocationOnScreen();
+
+        // Wait till window is actually visible to do any stuff like this.
+        if (MidiTools.windowWentVisible)
+        {
+            try
+            {
+                this.assetManagerPanel.refresh();
+                if (this.keep_running)
+                {
+                    String newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION;
+                    if (this.lastSavedFile != null)
+                    {
+                        boolean unsavedProjectChanges = MidiTools.this.hasUnsavedProjectChanges();
+                        if (unsavedProjectChanges)
+                        {
+                            newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [*" + this.lastSavedFile.getName() + "]";
+                        } else {
+                            newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.getName() + "]";
+                        }
+                    }
+                    if (!newTitle.equals(this.getTitle()))
+                        this.setTitle(newTitle);
+                } else {
+                    System.err.println("Not messing with title!");
+                }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+            repaintRules();
+            repaintMappings();
+            if (this.isShowing())
+                this.windowLocation = this.getLocationOnScreen();
+        }
     }
 
     public boolean hasUnsavedProjectChanges()
@@ -1052,7 +1187,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         }
         mlb.loadConfig(loadFile);
-        mlb.setVisible(true);
+        try
+        {
+            mlb.setVisible(true);
+        } catch (Throwable goVisible) {
+            System.exit(1);
+        }
         logIt("Finished Startup");
     }
 
@@ -1181,7 +1321,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         try
         {
-            MidiTools.instance.midiControlsPanel.insertElementAt(mc, index);
+            if (MidiTools.windowWentVisible)
+            {
+                SwingUtilities.invokeAndWait(() -> {
+                    MidiTools.instance.midiControlsPanel.insertElementAt(mc, index);
+                });
+            } else {
+                MidiTools.instance.midiControlsPanel.insertElementAt(mc, index);
+            }
             mc.addMidiControlListener(MidiTools.instance.apiServer);
             mc.addMidiControlListener(MidiTools.instance.routeputSessionManager);
             JSONObject event = new JSONObject();
@@ -1311,7 +1458,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             JSONObject configJson = new JSONObject();
             configJson.put("apiServer", this.apiServerEnable.getState());
             configJson.put("bootstrapSSL", this.bootstrapSSLItem.getState());
-            configJson.put("showQr", this.showQrItem.getState());
+            configJson.put("showQrType", this.getShowQr());
             configJson.put("windowX", this.windowLocation.x);
             configJson.put("windowY", this.windowLocation.y);
             configJson.put("windowWidth", this.getWidth());
@@ -1389,10 +1536,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 newWindowLocation.y = configJson.optInt("windowY", 0);
             }
 
-            if (configJson.has("showQr"))
+            if (configJson.has("showQrType"))
             {
-                boolean state = configJson.optBoolean("showQr", false);
-                this.showQrItem.setState(state);
+                String state = configJson.optString("showQrType", "none");
                 this.setShowQR(state);
             }
             if (configJson.has("plugins"))

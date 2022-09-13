@@ -189,6 +189,13 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);
         }
+        if (filenameLower.endsWith(".jpg") || filenameLower.endsWith(".gif") || filenameLower.endsWith(".png") || filenameLower.endsWith(".jpeg"))
+        {
+            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_CHANGE, MidiControlRule.ACTION_SHOW_IMAGE, MidiTools.addProjectAsset(file).getName());
+            newRule.setNickname(filename.substring(0, filename.length()-4));
+            if (!MidiControlRulePanel.this.contains(newRule))
+                MidiControlRulePanel.this.addElement(newRule);
+        }
     }
     
 

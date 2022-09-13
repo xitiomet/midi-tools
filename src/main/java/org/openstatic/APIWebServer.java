@@ -14,6 +14,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Vector;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -431,7 +432,13 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                 WebSocketSession wssession = (WebSocketSession) session;
                 System.out.println(wssession.getRemoteAddress().getHostString() + " connected to canvas!");
                 APIWebServer.instance.wsCanvasSessions.add(wssession);
-
+                Vector<String> canvasNames = MidiTools.getCanvasNames();
+                if (canvasNames.size() > 2)
+                {
+                    JSONObject welcomeObject = new JSONObject();
+                    welcomeObject.put("canvasList", new JSONArray(canvasNames));
+                    session.getRemote().sendStringByFuture(welcomeObject.toString());
+                }
             } else {
                 System.err.println("Not an instance of WebSocketSession");
             }

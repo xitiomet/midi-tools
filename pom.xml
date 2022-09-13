@@ -182,6 +182,13 @@
                               <include>**</include>
                           </includes>
                       </resource>
+                      <resource>
+                          <directory>${project.basedir}/target/natives</directory>
+                          <outputDirectory>Contents/Resources/midi-tools-res</outputDirectory>
+                          <includes>
+                              <include>libjinput-osx.jnilib</include>
+                          </includes>
+                      </resource>
                   </additionalResources>
               </app>
           </configuration>

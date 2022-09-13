@@ -86,7 +86,6 @@ import java.awt.Desktop;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
-import org.eclipse.jetty.util.ajax.JSON;
 import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener
@@ -190,7 +189,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.remoteQrMenuItem.addActionListener(this);
         this.remoteQrMenuItem.setEnabled(false);
 
-        this.canvasQrMenuItem = new JRadioButtonMenuItem("Canvas for Images/Sound");
+        this.canvasQrMenuItem = new JRadioButtonMenuItem("Media Canvas for Images/Sound");
         this.canvasQrMenuItem.addActionListener(this);
         this.canvasQrMenuItem.setEnabled(false);
 
@@ -217,7 +216,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.openInBrowserItem.addActionListener(this);
         this.openInBrowserItem.setActionCommand("open_api");
     
-        this.openCanvasBrowserItem = new JMenuItem("Open Image Canvas in Default Browser");
+        this.openCanvasBrowserItem = new JMenuItem("Open Media Canvas in Default Browser");
         this.openCanvasBrowserItem.setEnabled(false);
         this.openCanvasBrowserItem.setMnemonic(KeyEvent.VK_C);
         this.openCanvasBrowserItem.addActionListener(this);
@@ -693,6 +692,16 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         this.lastSavedFile = f;
     }
+
+    public static String getProjectName()
+    {
+        String rv = null;
+        if (MidiTools.instance.lastSavedFile != null)
+        {
+            rv = MidiTools.instance.lastSavedFile.getName().replace(".mtz", "");
+        }
+        return rv;
+    }
     
     public static void repaintRules()
     {
@@ -934,6 +943,23 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         }
         ComboBoxModel<String> rm = new DefaultComboBoxModel<String>(assetNames);
         return rm;
+    }
+
+    public static Vector<String> getSoundAssets()
+    {
+        Vector<String> assetNames = new Vector<String>();
+        Iterator<File> files = MidiTools.instance.assetManagerPanel.getAllAssets().iterator();
+        while (files.hasNext())
+        {
+            File file = files.next();
+            String filename = file.getName();
+            String filenameLower = filename.toLowerCase();
+            if (filenameLower.endsWith(".wav"))
+            {
+                assetNames.add(filename);
+            }
+        }
+        return assetNames;
     }
 
     public String getShowQr()

@@ -234,8 +234,7 @@ public class MidiControlRule implements MidiControlListener
                             canvasEvent.put("sound", this.action_value);
                             canvasEvent.put("canvas", this.canvasName);
                             canvasEvent.put("volume", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
-                            success = true;
-                            MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
+                            success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
                         } else {
                             if (MidiControlRule.this.sound != null)
                             {
@@ -252,8 +251,7 @@ public class MidiControlRule implements MidiControlListener
                             canvasEvent.put("image", avparsed);
                             canvasEvent.put("canvas", this.canvasName);
                             canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
-                            MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
-                            success = true;
+                            success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
                         }
                     } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
                         StringTokenizer st = new StringTokenizer(avparsed, ",");

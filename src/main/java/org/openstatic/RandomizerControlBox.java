@@ -89,21 +89,21 @@ public class RandomizerControlBox extends JPanel implements ActionListener
             this.disableAllButton = new JButton(disableIcon);
             this.disableAllButton.addActionListener(this);
             this.disableAllButton.setActionCommand("disable_selected");
-            this.disableAllButton.setToolTipText("Disable selected mappings");
+            this.disableAllButton.setToolTipText("Disable selected randomizer rules");
             this.buttonPanel.add(this.disableAllButton);
 
             ImageIcon enableIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/enable32.png")));
             this.enableAllButton = new JButton(enableIcon);
             this.enableAllButton.addActionListener(this);
             this.enableAllButton.setActionCommand("enable_selected");
-            this.enableAllButton.setToolTipText("Enable selected mappings");
+            this.enableAllButton.setToolTipText("Enable selected randomizer rules");
             this.buttonPanel.add(this.enableAllButton);
 
             ImageIcon trashIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/trash32.png")));
             this.deleteButton = new JButton(trashIcon);
             this.deleteButton.addActionListener(this);
             this.deleteButton.setActionCommand("delete_selected");
-            this.deleteButton.setToolTipText("Delete Selected mappings");
+            this.deleteButton.setToolTipText("Delete Selected randomizer rules");
             this.buttonPanel.add(this.deleteButton);
 
         } catch (Exception e) {

@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Vector;
@@ -47,6 +48,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
     private Server httpServer;
     protected ArrayList<WebSocketSession> wsSessions;
     protected ArrayList<WebSocketSession> wsCanvasSessions;
+    protected HashMap<WebSocketSession, String> canvasNames;
 
     protected static APIWebServer instance;
     private String staticRoot;
@@ -57,6 +59,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
         APIWebServer.instance = this;
         this.wsSessions = new ArrayList<WebSocketSession>();
         this.wsCanvasSessions = new ArrayList<WebSocketSession>();
+        this.canvasNames = new HashMap<WebSocketSession, String>();
         httpServer = new Server(6123);
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
@@ -296,16 +299,30 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
         }
     }
 
-    public void broadcastCanvasJSONObject(JSONObject jo) 
+    public boolean broadcastCanvasJSONObject(JSONObject jo) 
     {
+        boolean sent = false;
+        String canvas = jo.optString("canvas");
         String message = jo.toString();
-        for (Session s : this.wsCanvasSessions) {
+        for (WebSocketSession s : this.wsCanvasSessions) {
             try {
-                s.getRemote().sendStringByFuture(message);
+                if (canvas == null || "(ALL)".equals(canvas))
+                {
+                    s.getRemote().sendStringByFuture(message);
+                    sent = true;
+                } else {
+                    String canvasName = this.canvasNames.get(s);
+                    if (canvas.equals(canvasName))
+                    {
+                        s.getRemote().sendStringByFuture(message);
+                        sent = true;
+                    }
+                }
             } catch (Exception e) {
 
             }
         }
+        return sent;
     }
 
     public static class CanvasWebSocketServlet extends WebSocketServlet {
@@ -418,6 +435,10 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                 JSONObject jo = new JSONObject(message);
                 if (session instanceof WebSocketSession) {
                     WebSocketSession wssession = (WebSocketSession) session;
+                    if (jo.has("identify"))
+                    {
+                        APIWebServer.instance.canvasNames.put(wssession, jo.optString("identify"));
+                    }
                 } else {
                     System.err.println("not instance of WebSocketSession");
                 }
@@ -433,12 +454,14 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                 System.out.println(wssession.getRemoteAddress().getHostString() + " connected to canvas!");
                 APIWebServer.instance.wsCanvasSessions.add(wssession);
                 Vector<String> canvasNames = MidiTools.getCanvasNames();
-                if (canvasNames.size() > 2)
-                {
-                    JSONObject welcomeObject = new JSONObject();
-                    welcomeObject.put("canvasList", new JSONArray(canvasNames));
-                    session.getRemote().sendStringByFuture(welcomeObject.toString());
-                }
+                
+                JSONObject welcomeObject = new JSONObject();
+                welcomeObject.put("canvasList", new JSONArray(canvasNames));
+                welcomeObject.put("sounds", new JSONArray(MidiTools.getSoundAssets()));
+                String projectName = MidiTools.getProjectName();
+                if (projectName != null)
+                    welcomeObject.put("projectName", projectName);
+                session.getRemote().sendStringByFuture(welcomeObject.toString());
             } else {
                 System.err.println("Not an instance of WebSocketSession");
             }
@@ -449,6 +472,8 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
             if (session instanceof WebSocketSession) {
                 WebSocketSession wssession = (WebSocketSession) session;
                 APIWebServer.instance.wsCanvasSessions.remove(wssession);
+                if (APIWebServer.instance.canvasNames.containsKey(wssession))
+                    APIWebServer.instance.canvasNames.remove(wssession);
             }
         }
 

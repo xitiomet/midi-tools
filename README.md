@@ -109,3 +109,9 @@ When creating these types of rules you can specify a canvas target, this is the 
 To open a media canvas, simply go to the "Actions" menu and click on "open a media canvas". You can also go to options and enable the media canvas QR code to scan the url from a handheld device.
 
 ![](https://openstatic.org/projects/miditools/img/mediacanvas.png)
+
+Also a couple things to be aware of!
+ - The background of a media canvas is always black, this is on purpose since this feature is primarily for lighting effect. Your images background should be transparent or also black.
+ - Images will be stretched to fill the canvas since display sizes may vary.
+ - It is very possible to create a seizure effect with flashing/changing images. Please take precautions accordingly!
+ - The responsiveness greatly depends on your network environment, I've tested this on a rather busy gigabit ethernet network and the delay is never more then 10ms from the event trigger.

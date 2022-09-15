@@ -1,8 +1,8 @@
 # Midi Control Change Tools #
 
-This utility allows you to observe MIDI Control Change and NOTE messages from every channel in real-time, and associate rules with them. It also features midi port mapping, and a websocket interface. Each Channel/CC# is treated as in individual "Control" so this application can be thought of as an "omni" mode midi input.
+This utility allows you to observe MIDI Control Change and NOTE messages from every channel in real-time, and associate rules and actions with them. It also features midi port mapping, and a websocket interface. Each Channel/CC# is treated as in individual "Control" so this application can be thought of as an "omni" mode midi input.
 
-Each "Control" can have rules associated with it that will execute "Actions" based on the type of change made to the Control. For instance you can have a rule that will execute whenever the value increases. 
+Each "Control" can have rules associated with it that will execute "Actions" based on the type of change made to the Control. For instance you can have a rule that will execute whenever the value of a knob or slider increases. 
 
 Features
  - Fully functional MIDI router (create virtual connections between midi devices)
@@ -95,3 +95,17 @@ Supported Assets include:
  However any file type may be added, and will be available using the internal web server at http://127.0.0.1:6123/assets/ allowing external tools to access them via HTTP
 
 ![](https://openstatic.org/projects/miditools/img/projectassets.png)
+
+
+## Media Canvas Feature ##
+
+The media canvas is a greate way to create visual effects using a monitor or projector. The media canvas is a webapp that can be easily opened in any modern browser (Chrome/Safari/Brave). When creating rules there are two types of rules that use the media canvas. In order to use this feature the "API Server" must be enabled in options.
+
+ - SHOW IMAGE - Shows an image at the time the event is fired, the images brightness will be determined by the CC Value or note pressure. Whenever a show image event is fired on a canvas, the previous image is removed and the most recent image is shown.
+ - PLAY SOUND - Plays a sound clip using the CC value or note pressure to determine value (much like a sampler/sound board)
+
+When creating these types of rules you can specify a canvas target, this is the canvas you want to present the media. Canvas names are made up on the fly and Midi Tools will show the available canvas names when launching a media canvas. Ideally once you've started the canvas you can press F11 to full screen it, giving it full control over the display. Since media canvas's are just webpages, you can use a variety of devices to display them, the only requirement is that all the devices are on the same network with an acceptable latency.
+
+To open a media canvas, simply go to the "Actions" menu and click on "open a media canvas". You can also go to options and enable the media canvas QR code to scan the url from a handheld device.
+
+![](https://openstatic.org/projects/miditools/img/mediacanvas.png)

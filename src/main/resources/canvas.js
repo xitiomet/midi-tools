@@ -110,6 +110,7 @@ function setupWebsocket()
                     var canvasNames = jsonObject.canvasList;
                     if (canvasNames.length > 2)
                     {
+                        canvasNames.sort();
                         for (const s of canvasNames) { 
                             if (s != "(ALL)" && s != "(NONE)")
                             {

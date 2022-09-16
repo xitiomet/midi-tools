@@ -99,7 +99,7 @@ Supported Assets include:
 
 ## Media Canvas Feature ##
 
-The media canvas is a greate way to create visual effects using a monitor or projector. The media canvas is a webapp that can be easily opened in any modern browser (Chrome/Safari/Brave). When creating rules there are two types of rules that use the media canvas. In order to use this feature the "API Server" must be enabled in options.
+The media canvas is a great way to create visual effects using a monitor or projector. The media canvas is a webapp that can be easily opened in any modern browser (Chrome/Safari/Brave). When creating rules there are two types of rules that use the media canvas. In order to use this feature the "API Server" must be enabled in options.
 
  - SHOW IMAGE - Shows an image at the time the event is fired, the images brightness will be determined by the CC Value or note pressure. Whenever a show image event is fired on a canvas, the previous image is removed and the most recent image is shown.
  - PLAY SOUND - Plays a sound clip using the CC value or note pressure to determine value (much like a sampler/sound board)

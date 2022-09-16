@@ -945,6 +945,19 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return rm;
     }
 
+    public static Vector<String> getAllAssetNames()
+    {
+        Vector<String> assetNames = new Vector<String>();
+        Iterator<File> files = MidiTools.instance.assetManagerPanel.getAllAssets().iterator();
+        while (files.hasNext())
+        {
+            File file = files.next();
+            String filename = file.getName();
+            assetNames.add(filename);
+        }
+        return assetNames;
+    }
+
     public static Vector<String> getSoundAssets()
     {
         Vector<String> assetNames = new Vector<String>();

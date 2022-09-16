@@ -529,12 +529,30 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     } catch (Exception e) {
                         e.printStackTrace(System.err);
                     }
+                } else if ("/rules/enable/".equals(target)) {
+                    String ruleId = request.getParameter("ruleId");
+                    MidiControlRule rule = MidiTools.getMidiControlRuleById(ruleId);
+                    if (rule != null)
+                    {
+                        rule.setEnabled(true);
+                        response.put(ruleId, rule.toJSONObject());
+                    } else {
+                        response.put("error", "Rule Not Found!");
+                    }
+                } else if ("/rules/disable/".equals(target)) {
+                    String ruleId = request.getParameter("ruleId");
+                    MidiControlRule rule = MidiTools.getMidiControlRuleById(ruleId);
+                    if (rule != null)
+                    {
+                        rule.setEnabled(false);
+                        response.put(ruleId, rule.toJSONObject());
+                    } else {
+                        response.put("error", "Rule Not Found!");
+                    }
                 } else if ("/rules/".equals(target)) {
                     response.put("rules", MidiTools.instance.rulesAsJSONArray());
                 } else if ("/controls/".equals(target)) {
                     response.put("controls", MidiTools.instance.controlsAsJSONArray());
-                } else if ("/info/".equals(target)) {
-                    response.put("staticRoot", APIWebServer.instance.staticRoot);
                 } else if ("/mappings/add/".equals(target)) {
                     String source = request.getParameter("source");
                     String destination = request.getParameter("destination");
@@ -548,6 +566,8 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     }
                 } else if ("/mappings/".equals(target)) {
                     response.put("mappings", MidiTools.instance.mappingsAsJSONArray());
+                } else if ("/assets/".equals(target)) {
+                    response.put("asssets", new JSONArray(MidiTools.getAllAssetNames()));
                 }
             } catch (Exception x) {
                 x.printStackTrace(System.err);

@@ -30,12 +30,12 @@ public class RTPMidiPort implements MidiPort
     private AppleMidiSession session;
     private JmDNS jmdns;
 
-    public RTPMidiPort(String name, String rtp_name, int port)
+    public RTPMidiPort(String name, String rtp_name, InetAddress hostname, int port)
     {
         this.name = name;
         this.rtp_name = rtp_name;
         this.port = port;
-        this.hostname = getLocalHost();
+        this.hostname = hostname;
         this.session = new AppleMidiSession()
         {
             protected void onMidiMessage(final io.github.leovr.rtipmidi.model.MidiMessage message, final long timestamp)
@@ -216,27 +216,4 @@ public class RTPMidiPort implements MidiPort
         return this.name;
     }
     
-    // Figure out the local host ignoring any loopback interfaces.
-    public static InetAddress getLocalHost()
-    {
-        InetAddress ra = null;
-        try
-        {
-            for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
-            {
-                NetworkInterface ni = n.nextElement();
-                for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();)
-                {
-                    InetAddress ia = e.nextElement();
-                    if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
-                    {
-                        System.err.println("Possible Local Address:" + ia.toString());
-                        ra = ia;
-                    }
-                }
-            }
-
-        } catch (Exception e) {}
-        return ra;
-    }
 }

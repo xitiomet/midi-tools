@@ -11,6 +11,7 @@ import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.jar.Attributes;
@@ -31,6 +32,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
@@ -69,6 +71,9 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 
 import javax.imageio.ImageIO;
+import javax.jmdns.JmDNS;
+import javax.jmdns.impl.DNSRecord.Address;
+
 import java.awt.image.BufferedImage;
 import java.awt.BorderLayout;
 import java.awt.Toolkit;
@@ -136,7 +141,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private boolean keep_running;
     public APIWebServer apiServer;
     private MidiRandomizerPort randomizerPort;
-    private RTPMidiPort rtpMidiPort;
+    private ArrayList<RTPMidiPort> rtpMidiPorts;
     private Point windowLocation;
     private RoutePutClient routeputClient;
     private RoutePutSessionManager routeputSessionManager;
@@ -461,7 +466,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 // TODO Auto-generated method stub
                 
             }
-        });        this.cmpp = new CollectionMidiPortProvider();
+        });
+        this.cmpp = new CollectionMidiPortProvider();
         MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
@@ -470,17 +476,41 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         MidiTools.this.routeputClient.setAutoReconnect(true);
         MidiTools.this.routeputClient.setCollector(true);
         MidiTools.this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
-        MidiTools.this.routeputClient.setProperty("host", RTPMidiPort.getLocalHost().getHostName());
+        MidiTools.this.routeputClient.setProperty("host", getLocalHost().getHostName());
         MidiTools.this.routeputSessionManager = new RoutePutSessionManager(myChannel, MidiTools.this.routeputClient);
         Thread svcs = new Thread(() -> {
-            this.rtpMidiPort = new RTPMidiPort("RTP Network", "RTP MidiTools" , 5004);
+            this.rtpMidiPorts = new ArrayList<RTPMidiPort>();
             MidiPortManager.addMidiPortListener(this);
             MidiPortManager.addProvider(new DeviceMidiPortProvider());
             MidiPortManager.addProvider(new JoystickMidiPortProvider());
             cmpp.add(this.midi_logger_a);
             cmpp.add(this.midi_logger_b);
             cmpp.add(this.randomizerPort);
-            cmpp.add(this.rtpMidiPort);
+            try
+            {
+                Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+                for (NetworkInterface netint : Collections.list(nets))
+                {
+                    //System.err.println("Interface: " + netint.getDisplayName());
+                    // Create a JmDNS instance
+                    Enumeration<InetAddress> addresses = netint.getInetAddresses();
+                    Collections.list(addresses).forEach((address) -> {
+                        if (address instanceof Inet4Address)
+                        {
+                            try
+                            {
+                                RTPMidiPort rtpPort = new RTPMidiPort("RTP " + address.getHostAddress(), "RTP MidiTools", address, 5004);
+                                MidiTools.this.rtpMidiPorts.add(rtpPort);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                }
+                cmpp.addAll(this.rtpMidiPorts);
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
             MidiPortManager.addProvider(this.routeputSessionManager);
             //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
         });
@@ -511,6 +541,30 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             plugin_root.mkdirs();
         }
         centerWindow();
+    }
+
+    // Figure out the local host ignoring any loopback interfaces.
+    public static InetAddress getLocalHost()
+    {
+        InetAddress ra = null;
+        try
+        {
+            for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
+            {
+                NetworkInterface ni = n.nextElement();
+                for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();)
+                {
+                    InetAddress ia = e.nextElement();
+                    if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
+                    {
+                        System.err.println("Possible Local Address:" + ia.toString());
+                        ra = ia;
+                    }
+                }
+            }
+
+        } catch (Exception e) {}
+        return ra;
     }
 
     public void tryToExit()
@@ -658,6 +712,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MidiPortManager.deleteAllMidiPortMappings();
 
             MidiTools.eraseAssets();
+
+            this.randomizerPort.clearAllRules();
 
             Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
             while(pIterator.hasNext())

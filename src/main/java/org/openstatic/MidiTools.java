@@ -1202,6 +1202,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
             repaintRules();
             repaintMappings();
+            repaintDevices();
             if (this.isShowing())
                 this.windowLocation = this.getLocationOnScreen();
         }

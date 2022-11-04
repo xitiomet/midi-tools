@@ -35,4 +35,8 @@ public interface MidiPort extends Receiver
     
     // transmit to this device. canReceiveMessages should be true.
     public void send(MidiMessage message, long timeStamp);
+
+    // Last time the port recieved data
+    public long getLastActiveAt();
+
 }

@@ -479,6 +479,11 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
             }
         }
     }
+
+    public long getLastActiveAt()
+    {
+        return 0;
+    }
     
     public String toString()
     {

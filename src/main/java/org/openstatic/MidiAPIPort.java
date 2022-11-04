@@ -20,6 +20,7 @@ public class MidiAPIPort implements MidiPort
     private WebSocketSession session;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
+    private long lastActiveAt;
 
     public MidiAPIPort(String name, String deviceId, WebSocketSession session, int type)
     {
@@ -130,6 +131,7 @@ public class MidiAPIPort implements MidiPort
                         int command = data0 & 0xF0;
                         int channel = data0 & 0x0F;
                         final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
+                        this.lastActiveAt = System.currentTimeMillis();
                         for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiAPIPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                         {
                             try
@@ -265,4 +267,10 @@ public class MidiAPIPort implements MidiPort
             }
         }
     }
+    
+    public long getLastActiveAt()
+    {
+        return this.lastActiveAt;
+    }
+
 }

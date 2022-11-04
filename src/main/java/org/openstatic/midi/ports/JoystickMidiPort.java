@@ -17,6 +17,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private ArrayList<Component> controls;
+    private long lastActiveAt;
 
     public JoystickMidiPort(Controller controller)
     {
@@ -87,6 +88,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
                         try
                         {
                             final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, 0, cc, data2);
+                            this.lastActiveAt = System.currentTimeMillis();
                             JoystickMidiPort.this.receivers.forEach((r) -> {
                                 r.send(sm, timeStamp);
                             });
@@ -203,6 +205,11 @@ public class JoystickMidiPort implements MidiPort, Runnable
     public boolean equals(MidiPort port)
     {
         return this.name.equals(port.getName());
+    }
+
+    public long getLastActiveAt()
+    {
+        return this.lastActiveAt;
     }
     
     public String toString()

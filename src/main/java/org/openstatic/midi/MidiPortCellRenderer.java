@@ -19,7 +19,7 @@ public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<
    {
        super();
        this.setBackground(Color.WHITE);
-       this.setOpaque(false);
+       this.setOpaque(true);
        this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 3);
        this.setBorder(this.regularBorder);
    }
@@ -42,7 +42,12 @@ public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<
       }
       this.setText("<html>" + direction + " " + device.getName() + "</html>");
       this.setSelected(device.isOpened());
-
+      if ((System.currentTimeMillis() -  device.getLastActiveAt()) < 1000l)
+      {
+         this.setBackground(new Color(102,255,102));
+      } else {
+         this.setBackground(Color.WHITE);
+      }
       this.setFont(list.getFont());
       this.setEnabled(list.isEnabled());
 

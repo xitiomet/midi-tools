@@ -16,6 +16,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private RoutePutClient upstreamClient;
     private int beatPulse;
+    private long lastActiveAt;
 
     public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
     {
@@ -45,17 +46,18 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         {
             if (j.isType(RoutePutMessage.TYPE_MIDI))
             {
-                    JSONArray data = j.getRoutePutMeta().getJSONArray("data");
-                    final long timeStamp = j.getRoutePutMeta().optLong("ts", getMicrosecondPosition());
-                    int data0 = data.optInt(0, 0);
-                    int data1 = data.optInt(1, 0);
-                    int data2 = data.optInt(2, 0);
-                    int command = data0 & 0xF0;
-                    int channel = data0 & 0x0F;
-                    final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
-                    this.receivers.forEach((r) -> {
-                        r.send(sm, timeStamp);
-                    });
+                this.lastActiveAt = System.currentTimeMillis();
+                JSONArray data = j.getRoutePutMeta().getJSONArray("data");
+                final long timeStamp = j.getRoutePutMeta().optLong("ts", getMicrosecondPosition());
+                int data0 = data.optInt(0, 0);
+                int data1 = data.optInt(1, 0);
+                int data2 = data.optInt(2, 0);
+                int command = data0 & 0xF0;
+                int channel = data0 & 0x0F;
+                final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
+                this.receivers.forEach((r) -> {
+                    r.send(sm, timeStamp);
+                });
             } else if (j.isType(RoutePutMessage.TYPE_PULSE)) {
                 final long timeStamp = j.getRoutePutMeta().optLong("ts", 0);
                 final ShortMessage sm = new ShortMessage(ShortMessage.TIMING_CLOCK);
@@ -176,6 +178,11 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         {
             this.receivers.remove(r);
         }
+    }
+
+    public long getLastActiveAt()
+    {
+        return this.lastActiveAt;
     }
 
     public Collection<Receiver> getReceivers()

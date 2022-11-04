@@ -20,6 +20,7 @@ public class RoutePutSessionMidiPort implements MidiPort
     private RoutePutSession session;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
+    private long lastActiveAt;
 
     public RoutePutSessionMidiPort(String name, String deviceId, RoutePutSession session, int type)
     {
@@ -130,6 +131,7 @@ public class RoutePutSessionMidiPort implements MidiPort
                         int command = data0 & 0xF0;
                         int channel = data0 & 0x0F;
                         final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
+                        this.lastActiveAt = System.currentTimeMillis();
                         for (Enumeration<Receiver> re = ((Vector<Receiver>) RoutePutSessionMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                         {
                             try
@@ -264,5 +266,10 @@ public class RoutePutSessionMidiPort implements MidiPort
                 }
             }
         }
+    }
+
+    public long getLastActiveAt()
+    {
+        return this.lastActiveAt;
     }
 }

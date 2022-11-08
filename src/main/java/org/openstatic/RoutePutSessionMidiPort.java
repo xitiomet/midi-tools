@@ -20,7 +20,8 @@ public class RoutePutSessionMidiPort implements MidiPort
     private RoutePutSession session;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
-    private long lastActiveAt;
+    private long lastRxAt;
+    private long lastTxAt;
 
     public RoutePutSessionMidiPort(String name, String deviceId, RoutePutSession session, int type)
     {
@@ -131,7 +132,7 @@ public class RoutePutSessionMidiPort implements MidiPort
                         int command = data0 & 0xF0;
                         int channel = data0 & 0x0F;
                         final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
-                        this.lastActiveAt = System.currentTimeMillis();
+                        this.lastRxAt = System.currentTimeMillis();
                         for (Enumeration<Receiver> re = ((Vector<Receiver>) RoutePutSessionMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                         {
                             try
@@ -226,6 +227,7 @@ public class RoutePutSessionMidiPort implements MidiPort
     // transmit to this device. canReceiveMessages should be true.
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if(message instanceof ShortMessage && this.opened)
         {
             final ShortMessage sm = (ShortMessage) message;
@@ -268,8 +270,13 @@ public class RoutePutSessionMidiPort implements MidiPort
         }
     }
 
-    public long getLastActiveAt()
+    public long getLastTxAt()
     {
-        return this.lastActiveAt;
+        return this.lastTxAt;
+    }
+    
+    public long getLastRxAt()
+    {
+        return this.lastRxAt;
     }
 }

@@ -37,6 +37,7 @@ public interface MidiPort extends Receiver
     public void send(MidiMessage message, long timeStamp);
 
     // Last time the port recieved data
-    public long getLastActiveAt();
-
+    public long getLastRxAt();
+// Last time the port recieved data
+    public long getLastTxAt();
 }

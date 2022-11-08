@@ -19,7 +19,8 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
     private RoutePutClient upstreamClient;
     private int beatPulse;
     private String channelName;
-    private long lastActiveAt;
+    private long lastRxAt;
+    private long lastTxAt;
 
     public MIDIChannelMidiPort(String channelName)
     {
@@ -58,7 +59,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
                     int command = data0 & 0xF0;
                     int channel = data0 & 0x0F;
                     final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
-                    this.lastActiveAt = System.currentTimeMillis();
+                    this.lastRxAt = System.currentTimeMillis();
                     this.receivers.forEach((r) -> {
                         r.send(sm, timeStamp);
                     });
@@ -156,6 +157,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
     
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if(message instanceof ShortMessage && this.opened && this.upstreamClient.isConnected())
         {
             final ShortMessage sm = (ShortMessage) message;
@@ -224,9 +226,14 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
         return this.getName();
     }
 
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
-        return this.lastActiveAt;
+        return this.lastRxAt;
+    }
+
+    public long getLastTxAt()
+    {
+        return this.lastTxAt;
     }
 
 }

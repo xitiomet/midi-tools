@@ -71,6 +71,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private ArrayBlockingQueue<Runnable> taskQueue;
     private Thread taskThread;
     private int beatPulse;
+    private long lastTxAt;
     
     /*
     class ScrollingDocumentListener implements DocumentListener
@@ -464,6 +465,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     // transmit to this device. canReceiveMessages should be true.
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if (message instanceof ShortMessage && this.opened)
         {
             ShortMessage smsg = (ShortMessage) message;
@@ -480,9 +482,14 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         }
     }
 
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
         return 0;
+    }
+
+    public long getLastTxAt()
+    {
+        return this.lastTxAt;
     }
     
     public String toString()

@@ -1925,8 +1925,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         try
         {
-            Desktop dt = Desktop.getDesktop();
-            dt.browse(new URI(url));
+            CopyOrGo copyOrGo = new CopyOrGo(MidiTools.instance, url);
+            copyOrGo.setVisible(true);
             return true;
         } catch (Exception dt_ex) {
             return false;

@@ -11,14 +11,13 @@ import org.json.*;
 public class MidiRandomizerPort implements MidiPort, Runnable
 {
     private String name;
-    private Receiver outputReceiver;
     private Thread myThread;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private JSONArray randomRules = new JSONArray();
     private Vector<RandomizerRulesListener> listeners;
-    private long lastActiveAt;
-
+    private long lastRxAt;
+    private long lastTxAt;
 
     public MidiRandomizerPort(String name)
     {
@@ -239,7 +238,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                                 randRule.put("_value", data2);
                                 randRule.put("_lastChangeMillis", currentMillis);
                                 final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, (channel-1), cc, data2);
-                                this.lastActiveAt = System.currentTimeMillis();
+                                this.lastRxAt = System.currentTimeMillis();
                                 MidiRandomizerPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timeStamp);
                                 });
@@ -296,10 +295,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     
     public void send(MidiMessage message, long timeStamp)
     {
-        if (this.outputReceiver != null)
-        {
-            this.outputReceiver.send(message, timeStamp);
-        }
+        
     }
 
     public void addReceiver(Receiver r)
@@ -318,9 +314,14 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         }
     }
 
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
-        return this.lastActiveAt;
+        return this.lastRxAt;
+    }
+
+    public long getLastTxAt()
+    {
+        return 0;
     }
 
     public Collection<Receiver> getReceivers()

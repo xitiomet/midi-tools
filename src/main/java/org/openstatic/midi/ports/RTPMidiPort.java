@@ -29,7 +29,8 @@ public class RTPMidiPort implements MidiPort
     private AppleMidiServer appleMidiServer;
     private AppleMidiSession session;
     private JmDNS jmdns;
-    private long lastActiveAt;
+    private long lastRxAt;
+    private long lastTxAt;
 
     public RTPMidiPort(String name, String rtp_name, InetAddress hostname, int port)
     {
@@ -51,7 +52,7 @@ public class RTPMidiPort implements MidiPort
                             try
                             {
                                 ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
-                                RTPMidiPort.this.lastActiveAt = System.currentTimeMillis();
+                                RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
                                 });
@@ -174,6 +175,7 @@ public class RTPMidiPort implements MidiPort
     
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if (this.session != null && message instanceof ShortMessage && this.opened)
         {
             byte[] msgData = message.getMessage();
@@ -213,9 +215,14 @@ public class RTPMidiPort implements MidiPort
         return this.name.equals(port.getName());
     }
     
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
-        return this.lastActiveAt;
+        return this.lastRxAt;
+    }
+
+    public long getLastTxAt()
+    {
+        return this.lastTxAt;
     }
 
     public String toString()

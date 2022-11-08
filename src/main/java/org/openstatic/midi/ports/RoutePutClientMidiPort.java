@@ -16,7 +16,8 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private RoutePutClient upstreamClient;
     private int beatPulse;
-    private long lastActiveAt;
+    private long lastRxAt;
+    private long lastTxAt;
 
     public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
     {
@@ -46,7 +47,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         {
             if (j.isType(RoutePutMessage.TYPE_MIDI))
             {
-                this.lastActiveAt = System.currentTimeMillis();
+                this.lastRxAt = System.currentTimeMillis();
                 JSONArray data = j.getRoutePutMeta().getJSONArray("data");
                 final long timeStamp = j.getRoutePutMeta().optLong("ts", getMicrosecondPosition());
                 int data0 = data.optInt(0, 0);
@@ -132,6 +133,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if(message instanceof ShortMessage && this.opened && this.upstreamClient.isConnected())
         {
             final ShortMessage sm = (ShortMessage) message;
@@ -180,9 +182,14 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         }
     }
 
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
-        return this.lastActiveAt;
+        return this.lastRxAt;
+    }
+
+    public long getLastTxAt()
+    {
+        return this.lastTxAt;
     }
 
     public Collection<Receiver> getReceivers()

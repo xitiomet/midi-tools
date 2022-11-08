@@ -21,7 +21,8 @@ public class DeviceMidiPort implements MidiPort
     
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
-    private long lastActiveAt;
+    private long lastRxAt;
+    private long lastTxAt;
 
     public DeviceMidiPort(MidiDevice device)
     {
@@ -31,7 +32,7 @@ public class DeviceMidiPort implements MidiPort
         {
             public void send(MidiMessage message, long timeStamp)
             {
-                DeviceMidiPort.this.lastActiveAt = System.currentTimeMillis();
+                DeviceMidiPort.this.lastRxAt = System.currentTimeMillis();
                 for (Enumeration<Receiver> re = ((Vector<Receiver>) DeviceMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                 {
                     try
@@ -133,6 +134,7 @@ public class DeviceMidiPort implements MidiPort
     
     public void send(MidiMessage message, long timeStamp)
     {
+        this.lastTxAt = System.currentTimeMillis();
         if (this.deviceReceiver != null)
         {
             this.deviceReceiver.send(message, timeStamp);
@@ -175,8 +177,13 @@ public class DeviceMidiPort implements MidiPort
         return this.name;
     }
 
-    public long getLastActiveAt()
+    public long getLastRxAt()
     {
-        return this.lastActiveAt;
+        return this.lastRxAt;
+    }
+
+    public long getLastTxAt()
+    {
+        return this.lastTxAt;
     }
 }

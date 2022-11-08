@@ -1,9 +1,10 @@
 package org.openstatic.midi.ports;
 
+import org.openstatic.MidiTools;
 import org.openstatic.midi.*;
 
-
 import io.github.leovr.rtipmidi.*;
+import io.github.leovr.rtipmidi.messages.AppleMidiInvitationRequest;
 import io.github.leovr.rtipmidi.session.AppleMidiSession;
 //import io.github.leovr.rtipmidi.model.MidiMessage;
 
@@ -62,6 +63,11 @@ public class RTPMidiPort implements MidiPort
                         }
                     }
                 }
+            }
+
+            protected void onMidiInvitation(AppleMidiInvitationRequest req, AppleMidiServer server)
+            {
+                MidiTools.logIt("RTP Invitation from " + req.getName());
             }
         };
         Runtime.getRuntime().addShutdownHook(new Thread()
@@ -125,9 +131,21 @@ public class RTPMidiPort implements MidiPort
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
-                this.appleMidiServer = new AppleMidiServer(this.hostname.getHostName(), this.port);
-                this.appleMidiServer.addAppleMidiSession(session);
-                this.appleMidiServer.start();
+                try
+                {
+                    String strHostname = this.hostname.getHostName();
+                    System.err.println("Launching RTP on " + strHostname + ":" + String.valueOf(this.port));
+                    this.appleMidiServer = new AppleMidiServer(this.hostname, this.rtp_name, this.port);
+                    this.appleMidiServer.addAppleMidiSession(this.session);
+                    this.appleMidiServer.start();
+                } catch (Exception e2) {
+                    Thread t2 = new Thread(() -> {
+                        shutDownMDNS();
+                    });
+                    t2.start();
+                    this.opened = false;
+                    MidiTools.instance.midi_logger_b.printException(e2);
+                }
             });
             t.start();
             MidiPortManager.firePortOpened(this);

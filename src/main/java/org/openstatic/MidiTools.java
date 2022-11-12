@@ -87,6 +87,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 
 import org.openstatic.routeput.*;
@@ -1218,6 +1219,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             repaintDevices();
             if (this.isShowing())
                 this.windowLocation = this.getLocationOnScreen();
+            Component mainTabComponent = this.mainTabbedPane.getSelectedComponent();
+            if (mainTabComponent != null)
+                mainTabComponent.repaint();
         }
     }
 

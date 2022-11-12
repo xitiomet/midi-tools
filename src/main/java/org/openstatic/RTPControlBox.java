@@ -59,7 +59,8 @@ public class RTPControlBox extends JPanel implements ActionListener
                        long cms = System.currentTimeMillis();
                        if (cms - RTPControlBox.this.lastMappingClick < 500 && RTPControlBox.this.lastMappingClick > 0)
                        {
-                          client.start();
+                          if (!client.isConnected())
+                              client.start();
                        }
                        RTPControlBox.this.lastMappingClick = cms;
                    } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
@@ -98,7 +99,7 @@ public class RTPControlBox extends JPanel implements ActionListener
             this.disableAllButton = new JButton(disableIcon);
             this.disableAllButton.addActionListener(this);
             this.disableAllButton.setActionCommand("disable_selected");
-            this.disableAllButton.setToolTipText("Disable selected mappings");
+            this.disableAllButton.setToolTipText("Disconnect Selected Connections");
             this.buttonPanel.add(this.disableAllButton);
 
             this.icon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/rtpnet32.png")));
@@ -141,13 +142,7 @@ public class RTPControlBox extends JPanel implements ActionListener
                 while (mIterator.hasNext())
                 {
                     AppleMidiSessionClient client = mIterator.next();
-                    int n = JOptionPane.showConfirmDialog(null, "Disconnect from?\n" + client.getRemoteName(),
-                        "Port Mapping",
-                        JOptionPane.YES_NO_OPTION);
-                        if(n == JOptionPane.YES_OPTION)
-                        {
-                            client.stopClient();
-                        }
+                    client.stopClient();
                 }
                 this.mappingList.repaint();
             }

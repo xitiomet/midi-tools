@@ -4,22 +4,39 @@ import org.openstatic.MidiTools;
 import org.openstatic.midi.*;
 
 import io.github.leovr.rtipmidi.*;
+import io.github.leovr.rtipmidi.messages.AppleMidiInvitationAccepted;
+import io.github.leovr.rtipmidi.messages.AppleMidiInvitationDeclined;
 import io.github.leovr.rtipmidi.messages.AppleMidiInvitationRequest;
 import io.github.leovr.rtipmidi.session.AppleMidiSession;
+import io.github.leovr.rtipmidi.session.AppleMidiSessionClient;
+
+import java.net.Inet4Address;
+
 //import io.github.leovr.rtipmidi.model.MidiMessage;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
+import javax.annotation.Nonnull;
 import javax.jmdns.JmDNS;
+import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceInfo;
+import javax.jmdns.ServiceListener;
 
 import javax.sound.midi.*;
+import javax.swing.ListModel;
+import javax.swing.SwingUtilities;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+
 import java.util.Vector;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 
-public class RTPMidiPort implements MidiPort
+public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMidiSessionClient>
 {
     private String name;
     private String rtp_name;
@@ -27,6 +44,8 @@ public class RTPMidiPort implements MidiPort
     private InetAddress hostname;
     private boolean opened;
     private Vector<Receiver> receivers = new Vector<Receiver>();
+    private LinkedHashMap<String, AppleMidiSessionClient> remoteServers = new LinkedHashMap<String, AppleMidiSessionClient>();
+    private Vector<ListDataListener> listeners = new Vector<ListDataListener>();
     private AppleMidiServer appleMidiServer;
     private AppleMidiSession session;
     private JmDNS jmdns;
@@ -69,6 +88,22 @@ public class RTPMidiPort implements MidiPort
             {
                 MidiTools.logIt("RTP Invitation from " + req.getName());
             }
+
+            @Override
+            public void onMidiInvitationAccepted(@Nonnull AppleMidiInvitationAccepted arg0,
+                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServer arg1) {
+                MidiTools.logIt("RTP Invitation accepted by " + arg0.getName());
+
+                
+            }
+
+            @Override
+            public void onMidiInvitationDeclined(@Nonnull AppleMidiInvitationDeclined arg0,
+                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServer arg1) {
+                MidiTools.logIt("RTP Invitation declined by " + arg0.getName());
+
+                
+            }
         };
         Runtime.getRuntime().addShutdownHook(new Thread()
         {
@@ -77,6 +112,25 @@ public class RTPMidiPort implements MidiPort
             RTPMidiPort.this.shutDownMDNS();
           }
         });
+    }
+
+    public Collection<AppleMidiSessionClient> getRemoteServers()
+    {
+        return this.remoteServers.values();
+    }
+
+    public AppleMidiSessionClient addSessionClient(String name, String ipAddress, int port)
+    {
+        try
+        {
+            AppleMidiSessionClient client = new AppleMidiSessionClient(name, InetAddress.getByName(ipAddress), port, this.rtp_name);
+            client.setAppleMidiSession(this.session);
+            this.remoteServers.put(name, client);
+            return client;
+        } catch (Exception e) {
+            MidiTools.instance.midi_logger_b.printException(e);
+        }
+        return null;
     }
 
     public void shutDownMDNS()
@@ -128,6 +182,7 @@ public class RTPMidiPort implements MidiPort
                     this.jmdns = JmDNS.create(this.hostname);
                     ServiceInfo serviceInfo = ServiceInfo.create("_apple-midi._udp.local.", this.rtp_name, this.port, "MidiTools RTP Port " + this.name);
                     jmdns.registerService(serviceInfo);
+                    jmdns.addServiceListener("_apple-midi._udp.local.", RTPMidiPort.this);
                 } catch (Exception e) {
                     e.printStackTrace(System.err);
                 }
@@ -184,6 +239,11 @@ public class RTPMidiPort implements MidiPort
                     this.appleMidiServer.stop();
                     this.appleMidiServer = null;
                 }
+                this.remoteServers.values().forEach((remoteServer) -> 
+                {
+                    remoteServer.stopClient();
+                });
+                this.remoteServers.clear();
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
@@ -246,6 +306,118 @@ public class RTPMidiPort implements MidiPort
     public String toString()
     {
         return this.name;
+    }
+
+    @Override
+    public void serviceAdded(ServiceEvent event) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    private void addRemoteServer(String name, AppleMidiSessionClient server)
+    {
+        if (!this.remoteServers.containsKey(name))
+        {
+            this.remoteServers.put(name, server);
+            int location = this.remoteServers.size();
+            for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
+            {
+                try
+                {
+                    final ListDataListener ldl = ldle.nextElement();
+                    final ListDataEvent lde = new ListDataEvent(server, ListDataEvent.INTERVAL_ADDED, location, location);
+                    SwingUtilities.invokeAndWait(() -> {
+                        System.err.println("Interval Added "+ String.valueOf(location));
+                        ldl.intervalAdded(lde);
+                    });
+                } catch (Exception mlex) {
+                }
+            }
+        }
+    }
+
+    private void removeRemoteServer(String name)
+    {
+        if (this.remoteServers.containsKey(name))
+        {
+            int location = 0;
+            Iterator<String> kIterator = this.remoteServers.keySet().iterator();
+            while(kIterator.hasNext())
+            {
+                String key = kIterator.next();
+                if (key.equals(name))
+                    break;
+                location++;
+            }
+            final int fLocation = location;
+            AppleMidiSessionClient server = this.remoteServers.remove(name);
+            for (Enumeration<ListDataListener> ldle = ((Vector<ListDataListener>) this.listeners.clone()).elements(); ldle.hasMoreElements();)
+            {
+                try
+                {
+                    final ListDataListener ldl = ldle.nextElement();
+                    final ListDataEvent lde = new ListDataEvent(server, ListDataEvent.INTERVAL_REMOVED, location, location);
+                    SwingUtilities.invokeAndWait(() -> {
+                        System.err.println("Interval Removed "+ String.valueOf(fLocation));
+                        ldl.intervalRemoved(lde);
+                    });
+                } catch (Exception mlex) {
+                }
+            }
+        }
+    }
+
+    @Override
+    public void serviceRemoved(ServiceEvent event) {
+        // TODO Auto-generated method stub
+        ServiceInfo serviceInfo = event.getInfo();
+        String serviceName = serviceInfo.getName();
+        removeRemoteServer(serviceName);
+    }
+
+    @Override
+    public void serviceResolved(ServiceEvent event) {
+        // TODO Auto-generated method stub
+        ServiceInfo serviceInfo = event.getInfo();
+        int port = serviceInfo.getPort();
+        String serviceName = serviceInfo.getName();
+        if (!remoteServers.containsKey(serviceName))
+        {
+            System.err.println(this.getName() + " resovled " + serviceName);
+            Inet4Address[] addresses = serviceInfo.getInet4Addresses();
+            AppleMidiSessionClient remoteServer = new AppleMidiSessionClient(serviceName, addresses[0], port, this.rtp_name);
+            remoteServer.setAppleMidiSession(this.session);
+            addRemoteServer(serviceName, remoteServer);
+        }
+    }
+
+    @Override
+    public int getSize() {
+        // TODO Auto-generated method stub
+        return this.remoteServers.size();
+    }
+
+    @Override
+    public AppleMidiSessionClient getElementAt(int index) {
+        // TODO Auto-generated method stub
+        return remoteServers.values().toArray(new AppleMidiSessionClient[remoteServers.size()])[index];
+    }
+
+    @Override
+    public void addListDataListener(ListDataListener l)
+    {
+        //System.err.println("RTPMidi port addListDataListener");
+        if (!this.listeners.contains(l))
+            this.listeners.add(l);
+    }
+
+    @Override
+    public void removeListDataListener(ListDataListener l)
+    {
+        try
+        {
+            this.listeners.remove(l);
+        } catch (Exception e) {}
     }
     
 }

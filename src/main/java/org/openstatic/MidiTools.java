@@ -640,6 +640,12 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         this.midi_logger_b.println("MIDI Port Opened " + port.toString());
         port.addReceiver(MidiTools.this.midiControlsPanel);
+        if (port instanceof RTPMidiPort)
+        {
+            RTPMidiPort rtpPort = (RTPMidiPort) port;
+            RTPControlBox controlBox = new RTPControlBox(rtpPort);
+            MidiTools.this.mainTabbedPane.addTab(rtpPort.getName(), controlBox.getIcon(), controlBox);
+        }
         repaintDevices();
     }
     
@@ -647,6 +653,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         this.midi_logger_b.println("MIDI Port Closed " + port.toString());
         port.removeReceiver(MidiTools.this.midiControlsPanel);
+        if (port instanceof RTPMidiPort)
+        {
+            RTPMidiPort rtpPort = (RTPMidiPort) port;
+            String portName = rtpPort.getName();
+            int tabIndex = MidiTools.this.mainTabbedPane.indexOfTab(portName);
+            MidiTools.this.mainTabbedPane.remove(tabIndex);
+        }
         repaintDevices();
     }
     

@@ -16,6 +16,7 @@ import javax.swing.ImageIcon;
 import javax.swing.border.Border;
 
 import org.openstatic.midi.MidiToolsPlugin;
+import org.openstatic.midi.ports.RTPMidiPort;
 
 import io.github.leovr.rtipmidi.session.AppleMidiSessionClient;
 
@@ -25,12 +26,14 @@ public class AppleMidiSessionClientCellRenderer extends JPanel implements ListCe
    private Border regularBorder;
    private JCheckBox checkBox;
    private ImageIcon urlIcon;
+   private RTPMidiPort rtpPort;
    
-   public AppleMidiSessionClientCellRenderer()
+   public AppleMidiSessionClientCellRenderer(RTPMidiPort rtpPort)
    {
       super(new BorderLayout());
       this.setOpaque(true);
       this.setBackground(Color.WHITE);
+      this.rtpPort = rtpPort;
       this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 1);
       this.checkBox = new JCheckBox("");
       this.checkBox.setOpaque(false);
@@ -50,18 +53,19 @@ public class AppleMidiSessionClientCellRenderer extends JPanel implements ListCe
                                                  boolean isSelected,
                                                  boolean cellHasFocus)
    {
-      this.checkBox.setText("<html><body style=\"padding: 3px 3px 3px 3px;\">" + client.getRemoteName() + "</body></html>");
       this.checkBox.setIcon(this.urlIcon);
-      if (client.isConnected())
+      String ipString = client.getRemoteAddress().toString() + ":" + String.valueOf(client.getControlPort());
+      if (ipString.startsWith("/"))
+       ipString = ipString.substring(1);
+      if (client.isConnected() || client.hasServerConnection(this.rtpPort.getAppleMidiServer()))
       {
-         
-         this.setBackground(new Color(102,255,102));
+         this.checkBox.setText("<html><body style=\"padding: 3px 3px 3px 3px;\"><b style=\"font-size: 14px;\">" + client.getRemoteName() + "</b><br />" + ipString + " (Connected)</body></html>");
       } else {
-         this.setBackground(Color.WHITE);
+         this.checkBox.setText("<html><body style=\"padding: 3px 3px 3px 3px;\"><span style=\"font-size: 14px;\">" + client.getRemoteName() + "</span><br />" + ipString + " (Not Connected)</body></html>");
       }
       
       this.checkBox.setSelected(client.isConnected());
-
+      this.setBackground(Color.WHITE);
       this.setFont(list.getFont());
       this.setEnabled(list.isEnabled());
 

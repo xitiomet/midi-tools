@@ -114,6 +114,11 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
         });
     }
 
+    public AppleMidiServer getAppleMidiServer()
+    {
+        return this.appleMidiServer;
+    }
+
     public Collection<AppleMidiSessionClient> getRemoteServers()
     {
         return this.remoteServers.values();

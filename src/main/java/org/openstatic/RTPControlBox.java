@@ -40,7 +40,7 @@ public class RTPControlBox extends JPanel implements ActionListener
     {
         super(new BorderLayout());
         this.port = port;
-        this.appleMidiSessionClientCellRenderer = new AppleMidiSessionClientCellRenderer();
+        this.appleMidiSessionClientCellRenderer = new AppleMidiSessionClientCellRenderer(port);
         this.mappingList = new JList<AppleMidiSessionClient>(port);
         this.mappingList.setOpaque(true);
         this.mappingList.setCellRenderer(this.appleMidiSessionClientCellRenderer);
@@ -59,8 +59,10 @@ public class RTPControlBox extends JPanel implements ActionListener
                        long cms = System.currentTimeMillis();
                        if (cms - RTPControlBox.this.lastMappingClick < 500 && RTPControlBox.this.lastMappingClick > 0)
                        {
-                          if (!client.isConnected())
-                              client.start();
+                          if (!client.isConnected() && !client.hasServerConnection(port.getAppleMidiServer()))
+                          {
+                            client.start();
+                          }
                        }
                        RTPControlBox.this.lastMappingClick = cms;
                    } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
@@ -69,7 +71,8 @@ public class RTPControlBox extends JPanel implements ActionListener
                         JOptionPane.YES_NO_OPTION);
                         if(n == JOptionPane.YES_OPTION)
                         {
-                            client.stopClient();
+                            if (client.isConnected())
+                               client.stopClient();
                         }
                    }
                    RTPControlBox.this.repaint();
@@ -128,7 +131,7 @@ public class RTPControlBox extends JPanel implements ActionListener
                 while (mIterator.hasNext())
                 {
                     AppleMidiSessionClient client = mIterator.next();
-                    if (!client.isConnected())
+                    if (!client.isConnected() && !client.hasServerConnection(port.getAppleMidiServer()))
                         client.start();
                 }
             }

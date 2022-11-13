@@ -71,7 +71,29 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                         {
                             try
                             {
-                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
+                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[3]);
+                                RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
+                                RTPMidiPort.this.receivers.forEach((r) -> {
+                                    r.send(sm, timestamp);
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
+                        } else if (msgData.length == 2) {
+                            try
+                            {
+                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], 0);
+                                RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
+                                RTPMidiPort.this.receivers.forEach((r) -> {
+                                    r.send(sm, timestamp);
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
+                        } else if (msgData.length == 1) {
+                            try
+                            {
+                                ShortMessage sm = new ShortMessage(msgData[0] & 0xFF);
                                 RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
@@ -262,8 +284,17 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
         if (this.session != null && message instanceof ShortMessage && this.opened)
         {
             byte[] msgData = message.getMessage();
-            io.github.leovr.rtipmidi.model.ShortMessage rtpSM = new io.github.leovr.rtipmidi.model.ShortMessage(msgData[0], msgData[1], msgData[2]);
-            this.session.sendMidiMessage(rtpSM, timeStamp);
+            if (msgData.length == 3)
+            {
+                io.github.leovr.rtipmidi.model.ShortMessage rtpSM = new io.github.leovr.rtipmidi.model.ShortMessage(msgData[0], msgData[1], msgData[2]);
+                this.session.sendMidiMessage(rtpSM, timeStamp);
+            } else if (msgData.length == 2) {
+                io.github.leovr.rtipmidi.model.ShortMessage rtpSM = new io.github.leovr.rtipmidi.model.ShortMessage(msgData[0], msgData[1]);
+                this.session.sendMidiMessage(rtpSM, timeStamp);
+            } else if (msgData.length == 1) {
+                io.github.leovr.rtipmidi.model.ShortMessage rtpSM = new io.github.leovr.rtipmidi.model.ShortMessage(msgData[0]);
+                this.session.sendMidiMessage(rtpSM, timeStamp);
+            }
         }
     }
 

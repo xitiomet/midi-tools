@@ -31,6 +31,7 @@ public class RTPControlBox extends JPanel implements ActionListener
     private long lastMappingClick;
     private JPanel buttonPanel;
     private JButton connectButton;
+    private JButton openUrlButton;
     private JButton selectAllButton;
     private JButton disableAllButton;
     private RTPMidiPort port;
@@ -65,15 +66,6 @@ public class RTPControlBox extends JPanel implements ActionListener
                           }
                        }
                        RTPControlBox.this.lastMappingClick = cms;
-                   } else if (e.getButton() == MouseEvent.BUTTON2 || e.getButton() == MouseEvent.BUTTON3) {
-                      int n = JOptionPane.showConfirmDialog(null, "Disconnect from?\n" + client.getRemoteName(),
-                        "Port Mapping",
-                        JOptionPane.YES_NO_OPTION);
-                        if(n == JOptionPane.YES_OPTION)
-                        {
-                            if (client.isConnected())
-                               client.stopClient();
-                        }
                    }
                    RTPControlBox.this.repaint();
                }
@@ -90,6 +82,13 @@ public class RTPControlBox extends JPanel implements ActionListener
             this.connectButton.addActionListener(this);
             this.connectButton.setToolTipText("Connect to Server");
             this.buttonPanel.add(this.connectButton);
+
+            ImageIcon urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
+            this.openUrlButton = new JButton(urlIcon);
+            this.openUrlButton.setActionCommand("url");
+            this.openUrlButton.addActionListener(this);
+            this.openUrlButton.setToolTipText("Open Device webpage");
+            this.buttonPanel.add(this.openUrlButton);
 
             ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
             this.selectAllButton = new JButton(selectAllIcon);
@@ -134,6 +133,24 @@ public class RTPControlBox extends JPanel implements ActionListener
                     if (!client.isConnected() && !client.hasServerConnection(port.getAppleMidiServer()))
                         client.start();
                 }
+            }
+        } else if (e.getSource() == this.openUrlButton) {
+            Collection<AppleMidiSessionClient> selectedRules = this.getSelectedMappings();
+            if (selectedRules.size() == 0)
+            {
+                
+            } else {
+                Iterator<AppleMidiSessionClient> mIterator = selectedRules.iterator();
+                while (mIterator.hasNext())
+                {
+                    AppleMidiSessionClient client = mIterator.next();
+                    String ipString = client.getRemoteAddress().toString();
+                    if (ipString.startsWith("/"))
+                        ipString = ipString.substring(1);
+                    String url = "http://" + ipString + "/";
+                    MidiTools.browseTo(url);
+                }
+                this.mappingList.repaint();
             }
         } else if (e.getSource() == this.disableAllButton) {
             Collection<AppleMidiSessionClient> selectedRules = this.getSelectedMappings();

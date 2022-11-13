@@ -145,7 +145,13 @@ public class RTPControlBox extends JPanel implements ActionListener
                 while (mIterator.hasNext())
                 {
                     AppleMidiSessionClient client = mIterator.next();
-                    client.stopClient();
+                    if (client.isConnected())
+                    {
+                        client.stopClient();
+                    } else if (client.hasServerConnection(port.getAppleMidiServer())) {
+                        System.err.println("Closing remote connection ... ... ...");
+                        port.getAppleMidiServer().closeConnection(client.getRemoteAddress(), client.getControlPort());
+                    }
                 }
                 this.mappingList.repaint();
             }

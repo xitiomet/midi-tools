@@ -96,7 +96,7 @@ import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener
 {
-    public static final String VERSION = "1.5";
+    public static final String VERSION = "1.6";
     public static String LOCAL_SERIAL;
     public static long appLaunchTime;
     public static boolean windowWentVisible = false;
@@ -496,7 +496,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     // Create a JmDNS instance
                     Enumeration<InetAddress> addresses = netint.getInetAddresses();
                     Collections.list(addresses).forEach((address) -> {
-                        if (address instanceof Inet4Address)
+                        if (address.isSiteLocalAddress())
                         {
                             try
                             {

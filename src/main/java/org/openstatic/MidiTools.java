@@ -7,6 +7,7 @@ import org.openstatic.midi.ports.MidiRandomizerPort;
 import org.openstatic.midi.ports.RTPMidiPort;
 import org.openstatic.midi.providers.CollectionMidiPortProvider;
 import org.openstatic.midi.providers.DeviceMidiPortProvider;
+import org.openstatic.midi.providers.JackMidiPortProvider;
 import org.openstatic.midi.providers.JoystickMidiPortProvider;
 
 import java.util.HashMap;
@@ -150,6 +151,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private RoutePutClient routeputClient;
     private RoutePutSessionManager routeputSessionManager;
     public CollectionMidiPortProvider cmpp;
+    public JackMidiPortProvider jmpp;
     private JMenuItem routeputConnectMenuItem;
     private MappingControlBox mappingControlBox;
     protected MidiControlRulePanel midiControlRulePanel;
@@ -160,7 +162,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
 
-    public MidiTools()
+    public MidiTools(String os_name)
     {
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
         MidiTools.appLaunchTime = System.currentTimeMillis();
@@ -524,6 +526,18 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 e.printStackTrace(System.err);
             }
             MidiPortManager.addProvider(this.routeputSessionManager);
+            if (os_name.contains("linux"))
+            {
+                System.err.println("Starting Jack Suppport");
+                try
+                {
+                    this.jmpp = new JackMidiPortProvider();
+                    MidiPortManager.addProvider(this.jmpp);
+                    System.err.println("Initialized Jack Suppport");
+                } catch (Exception jmppex) {
+                    jmppex.printStackTrace(System.err);
+                }
+            }
             //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
         });
         svcs.start();
@@ -1400,7 +1414,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         }
         MidiTools.eraseAssets();
-        MidiTools mlb = new MidiTools();
+        MidiTools mlb = new MidiTools(os_name);
         mlb.start();
         //logIt("loading config");
         File loadFile = null;

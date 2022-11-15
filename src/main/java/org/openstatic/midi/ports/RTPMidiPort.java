@@ -71,7 +71,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                         {
                             try
                             {
-                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[3]);
+                                ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
                                 RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
@@ -227,6 +227,8 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                     t2.start();
                     this.opened = false;
                     MidiTools.instance.midi_logger_b.printException(e2);
+                    MidiPortManager.firePortClosed(this);
+                    
                 }
             });
             t.start();

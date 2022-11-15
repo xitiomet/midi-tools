@@ -88,7 +88,12 @@
         <artifactId>routeput</artifactId>
         <version>1.2022.0907</version>
     </dependency>
-    
+    <!-- https://mvnrepository.com/artifact/org.jaudiolibs/jnajack -->
+    <dependency>
+        <groupId>org.jaudiolibs</groupId>
+        <artifactId>jnajack</artifactId>
+        <version>1.4.0</version>
+    </dependency>
   </dependencies>
   <reporting>
     <plugins>

@@ -43,6 +43,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<MidiControl> controlSelector;
     private JComboBox<String> pluginSelector;
     private JComboBox<String> pluginTargetSelector;
+    private JComboBox<String> showImageModeSelector;
     private JComboBox<String> actionSelector;
     private JTextField nicknameField;
     private JComboBox<String> ruleGroupField;
@@ -86,9 +87,17 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     File assetFile = MidiTools.addProjectAsset(fileToLoad);
                     String filename = assetFile.getName();
                     this.selectFileField.setSelectedItem(filename);
-                    this.actionValueField.setText(filename);
+                    if (this.actionSelector.getSelectedIndex() == MidiControlRule.ACTION_SHOW_IMAGE)
+                        this.actionValueField.setText(filename + "," + this.showImageModeSelector.getSelectedItem().toString());
+                    else
+                        this.actionValueField.setText(filename);
                 }
             }
+        }
+
+        if (e.getSource() == this.showImageModeSelector)
+        {
+            this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
         }
 
         if (e.getSource() == this.pluginSelector)
@@ -214,7 +223,23 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
-            this.selectFileField.setSelectedItem(this.actionValueField.getText());
+            if (i == MidiControlRule.ACTION_SHOW_IMAGE)
+            {
+                this.actionValuePanel.add(this.showImageModeSelector, BorderLayout.PAGE_END);
+                StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
+                if (st.countTokens() == 2)
+                {
+                    String filename = st.nextToken();
+                    this.selectFileField.setSelectedItem(filename);
+                    String mode = st.nextToken();
+                    this.showImageModeSelector.setSelectedItem(mode);
+                } else {
+                    String filename = st.nextToken();
+                    this.selectFileField.setSelectedItem(filename);
+                }
+            } else {
+                this.selectFileField.setSelectedItem(this.actionValueField.getText());
+            }
         } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");
             refreshDevices();
@@ -336,7 +361,20 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.pluginTargetSelector.addActionListener(this);
         this.pluginTargetSelector.setBackground(Color.WHITE);
 
-        
+        this.showImageModeSelector = new JComboBox<String>();
+        this.showImageModeSelector.setEditable(false);
+        this.showImageModeSelector.addActionListener(this);
+        this.showImageModeSelector.setBackground(Color.WHITE);
+        Vector<String> imageModes = new Vector<String>();
+        imageModes.add("opacity");
+        imageModes.add("scale");
+        imageModes.add("rotate");
+        imageModes.add("opacity scale");
+        imageModes.add("rotate scale");
+        imageModes.add("opacity rotate");
+        imageModes.add("opacity rotate scale");
+        this.showImageModeSelector.setModel(new DefaultComboBoxModel<String>(imageModes));
+
         this.selectRuleGroupDropdown = new JComboBox<String>(actionList);
         this.selectRuleGroupDropdown.setEditable(true);
         this.selectRuleGroupDropdown.addActionListener(this);

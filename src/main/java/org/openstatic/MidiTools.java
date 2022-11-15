@@ -21,6 +21,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Vector;
 
 import net.glxn.qrgen.QRCode;
@@ -487,6 +488,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             cmpp.add(this.midi_logger_a);
             cmpp.add(this.midi_logger_b);
             cmpp.add(this.randomizerPort);
+            String localHostname = getLocalHostname();
             try
             {
                 Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
@@ -500,7 +502,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         {
                             try
                             {
-                                RTPMidiPort rtpPort = new RTPMidiPort("RTP " + address.getHostAddress(), "RTP MidiTools", address, 5004);
+                                RTPMidiPort rtpPort = new RTPMidiPort("RTP " + address.getHostAddress(), localHostname + " MidiTools", address, 5004);
                                 MidiTools.this.rtpMidiPorts.add(rtpPort);
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -566,6 +568,84 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
         } catch (Exception e) {}
         return ra;
+    }
+
+    public static String shellExec(String cmd[])
+    {
+        try
+        {
+            Process cmdProc = Runtime.getRuntime().exec(cmd);
+            cmdProc.waitFor();
+            return readStreamToString(cmdProc.getInputStream());
+        } catch (Exception e) {
+           
+        }
+        return null;
+    }
+
+    public static String readStreamToString(InputStream is)
+    {
+        String result = "";
+        try
+        {
+            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+            result = s.hasNext() ? s.next() : "";
+            s.close();
+        } catch (Exception e) {}
+        return result;
+    }
+
+    public static String getLocalHostname()
+    {
+        String returnValue = "";
+        Map<String, String> env = System.getenv();
+        if (env.containsKey("COMPUTERNAME"))
+        {
+            returnValue = env.get("COMPUTERNAME");
+        } else if (env.containsKey("HOSTNAME")) {
+            returnValue = env.get("HOSTNAME");
+        } else {
+            String hostnameCommand = shellExec(new String[] {"hostname"});
+            if (hostnameCommand != null)
+            {
+                String hostname = hostnameCommand.trim();
+                if (!"".equals(hostname))
+                    returnValue = hostname;
+            }
+        }
+        if ("".equals(returnValue))
+        {
+            try
+            {
+                for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements() && "".equals(returnValue);)
+                {
+                    NetworkInterface ni = n.nextElement();
+                    for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements() && "".equals(returnValue);)
+                    {
+                        InetAddress ia = e.nextElement();
+                        if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
+                        {
+                            String hostname = ia.getHostName();
+                            returnValue = hostname;
+                        }
+                    }
+                }
+
+            } catch (Exception e) {}
+        }
+        if ("".equals(returnValue))
+        {
+            returnValue = RoutePutServer.generateBigAlphaKey(5);
+        }
+        if (returnValue.contains(".local"))
+        {
+            returnValue = returnValue.replace(".local", "");
+        }
+        if (returnValue.contains(".lan"))
+        {
+            returnValue = returnValue.replace(".lan", "");
+        }
+        return returnValue;
     }
 
     public void tryToExit()

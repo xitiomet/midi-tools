@@ -247,10 +247,20 @@ public class MidiControlRule implements MidiControlListener
                     } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
                         if (!"(NONE)".equals(this.canvasName) && canvasName != null)
                         {
+                            StringTokenizer st = new StringTokenizer(avparsed, ",");
+                            String filename = st.nextToken();
+                            String mode = "opacity";
+                            if (st.hasMoreTokens())
+                                mode = st.nextToken();
                             JSONObject canvasEvent = new JSONObject();
-                            canvasEvent.put("image", avparsed);
+                            canvasEvent.put("image", filename);
+                            if (mode.contains("opacity"))
+                                canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("scale"))
+                                canvasEvent.put("scale", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("rotate"))
+                                canvasEvent.put("rotate", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 360f));
                             canvasEvent.put("canvas", this.canvasName);
-                            canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
                         }
                     } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {

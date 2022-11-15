@@ -6,6 +6,7 @@ var protocol = location.protocol;
 var port = location.port;
 var wsProtocol = 'ws';
 var sounds = new Map();
+var httpUrl = '';
 
 function getParameterByName(name, url = window.location.href) 
 {
@@ -32,13 +33,35 @@ function sendEvent(wsEvent)
     }
 }
 
-function updateImage(imageName, opacity)
+function updateImage(jsonObject)
 {
-    var imgUrl = '/assets/' + imageName;
+    var imgUrl = httpUrl + '/assets/' + jsonObject.image;
     var imgElement = document.getElementById('imgTag');
     imgElement.src = imgUrl;
     imgElement.style.display = 'inline-block';
-    imgElement.style.opacity = opacity;
+    
+    if (jsonObject.hasOwnProperty('scale'))
+    {
+        imgElement.style.height = (jsonObject.scale * 100)+'%';
+        imgElement.style.top = (50-(jsonObject.scale * 50))+'%';
+    } else {
+        imgElement.style.height = '100%';
+        imgElement.style.top = '0px';
+    }
+    
+    if (jsonObject.hasOwnProperty('opacity'))
+    {
+        imgElement.style.opacity = jsonObject.opacity;
+    } else {
+        imgElement.style.opacity = 1;
+    }
+
+    if (jsonObject.hasOwnProperty('rotate'))
+    {
+        imgElement.style.transform = 'rotate(' + jsonObject.rotate + 'deg)';
+    } else {
+        imgElement.style.transform = 'rotate(0deg)';
+    }
 }
 
 function loadSound(file)
@@ -46,7 +69,7 @@ function loadSound(file)
     if (!sounds.has(file))
     {
         console.log("loading sound: " + file);
-        audio = new Audio('/assets/' + file);
+        audio = new Audio(httpUrl + '/assets/' + file);
         sounds.set(file, audio)
     }
 }
@@ -83,6 +106,7 @@ function setupWebsocket()
             hostname = '127.0.0.1';
             protocol = 'http';
             port = 6123;
+            httpUrl = "http://127.0.0.1:6123";
         }
         if (protocol.startsWith('https'))
         {
@@ -152,7 +176,7 @@ function setupWebsocket()
 
             if (jsonObject.hasOwnProperty("image"))
             {
-                updateImage(jsonObject.image, jsonObject.opacity);
+                updateImage(jsonObject);
             }
             if (jsonObject.hasOwnProperty("sound"))
             {

@@ -7,6 +7,7 @@ var port = location.port;
 var wsProtocol = 'ws';
 var sounds = new Map();
 var httpUrl = '';
+var lastImageFile = null;
 
 function getParameterByName(name, url = window.location.href) 
 {
@@ -36,6 +37,7 @@ function sendEvent(wsEvent)
 function updateImage(jsonObject)
 {
     var imgUrl = httpUrl + '/assets/' + jsonObject.image;
+    var imageChange = (jsonObject.image != lastImageFile);
     var imgElement = document.getElementById('imgTag');
     imgElement.src = imgUrl;
     imgElement.style.display = 'inline-block';
@@ -44,7 +46,7 @@ function updateImage(jsonObject)
     {
         imgElement.style.height = (jsonObject.scale * 100)+'%';
         imgElement.style.top = (50-(jsonObject.scale * 50))+'%';
-    } else {
+    } else if (imageChange) {
         imgElement.style.height = '100%';
         imgElement.style.top = '0px';
     }
@@ -52,16 +54,17 @@ function updateImage(jsonObject)
     if (jsonObject.hasOwnProperty('opacity'))
     {
         imgElement.style.opacity = jsonObject.opacity;
-    } else {
+    } else if (imageChange) {
         imgElement.style.opacity = 1;
     }
 
     if (jsonObject.hasOwnProperty('rotate'))
     {
         imgElement.style.transform = 'rotate(' + jsonObject.rotate + 'deg)';
-    } else {
+    } else if (imageChange) {
         imgElement.style.transform = 'rotate(0deg)';
     }
+    lastImageFile = jsonObject.image;
 }
 
 function loadSound(file)

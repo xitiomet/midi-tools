@@ -306,8 +306,8 @@ public class MidiControl
             jo.put("note", this.note);
         jo.put("channel", this.channel);
         jo.put("nickname", this.nickname);
-        jo.put("value", this.value);
-        jo.put("settledValue", this.settled_value);
+        //jo.put("value", this.value);
+        //jo.put("settledValue", this.settled_value);
         return jo;
     }
     

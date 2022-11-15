@@ -6,6 +6,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
@@ -36,6 +37,7 @@ public class AssetManagerPanel extends JPanel implements ActionListener
     private JPanel buttonPanel;
     private JButton selectAllButton;
     private JButton deleteButton;
+    private JButton labelButton;
     private JButton addFileButton;
     private JButton extractFileButton;
     private FolderListModel folderListModel;
@@ -109,6 +111,13 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             this.extractFileButton.setToolTipText("Export Selected File");
             this.extractFileButton.addActionListener(this);
             this.buttonPanel.add(this.extractFileButton);
+
+            ImageIcon labelIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/label32.png")));
+            this.labelButton = new JButton(labelIcon);
+            this.labelButton.addActionListener(this);
+            this.labelButton.setActionCommand("rename_file");
+            this.labelButton.setToolTipText("Rename Selected File");
+            this.buttonPanel.add(this.labelButton);
 
             ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
             this.selectAllButton = new JButton(selectAllIcon);
@@ -205,6 +214,27 @@ public class AssetManagerPanel extends JPanel implements ActionListener
                 {
                     this.addAsset(selectedFiles[i]);
                 }
+            }
+        } else if (e.getSource() == this.labelButton) {
+            Collection<File> selectedFiles = this.getSelectedFiles();
+            if (selectedFiles.size() == 0)
+            {
+                
+            } else {
+                Iterator<File> fileIterator = selectedFiles.iterator();
+                while (fileIterator.hasNext())
+                {
+                    File file = fileIterator.next();
+                    String originalFilename = file.getName();
+                    String s = (String) JOptionPane.showInputDialog(this,"Rename File\n" + originalFilename, originalFilename);
+                    if (s != null)
+                    {
+                        file.renameTo(new File(file.getParent(), s));
+                        //Trigger update to all rules using this file!
+                        MidiTools.renamedFile(originalFilename, s);
+                    }
+                }
+                AssetManagerPanel.this.repaint();
             }
         } else if (e.getSource() == this.extractFileButton) {
             JFileChooser fileChooser = new JFileChooser();

@@ -111,7 +111,10 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         if (e.getSource() == this.selectFileField)
         {
             String fileName = this.selectFileField.getSelectedItem().toString();
-            this.actionValueField.setText(fileName);
+            if (this.actionSelector.getSelectedIndex() == MidiControlRule.ACTION_SHOW_IMAGE)
+                this.actionValueField.setText(fileName + "," + this.showImageModeSelector.getSelectedItem().toString());
+            else
+                this.actionValueField.setText(fileName);
         }
 
         if (e.getSource() == this.pluginTargetSelector)
@@ -227,18 +230,20 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             {
                 this.actionValuePanel.add(this.showImageModeSelector, BorderLayout.PAGE_END);
                 StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
-                if (st.countTokens() == 2)
+                if (st.hasMoreTokens())
                 {
                     String filename = st.nextToken();
                     this.selectFileField.setSelectedItem(filename);
+                }
+                if (st.hasMoreTokens())
+                {
                     String mode = st.nextToken();
                     this.showImageModeSelector.setSelectedItem(mode);
-                } else {
-                    String filename = st.nextToken();
-                    this.selectFileField.setSelectedItem(filename);
                 }
+                this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
             } else {
                 this.selectFileField.setSelectedItem(this.actionValueField.getText());
+                this.actionValueField.setText(this.selectFileField.getSelectedItem().toString());
             }
         } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");
@@ -284,6 +289,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     this.pluginTargetSelector.setModel(this.getPluginTargetModel(plugin));
                     this.pluginSelector.setSelectedItem(pluginName);
                     this.pluginTargetSelector.setSelectedItem(targetName);
+                    this.actionValueField.setText(pluginName + "," + targetName);
                 } else {
                     String firstPlugin = this.pluginSelector.getSelectedItem().toString();
                     MidiToolsPlugin plugin = MidiTools.instance.plugins.get(firstPlugin);
@@ -393,7 +399,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.canvasSelectorField.setEditable(true);
         this.canvasSelectorField.setModel(getCanvasSelectorModel());
         this.canvasSelectorField.setBackground(Color.WHITE);
-        this.canvasSelectorField.setToolTipText("Select the Canvas to display this media, select (NONE) for local");
+        this.canvasSelectorField.setToolTipText("Select the Canvas to display this media, select (NONE) for local or enter a name like \"Main Display\" (Canvases are created dynamically)");
 
 
         //this.ruleGroupField.setHorizontalAlignment(SwingConstants.CENTER);

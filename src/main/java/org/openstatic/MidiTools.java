@@ -52,12 +52,14 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JTabbedPane;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.JScrollPane;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JSeparator;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
@@ -180,7 +182,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             this.setIconImage(windowIcon);
         } catch (Exception iconException) {}
         
-
+        // Enable CTRL+S
+        this.getRootPane().registerKeyboardAction(new ActionListener() {//this, is a JFrame
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ActionEvent e2 = new ActionEvent(MidiTools.this.saveMenuItem, ActionEvent.ACTION_FIRST, "save");
+                MidiTools.this.actionPerformed(e2);
+            }
+        }, KeyStroke.getKeyStroke(KeyEvent.VK_S,KeyEvent.CTRL_DOWN_MASK),JComponent.WHEN_IN_FOCUSED_WINDOW );
         this.qrCodeMenu = new JMenu("QR Code");
         this.qrCodeMenu.setMnemonic(KeyEvent.VK_Q);
         
@@ -1223,6 +1232,31 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
         }
         return canvasNames;
+    }
+
+    public static void renamedFile(String original, String newName)
+    {
+        
+        try
+        {
+            // Check for new devices added
+            for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); newRuleEnum.hasMoreElements();)
+            {
+                MidiControlRule mcr = newRuleEnum.nextElement();
+                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE || mcr.getActionType() == MidiControlRule.ACTION_PROC)
+                {
+                    String actionValue = mcr.getActionValue();
+                    if (actionValue != null)
+                    {
+                        if (actionValue.contains(original))
+                            mcr.setActionValue(actionValue.replace(original, newName));
+                    }
+                }
+                
+            }
+        } catch (Exception e) {
+
+        }
     }
 
     private long lastSecondAt = 0l;

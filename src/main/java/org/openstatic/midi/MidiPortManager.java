@@ -92,7 +92,7 @@ public class MidiPortManager
     private static synchronized void refresh()
     {   
         Vector<MidiPort> updatedSources = new Vector<MidiPort>();
-        for (MidiPortProvider midiPortProvider : MidiPortManager.providers) 
+        for (MidiPortProvider midiPortProvider : ((Vector<MidiPortProvider>) MidiPortManager.providers.clone())) 
         {
             Collection<? extends MidiPort> ports = midiPortProvider.getMidiPorts();
             if (ports != null)

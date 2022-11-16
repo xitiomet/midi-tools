@@ -1004,7 +1004,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             JOptionPane.YES_NO_OPTION);
             if(n == JOptionPane.YES_OPTION)
             {
-                resetConfiguration();
+                Thread x = new Thread()
+                {
+                    public void run()
+                    {
+                        resetConfiguration();
+                    }
+                };
+                x.start();
             }
         } else if (cmd.equals("exit")) {
             tryToExit();

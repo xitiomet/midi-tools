@@ -14,7 +14,6 @@ public class MidiPortManager
     private static Vector<MidiPortProvider> providers = new Vector<MidiPortProvider>();
     private static Vector<MidiPortListener> listeners = new Vector<MidiPortListener>();
     private static Vector<MidiPortMapping> mappings = new Vector<MidiPortMapping>();
-    private static long lastPortFetch = 0;
     private static boolean keepRunning;
     private static Thread taskThread;
     
@@ -58,16 +57,19 @@ public class MidiPortManager
                     //System.err.println("task loop");
                     while(MidiPortManager.keepRunning)
                     {
-                        if ((System.currentTimeMillis() - MidiPortManager.lastPortFetch) > 2000)
+                        Thread x = new Thread()
                         {
-                            Thread x = new Thread()
+                            public void run()
                             {
-                                public void run()
-                                {
-                                    MidiPortManager.refresh();
-                                }
-                            };
-                            x.start();
+                                MidiPortManager.refresh();
+                            }
+                        };
+                        x.start();
+                        try
+                        {
+                            Thread.sleep(2000);
+                        } catch (Exception e) {
+
                         }
                     }
                 }
@@ -124,7 +126,6 @@ public class MidiPortManager
             }
         }
         MidiPortManager.ports = updatedSources;
-        MidiPortManager.lastPortFetch = System.currentTimeMillis();
     }
 
     

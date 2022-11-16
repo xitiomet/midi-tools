@@ -130,6 +130,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
             {
                 this.opened = true;
                 this.myThread = new Thread(this);
+                this.myThread.setName("Controller Thread " + this.name);
                 this.myThread.start();
                 MidiPortManager.firePortOpened(this);
             }

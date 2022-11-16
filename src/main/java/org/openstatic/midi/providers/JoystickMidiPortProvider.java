@@ -16,22 +16,23 @@ import net.java.games.input.*;
 public class JoystickMidiPortProvider implements MidiPortProvider 
 {
     private LinkedHashMap<String, JoystickMidiPort> localDevices;
+    private ControllerEnvironment controllerEnvironment;
 
     public JoystickMidiPortProvider()
     {
         this.localDevices = new LinkedHashMap<String, JoystickMidiPort>();
+        this.controllerEnvironment = new DirectAndRawInputEnvironmentPlugin();
+        if(!this.controllerEnvironment.isSupported())
+        {
+            //System.err.println("Fallback to default controller environment");
+            this.controllerEnvironment = ControllerEnvironment.getDefaultEnvironment();
+        }
     }
 
     @Override
     public Collection<? extends MidiPort> getMidiPorts()
     {
-        ControllerEnvironment ce = new DirectAndRawInputEnvironmentPlugin();
-        if(!ce.isSupported())
-        {
-            //System.err.println("Fallback to default controller environment");
-            ce = ControllerEnvironment.getDefaultEnvironment();
-        }
-        Controller[] ca = ce.getControllers();
+        Controller[] ca = this.controllerEnvironment.getControllers();
         Vector<Controller> newLocalDevices = new Vector<Controller>(Arrays.asList(ca));
         Vector<String> controllerNames = new Vector<String>();
 

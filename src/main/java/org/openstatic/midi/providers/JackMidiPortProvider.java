@@ -23,33 +23,43 @@ import org.jaudiolibs.jnajack.JackShutdownCallback;
 import org.jaudiolibs.jnajack.JackStatus;
 import org.openstatic.MidiTools;
 import org.openstatic.midi.MidiPort;
+import org.openstatic.midi.MidiPortManager;
 import org.openstatic.midi.JackMidiMessage;
 import org.openstatic.midi.MidiPortProvider;
 import org.openstatic.midi.ports.JackMidiPort;
 
-public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallback, JackShutdownCallback
+public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallback, JackShutdownCallback, Runnable
 {
     private final Jack jack;
-    private final JackClient client;
+    private JackClient client;
     private String jackName;
     private LinkedHashMap<String, JackMidiPort> localDevices;
     private final JackMidi.Event midiEvent;
     private int bufferSize;
-
+    private Thread reconnectThread;
+    private long lastProcessAt;
 
     public JackMidiPortProvider() throws JackException
     {
-        EnumSet<JackStatus> status = EnumSet.noneOf(JackStatus.class);
         this.localDevices = new LinkedHashMap<String, JackMidiPort>();
         this.jackName = MidiTools.instance.getLocalHostname() + " MidiTools";
         this.jack = Jack.getInstance();
+        this.midiEvent = new JackMidi.Event();
+        this.reconnectThread = new Thread(this);
+        this.reconnectThread.start();
+    }
+
+    public void connect() throws JackException
+    {
+        EnumSet<JackStatus> status = EnumSet.noneOf(JackStatus.class);
         this.client = jack.openClient(jackName, EnumSet.of(JackOptions.JackNoStartServer), status);
         this.client.setProcessCallback(this);
         this.client.onShutdown(this);
         this.bufferSize = client.getBufferSize();
-        this.midiEvent = new JackMidi.Event();
         this.localDevices.put("IN1", new JackMidiPort(this, "IN1", JackMidiPort.INPUT_PORT));
         this.localDevices.put("OUT1", new JackMidiPort(this, "OUT1", JackMidiPort.OUTPUT_PORT));
+        this.localDevices.put("IN2", new JackMidiPort(this, "IN2", JackMidiPort.INPUT_PORT));
+        this.localDevices.put("OUT2", new JackMidiPort(this, "OUT2", JackMidiPort.OUTPUT_PORT));
         client.activate();
     }
 
@@ -85,7 +95,8 @@ public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallba
 
     @Override
     public void clientShutdown(JackClient client) {
-        this.localDevices.clear();        
+        this.localDevices.clear();
+        this.client = null;
     }
 
     private void processPortInput(JackMidiPort jmp)
@@ -146,12 +157,30 @@ public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallba
                     processPortOutput(jackPort);
                 }
             }
-            
+            this.lastProcessAt = System.currentTimeMillis();
             return true;
         } catch (Exception ex) {
             System.out.println("ERROR : " + ex);
             ex.printStackTrace(System.err);
             return false;
+        }
+    }
+
+    @Override
+    public void run() {
+        while(MidiPortManager.isRunning())
+        {
+            if ((System.currentTimeMillis() - this.lastProcessAt) > 10000)
+            {
+                System.err.println("Jack Reconnect Test");
+                try
+                {
+                    this.lastProcessAt = System.currentTimeMillis();
+                    this.connect();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 }

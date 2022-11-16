@@ -4,9 +4,8 @@ import javax.sound.midi.*;
 import java.util.Vector;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Enumeration;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class MidiPortManager
@@ -16,12 +15,31 @@ public class MidiPortManager
     private static Vector<MidiPortListener> listeners = new Vector<MidiPortListener>();
     private static Vector<MidiPortMapping> mappings = new Vector<MidiPortMapping>();
     private static long lastPortFetch = 0;
-    
-    private static LinkedBlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
+    private static boolean keepRunning;
     private static Thread taskThread;
     
+    public static synchronized String generateBigAlphaKey(int key_length)
+    {
+        try
+        {
+            // make sure we never get the same millis!
+            Thread.sleep(1);
+        } catch (Exception e) {}
+        Random n = new Random(System.currentTimeMillis());
+        String alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        StringBuffer return_key = new StringBuffer();
+        for (int i = 0; i < key_length; i++)
+        {
+            return_key.append(alpha.charAt(n.nextInt(alpha.length())));
+        }
+        String randKey = return_key.toString();
+        //System.err.println("Generated Rule ID: " + randKey);
+        return randKey;
+    }
+
     public static void init()
     {
+        MidiPortManager.keepRunning = true;
         if (MidiPortManager.taskThread == null)
         {
             //refresh();
@@ -29,7 +47,7 @@ public class MidiPortManager
             { 
                 public void run() 
                 { 
-                    MidiPortManager.taskThread = null;
+                    MidiPortManager.shutdown();
                     System.out.println("Shutdown MidiPortManager!"); 
                 } 
             }); 
@@ -38,19 +56,8 @@ public class MidiPortManager
                 public void run()
                 {
                     //System.err.println("task loop");
-                    while(MidiPortManager.taskThread != null)
+                    while(MidiPortManager.keepRunning)
                     {
-                        try
-                        {
-                            Runnable r = MidiPortManager.taskQueue.poll(1, TimeUnit.SECONDS);
-                            if (r != null)
-                            {
-                                r.run();
-                                //System.err.println("taskComplete - " + r.toString());
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
-                        }
                         if ((System.currentTimeMillis() - MidiPortManager.lastPortFetch) > 2000)
                         {
                             Thread x = new Thread()
@@ -70,11 +77,14 @@ public class MidiPortManager
         }
     }
 
-    
-    protected static void addTask(Runnable r)
+    public static void shutdown()
     {
-        init();
-        MidiPortManager.taskQueue.add(r);
+        MidiPortManager.keepRunning = false;
+    }
+
+    public static boolean isRunning()
+    {
+        return MidiPortManager.keepRunning;
     }
 
     private static synchronized void refresh()
@@ -335,6 +345,19 @@ public class MidiPortManager
         return outputs;
     }
     
+    public static MidiPortMapping findMidiPortMappingByName(String mappingName)
+    {
+        for(Iterator<MidiPortMapping> mappingsIterator = MidiPortManager.mappings.iterator(); mappingsIterator.hasNext();)
+        {
+            MidiPortMapping t = mappingsIterator.next();
+            if (t.toString().equals(mappingName))
+            {
+                return t;
+            }
+        }
+        return null;
+    }
+
     public static MidiPortMapping findMidiPortMappingById(String mappingId)
     {
         for(Iterator<MidiPortMapping> mappingsIterator = MidiPortManager.mappings.iterator(); mappingsIterator.hasNext();)

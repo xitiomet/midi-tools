@@ -32,6 +32,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
    private ImageIcon urlIcon;
    private ImageIcon pluginIcon;
    private ImageIcon imageIcon;
+   private ImageIcon mappingIcon;
    
    public MidiControlRuleCellRenderer()
    {
@@ -54,6 +55,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
          this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
          this.imageIcon = new  ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
+         this.mappingIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/cable32.png")));
       } catch (Exception e) {
 
       }
@@ -103,6 +105,8 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.urlIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
          this.checkBox.setIcon(this.imageIcon);
+      } else if (rule.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+         this.checkBox.setIcon(this.mappingIcon);
       } else {
          this.checkBox.setIcon(this.gearsIcon);
       }

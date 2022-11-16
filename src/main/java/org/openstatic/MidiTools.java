@@ -526,17 +526,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 e.printStackTrace(System.err);
             }
             MidiPortManager.addProvider(this.routeputSessionManager);
-            if (os_name.contains("linux"))
+            try
             {
-                System.err.println("Starting Jack Suppport");
-                try
-                {
-                    this.jmpp = new JackMidiPortProvider();
-                    MidiPortManager.addProvider(this.jmpp);
-                    System.err.println("Initialized Jack Suppport");
-                } catch (Exception jmppex) {
-                    jmppex.printStackTrace(System.err);
-                }
+                this.jmpp = new JackMidiPortProvider();
+                MidiPortManager.addProvider(this.jmpp);
+                System.err.println("Initialized Jack Suppport");
+            } catch (Exception jmppex) {
+                jmppex.printStackTrace(System.err);
             }
             //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
         });
@@ -658,7 +654,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         }
         if ("".equals(returnValue))
         {
-            returnValue = RoutePutServer.generateBigAlphaKey(5);
+            returnValue = MidiPortManager.generateBigAlphaKey(5);
         }
         if (returnValue.contains(".local"))
         {

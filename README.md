@@ -6,6 +6,7 @@ Each "Control" can have rules associated with it that will execute "Actions" bas
 
 Features
  - Fully functional MIDI router (create virtual connections between midi devices)
+ - JACK Midi Support (jackaudio.org)
  - Plugin support for controlling popular hardware via MIDI (Philips Hue Plugin available)
  - All OS compatable game controllers (Xbox Controller, 8Bitdo, etc) recognized as MIDI inputs
  - RTP MIDI support for use with Apple's network MIDI implementation
@@ -13,7 +14,7 @@ Features
  - Media Canvas feature lets you create audio/visual content triggered by MIDI messages
  - Mobile friendly remote control interface
 
-![](https://openstatic.org/projects/miditools/img/miditools10.png)
+![](https://openstatic.org/projects/miditools/img/miditools11.png)
 
 ### How do I use it? ###
 Simply launch the app and check off what MIDI devices you want to use. Then toggle the ear on the MIDI Controls tab, as you play with the physical controls on your device, those controls will appear in the "Midi Controls" section. Each control represents a channel and a control change number. In order to create a rule for a control, select control by clicking on it. Then click the "script" button (third one on the left of the midi controls tab)
@@ -48,10 +49,13 @@ Simply launch the app and check off what MIDI devices you want to use. Then togg
 	  Action Type: Device Name,channel#,cc#,{{value}}
 	- ENABLE RULE GROUP - Enable a group of rules
 	- DISABLE RULE GROUP - Disable a group of rules
-	- TOGGLE RULE GROUP - Toggle a group of rules
+	- TOGGLE RULE GROUP - Toggle a group of rules if the value >= 64 the group is enabled otherwise its disabled.
 	- LOGGER A MESSAGE - Add some text to Logger A
 	- LOGGER B MESSAGE - Add some text to Logger B
 	- SHOW IMAGE - Display an image on the Canvas
+	- MAPPING ENABLE - Enable a port mapping
+	- MAPPING DISABLE - Disable a port mapping
+	- MAPPING TOGGLE - Toggle a Port Mapping if the value >= 64 the mapping is enabled otherwise its disabled.
 - Target Canvas - Specify the canvas this action should take place, this applies to PLAY SOUND and SHOW IMAGE. Canvas names can be made up on the fly!
 - Action Value - Specify the parameters to an Action Type (variables below)
 	- {{value}} - The value(third byte) of the MIDI Control Change Event (0-127)
@@ -101,7 +105,7 @@ Supported Assets include:
 
 The media canvas is a great way to create visual effects using a monitor or projector. The media canvas is a webapp that can be easily opened in any modern browser (Chrome/Safari/Brave). When creating rules there are two types of rules that use the media canvas. In order to use this feature the "API Server" must be enabled in options.
 
- - SHOW IMAGE - Shows an image at the time the event is fired, the images brightness will be determined by the CC Value or note pressure. Whenever a show image event is fired on a canvas, the previous image is removed and the most recent image is shown.
+ - SHOW IMAGE - Shows an image at the time the event is fired, the images effect (rotate, opacity, scale) will be determined by the CC Value or note pressure. Whenever a show image event is fired on a canvas, the previous image is removed and the most recent image is shown.
  - PLAY SOUND - Plays a sound clip using the CC value or note pressure to determine value (much like a sampler/sound board)
 
 When creating these types of rules you can specify a canvas target, this is the canvas you want to present the media. Canvas names are made up on the fly and Midi Tools will show the available canvas names when launching a media canvas. Ideally once you've started the canvas you can press F11 to full screen it, giving it full control over the display. Since media canvas's are just webpages, you can use a variety of devices to display them, the only requirement is that all the devices are on the same network with an acceptable latency.

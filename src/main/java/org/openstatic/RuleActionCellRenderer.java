@@ -23,6 +23,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
     private ImageIcon urlIcon;
     private ImageIcon pluginIcon;
     private ImageIcon imageIcon;
+    private ImageIcon mappingIcon;
 
     public RuleActionCellRenderer()
     {
@@ -41,6 +42,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.urlIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/url32.png")));
             this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
             this.imageIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
+            this.mappingIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/cable32.png")));
         } catch (Exception e) {
 
         }
@@ -73,7 +75,13 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.label.setIcon(this.pluginIcon);
         } else if ("SHOW IMAGE".equals(value)) {
             this.label.setIcon(this.imageIcon);
-        } else {
+        } else if ("MAPPING ENABLE".equals(value)) {
+            this.label.setIcon(this.mappingIcon);
+        } else if ("MAPPING DISABLE".equals(value)) {
+            this.label.setIcon(this.mappingIcon);
+        } else if ("MAPPING TOGGLE".equals(value)) {
+            this.label.setIcon(this.mappingIcon);
+        }else {
             this.label.setIcon(this.gearsIcon);
         }
         return this;

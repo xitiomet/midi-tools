@@ -17,28 +17,9 @@ public class MidiPortMapping
     private boolean opened;
     private long lastActiveAt;
     
-    private static synchronized String generateBigAlphaKey(int key_length)
-    {
-        try
-        {
-            // make sure we never get the same millis!
-            Thread.sleep(1);
-        } catch (Exception e) {}
-        Random n = new Random(System.currentTimeMillis());
-        String alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        StringBuffer return_key = new StringBuffer();
-        for (int i = 0; i < key_length; i++)
-        {
-            return_key.append(alpha.charAt(n.nextInt(alpha.length())));
-        }
-        String randKey = return_key.toString();
-        //System.err.println("Generated Rule ID: " + randKey);
-        return randKey;
-    }
-    
     public MidiPortMapping(JSONObject jo)
     {
-        this.mappingId = jo.optString("mappingId", generateBigAlphaKey(24));
+        this.mappingId = jo.optString("mappingId", MidiPortManager.generateBigAlphaKey(24));
         this.nickname = jo.optString("nickname",null);
         this.sourceName = jo.optString("source", null);
         this.destinationName = jo.optString("destination", null);
@@ -64,7 +45,7 @@ public class MidiPortMapping
     
     public MidiPortMapping(MidiPort source, MidiPort destination)
     {
-        this.mappingId = generateBigAlphaKey(24);
+        this.mappingId = MidiPortManager.generateBigAlphaKey(24);
         this.nickname = null;
         this.source = source;
         this.destination = destination;
@@ -178,8 +159,16 @@ public class MidiPortMapping
 
     public JSONObject toSavableJSONObject()
     {
-        return this.toJSONObject();
-    }
+        JSONObject jo = new JSONObject();
+        jo.put("mappingId", this.mappingId);
+        if (this.nickname != null)
+            jo.put("nickname", this.nickname);
+        else
+            jo.put("nickname", this.sourceName + " to " + this.destinationName);
+        jo.put("source", this.sourceName);
+        jo.put("destination", this.destinationName);
+        jo.put("opened", this.opened);
+        return jo;    }
     
     public JSONObject toJSONObject()
     {

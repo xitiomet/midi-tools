@@ -18,8 +18,8 @@ public class JackMidiMessage extends MidiMessage
     }
 
     @Override
-    public Object clone() {
-        // TODO Auto-generated method stub
+    public Object clone()
+    {
         return new JackMidiMessage(this.getMessage(), this.tick);
     }
 }

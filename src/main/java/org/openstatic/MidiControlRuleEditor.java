@@ -54,6 +54,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> deviceSelectAVF;
     private JComboBox<String> channelSelectAVF;
     private JComboBox<String> selectRuleGroupDropdown;
+    private JComboBox<MidiPortMapping> selectMappingDropdown;
     private JTextField ccAVF;
     private JTextField valueAVF;
     private JPanel transmitMidiPanel;
@@ -140,6 +141,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         if (e.getSource() == this.selectRuleGroupDropdown)
         {
             this.actionValueField.setText(this.selectRuleGroupDropdown.getSelectedItem().toString());
+        }
+
+        if (e.getSource() == this.selectMappingDropdown)
+        {
+            MidiPortMapping selectedMapping = (MidiPortMapping) this.selectMappingDropdown.getSelectedItem();
+            this.actionValueField.setText(selectedMapping.getMappingId());
         }
         
         if (e.getSource() == this.deleteButton)
@@ -275,6 +282,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
+        } else if (i == MidiControlRule.ACTION_DISABLE_MAPPING || i == MidiControlRule.ACTION_ENABLE_MAPPING || i == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+            this.actionValueLabel.setText("Port Mapping");
+            this.selectMappingDropdown.setSelectedItem(this.actionValueField.getText());
+            this.actionValuePanel.add(this.selectMappingDropdown, BorderLayout.CENTER);
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
+            MidiPortMapping selectedMapping = (MidiPortMapping) this.selectMappingDropdown.getSelectedItem();
+            this.actionValueField.setText(selectedMapping.getMappingId());
         } else if (i == MidiControlRule.ACTION_PLUGIN) {
             try
             {
@@ -327,7 +342,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 11; i++)
+        for(int i = 0; i < 14; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }
@@ -345,6 +360,15 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         for (Enumeration<MidiControl> cenum = MidiTools.instance.midiControlsPanel.getControlsEnumeration(); cenum.hasMoreElements();)
             ctrls.add(cenum.nextElement());
         this.controlSelector.setModel(new DefaultComboBoxModel<MidiControl>(ctrls));
+
+        this.selectMappingDropdown = new JComboBox<MidiPortMapping>();
+        this.selectMappingDropdown.setEditable(false);
+        this.selectMappingDropdown.addActionListener(this);
+        this.setBackground(Color.WHITE);
+        Vector<MidiPortMapping> mappings = new Vector<MidiPortMapping>();
+        for (Iterator<MidiPortMapping> mpmIterator = MidiPortManager.getMidiPortMappings().iterator(); mpmIterator.hasNext();)
+            mappings.add(mpmIterator.next());
+        this.selectMappingDropdown.setModel(new DefaultComboBoxModel<MidiPortMapping>(mappings));
 
         this.eventSelector = new JComboBox<String>(eventModeList);
         this.eventSelector.setEditable(false);

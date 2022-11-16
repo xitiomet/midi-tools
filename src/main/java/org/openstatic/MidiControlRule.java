@@ -38,6 +38,9 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_DISABLE_RULE_GROUP = 8;
     public static final int ACTION_TOGGLE_RULE_GROUP = 9;
     public static final int ACTION_SHOW_IMAGE = 10;
+    public static final int ACTION_ENABLE_MAPPING = 11;
+    public static final int ACTION_DISABLE_MAPPING = 12;
+    public static final int ACTION_TOGGLE_MAPPING = 13;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;
@@ -48,29 +51,10 @@ public class MidiControlRule implements MidiControlListener
     public static final int EVENT_SETTLED_INCREASE = 6;
     public static final int EVENT_SETTLED_DECREASE = 7;
     
-    public static synchronized String generateBigAlphaKey(int key_length)
-    {
-        try
-        {
-            // make sure we never get the same millis!
-            Thread.sleep(1);
-        } catch (Exception e) {}
-        Random n = new Random(System.currentTimeMillis());
-        String alpha = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        StringBuffer return_key = new StringBuffer();
-        for (int i = 0; i < key_length; i++)
-        {
-            return_key.append(alpha.charAt(n.nextInt(alpha.length())));
-        }
-        String randKey = return_key.toString();
-        //System.err.println("Generated Rule ID: " + randKey);
-        return randKey;
-    }
-    
     public MidiControlRule(JSONObject jo)
     {
         System.err.println("READING RULE: " + jo.toString());
-        this.ruleId = jo.optString("ruleId", generateBigAlphaKey(24));
+        this.ruleId = jo.optString("ruleId", MidiPortManager.generateBigAlphaKey(24));
         this.ruleGroup = jo.optString("ruleGroup", "all");
         this.event_mode = jo.optInt("eventMode", 0);
         this.action_type = jo.optInt("actionType", 0);
@@ -109,7 +93,7 @@ public class MidiControlRule implements MidiControlListener
     
     public MidiControlRule(MidiControl control, int event_mode, int action_type, String action_value)
     {
-        this.ruleId = generateBigAlphaKey(24);
+        this.ruleId = MidiPortManager.generateBigAlphaKey(24);
         this.ruleGroup = "all";
         this.control = control;
         this.event_mode = event_mode;
@@ -299,7 +283,12 @@ public class MidiControlRule implements MidiControlListener
                         MidiTools.setRuleGroupEnabled(avparsed, false);
                         success = true;
                     } else if (this.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
-                        MidiTools.toggleRuleGroupEnabled(avparsed);
+                        if (new_value >= 64)
+                        {
+                            MidiTools.setRuleGroupEnabled(avparsed, true);
+                        } else {
+                            MidiTools.setRuleGroupEnabled(avparsed, false);
+                        }
                         success = true;
                     } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
                         MidiTools.instance.midi_logger_a.println(avparsed);
@@ -313,6 +302,28 @@ public class MidiControlRule implements MidiControlListener
                             success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, avparsed2[1], old_value, new_value);
                         else
                         success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, null, old_value, new_value);
+                    } else if (this.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING) {
+                        MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
+                        if (mapping != null)
+                        {
+                            mapping.setOpen(true);
+                            success = mapping.isOpened();
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING) {
+                        MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
+                        if (mapping != null)
+                        {
+                            mapping.setOpen(false);
+                            success = !mapping.isOpened();
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+                        MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
+                        if (mapping != null)
+                        {
+                            boolean changeTo = (new_value >= 64);
+                            mapping.setOpen(changeTo);
+                            success = (mapping.isOpened() == changeTo);
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -485,6 +496,12 @@ public class MidiControlRule implements MidiControlListener
             return "PLUGIN";
         } else if (n == MidiControlRule.ACTION_SHOW_IMAGE) {
             return "SHOW IMAGE";
+        } else if (n == MidiControlRule.ACTION_ENABLE_MAPPING) {
+            return "MAPPING ENABLE";
+        } else if (n == MidiControlRule.ACTION_DISABLE_MAPPING) {
+            return "MAPPING DISABLE";
+        } else if (n == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+            return "MAPPING TOGGLE";
         }
         return "";
     }
@@ -595,6 +612,11 @@ public class MidiControlRule implements MidiControlListener
                 return controlText + " [" + eventModeText + "] >> " + avparsed2[0] + " - " + avparsed2[1];
             else
                 return controlText + " [" + eventModeText + "] >> " + avparsed2[0];
+        } else if (this.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || this.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || this.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+            MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(targetText);
+            if (mapping != null)
+                targetText = mapping.toString();
+            return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
         } else {
             return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
         }

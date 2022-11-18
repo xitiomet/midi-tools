@@ -25,10 +25,11 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
     public MIDIChannelMidiPort(String channelName)
     {
         this.channelName = channelName;
+        String hostname = MidiTools.getLocalHostname();
         this.channel = RoutePutChannel.getChannel("midichannel-" + this.channelName);
         this.upstreamClient = new RoutePutClient(this.channel, "wss://midichannel.net/channel/");
-        this.upstreamClient.setProperty("description", "Midi Control Change Tool");
-        this.upstreamClient.setProperty("username", "MidiTools");
+        this.upstreamClient.setProperty("description", "Midi Control Change Tool " + hostname);
+        this.upstreamClient.setProperty("username", "MidiTools " + hostname);
         this.upstreamClient.setProperty("midiChatAvatar", "https://openstatic.org/projects/miditools/icon.png");
         this.upstreamClient.setProperty("typing", false);
         this.upstreamClient.setProperty("playing", false);

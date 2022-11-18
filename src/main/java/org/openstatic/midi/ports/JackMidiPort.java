@@ -14,6 +14,7 @@ import org.jaudiolibs.jnajack.JackPortFlags;
 import org.jaudiolibs.jnajack.JackPortType;
 import org.openstatic.midi.JackMidiMessage;
 import org.openstatic.midi.MidiPort;
+import org.openstatic.midi.MidiPortManager;
 import org.openstatic.midi.providers.JackMidiPortProvider;
 
 public class JackMidiPort implements MidiPort
@@ -56,11 +57,14 @@ public class JackMidiPort implements MidiPort
     @Override
     public void open() {
         this.opened = true;
+        MidiPortManager.firePortOpened(this);
+
     }
 
     @Override
     public void close() {
         this.opened = false;
+        MidiPortManager.firePortClosed(this);
     }
 
     @Override

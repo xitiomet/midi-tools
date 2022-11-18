@@ -158,7 +158,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private RandomizerControlBox randomizerControlBox;
     private AssetManagerPanel assetManagerPanel;
     public JSONObject loadedProjectJSON;
-
+    public MidiPlayerPanel midiPlayer;
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
 
@@ -371,7 +371,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.add(this.deviceQRPanel, BorderLayout.WEST);
         
         this.bottomTabbedPane = new JTabbedPane();
-        this.bottomTabbedPane.setPreferredSize(new Dimension(0, 200));
+        this.bottomTabbedPane.setPreferredSize(new Dimension(0, 232));
         BufferedImage scriptIconImage = null;
         try
         {
@@ -416,11 +416,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         {
             folderIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/folder32.png"));
         } catch (Exception e) {}
+        this.midiPlayer = new MidiPlayerPanel();
+
         ImageIcon folderIcon = new ImageIcon(folderIconImage);
         this.assetManagerPanel = new AssetManagerPanel(getAssetFolder());
         this.mainTabbedPane.addTab("Project Assets", folderIcon, this.assetManagerPanel);
 
-        this.bottomTabbedPane.addTab("Logger B", this.midi_logger_b);
+        this.bottomTabbedPane.addTab("Logger B", logIcon, this.midi_logger_b);
+        this.bottomTabbedPane.addTab("MIDI Player", this.midiPlayer.getIcon(), this.midiPlayer);
         this.bottomTabbedPane.setSelectedIndex(0);
 
         this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
@@ -498,6 +501,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MidiPortManager.addProvider(new JoystickMidiPortProvider());
             cmpp.add(this.midi_logger_a);
             cmpp.add(this.midi_logger_b);
+            cmpp.add(this.midiPlayer);
             cmpp.add(this.randomizerPort);
             String localHostname = getLocalHostname();
             try

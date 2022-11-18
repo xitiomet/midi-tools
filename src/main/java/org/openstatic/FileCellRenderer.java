@@ -29,6 +29,7 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
    private ImageIcon folderIcon;
    private ImageIcon imageIcon;
    private ImageIcon soundFontIcon;
+   private ImageIcon midiFileIcon;
    
    public FileCellRenderer()
    {
@@ -47,6 +48,7 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
          this.imageIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
          this.fileIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/file32.png")));
          this.soundFontIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/soundfont32.png")));
+         this.midiFileIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/midifile32.png")));
       } catch (Exception e) {
 
       }
@@ -70,6 +72,8 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
          this.checkBox.setIcon(this.folderIcon);
       } else if (exten.equals(".wav")) {
          this.checkBox.setIcon(this.speakerIcon);
+      } else if (exten.equals(".mid") || exten.equals(".midi")) {
+         this.checkBox.setIcon(this.midiFileIcon);
       } else if (exten.equals(".sf2")) {
          this.checkBox.setIcon(this.soundFontIcon);
       } else if (exten.equals(".gif") || exten.equals(".png") || exten.equals(".jpg") || exten.equals(".jpeg") || exten.equals(".bmp")) {

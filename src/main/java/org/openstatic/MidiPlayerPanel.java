@@ -7,29 +7,20 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Track;
 import javax.sound.midi.Sequencer.SyncMode;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
-import javax.swing.ListSelectionModel;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.openstatic.midi.MidiPort;
-import org.openstatic.midi.MidiPortListener;
 import org.openstatic.midi.MidiPortManager;
-import org.openstatic.midi.MidiPortMapping;
 
-import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -37,9 +28,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.Component;
 import java.io.File;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -55,6 +43,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     private File midiFile;
     private boolean opened;
     private JButton playButton;
+    private JButton stopButton;
     private JToggleButton repeatButton;
     private JButton pauseButton;
     private JButton previousButton;
@@ -141,19 +130,23 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         this.playButton = new JButton(getIcon("/midi-tools-res/play.png"));
         this.playButton.setActionCommand("play");
         this.playButton.addActionListener(this);
-        this.playButton.setOpaque(true);
-        this.playButton.setForeground(Color.LIGHT_GRAY);
         buttonPanel.add(this.playButton);
+
+        this.pauseButton = new JButton(getIcon("/midi-tools-res/pause.png"));
+        this.pauseButton.setActionCommand("pause");
+        this.pauseButton.addActionListener(this);
+        buttonPanel.add(this.pauseButton);
+
+        this.stopButton = new JButton(getIcon("/midi-tools-res/stop.png"));
+        this.stopButton.setActionCommand("stop");
+        this.stopButton.addActionListener(this);
+        buttonPanel.add(this.stopButton);
 
         this.repeatButton = new JToggleButton(getIcon("/midi-tools-res/repeat.png"));
         this.repeatButton.setActionCommand("repeat");
         this.repeatButton.addActionListener(this);
         buttonPanel.add(this.repeatButton);
 
-        this.pauseButton = new JButton(getIcon("/midi-tools-res/pause.png"));
-        this.pauseButton.setActionCommand("pause");
-        this.pauseButton.addActionListener(this);
-        buttonPanel.add(this.pauseButton);
         this.selectTrackPanel = new JPanel(new BorderLayout());
         this.selectTrackPanel.add(new JLabel(" Select MIDI Track "), BorderLayout.WEST);
         this.selectTrackPanel.add(this.selectFileField, BorderLayout.CENTER);
@@ -235,6 +228,16 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         }
     }
 
+    public void stop()
+    {
+        this.userPaused = true;
+        if (this.sequencer.isRunning())
+        {
+            this.sequencer.stop();
+            this.sequencer.setMicrosecondPosition(0);
+        }
+    }
+
     public void pause()
     {
         this.userPaused = true;
@@ -264,6 +267,10 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         if ("previous".equals(actionCommand))
         {
             restartTrack();
+        }
+        if ("stop".equals(actionCommand))
+        {
+            stop();
         }
         if ("next".equals(actionCommand))
         {

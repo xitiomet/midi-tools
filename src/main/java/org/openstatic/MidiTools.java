@@ -2112,7 +2112,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     
     public static String getLocalIP()
     {
-        String return_ip = "";
+        String return_ip = "127.0.0.1";
         try
         {
             for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
@@ -2126,7 +2126,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         return_ip = this_ip;
                 }
             }
-
         } catch (Exception e) {}
         return return_ip;
     }

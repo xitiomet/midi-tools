@@ -110,10 +110,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
 
             @Override
             public void focusGained(FocusEvent e) {
-                String filename = null;
-                if (MidiPlayerPanel.this.midiFile != null)
-                    filename = MidiPlayerPanel.this.midiFile.getName();
-                MidiPlayerPanel.this.refreshAssetChoices(filename);
+                refreshAssetChoices();
             }
 
             @Override
@@ -171,6 +168,14 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         this.clockThread.start();
     }
 
+    public void refreshAssetChoices()
+    {
+        String filename = null;
+        if (MidiPlayerPanel.this.midiFile != null)
+            filename = MidiPlayerPanel.this.midiFile.getName();
+        MidiPlayerPanel.this.refreshAssetChoices(filename);
+    }
+
     public void refreshAssetChoices(String filename)
     {
         ArrayList<String> extens = new ArrayList<String>();
@@ -178,7 +183,11 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         extens.add(".midi");
         this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
         if (filename != null)
+        {
             this.selectFileField.setSelectedItem(filename);
+        } else if (this.selectFileField.getItemCount() > 0) {
+            this.selectFileField.setSelectedIndex(0);
+        }
     }
 
     public void loadFile(File file)
@@ -213,11 +222,16 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     public void play()
     {
         this.userPaused = false;
-        if (!this.sequencer.isRunning())
+        if (this.sequence != null)
         {
-            this.loadSelectedFile();
-            if (this.midiFile != null && this.sequence != null)
+            if (!this.sequencer.isRunning())
+            {
+                if (sequence.getMicrosecondLength() == this.sequencer.getMicrosecondPosition())
+                {
+                    this.sequencer.setMicrosecondPosition(0);
+                }
                 this.sequencer.start();
+            }
         }
     }
 
@@ -295,6 +309,8 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     public void setSelectedFilename(String filename)
     {
         this.selectFileField.setSelectedItem(filename);
+        if (this.midiFile == null)
+            this.loadSelectedFile();
     }
 
     public String getSelectedFilename()
@@ -304,17 +320,20 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
 
     public void loadSelectedFile()
     {
-        String selectedFilename = this.selectFileField.getSelectedItem().toString();
-        if (!this.sequencer.isRunning())
+        if (this.selectFileField.getSelectedItem() != null)
         {
-            if (this.midiFile == null)
+            String selectedFilename = this.selectFileField.getSelectedItem().toString();
+            if (!this.sequencer.isRunning())
             {
-                this.loadFile(new File(MidiTools.getAssetFolder(), selectedFilename));
-            } else if (!this.midiFile.getName().equals(selectedFilename)) {
+                if (this.midiFile == null)
+                {
+                    this.loadFile(new File(MidiTools.getAssetFolder(), selectedFilename));
+                } else if (!this.midiFile.getName().equals(selectedFilename)) {
+                    this.loadFile(new File(MidiTools.getAssetFolder(), selectedFilename));
+                }
+            } else if (this.sequencer.getMicrosecondPosition() == 0) {
                 this.loadFile(new File(MidiTools.getAssetFolder(), selectedFilename));
             }
-        } else if (this.sequencer.getMicrosecondPosition() == 0) {
-            this.loadFile(new File(MidiTools.getAssetFolder(), selectedFilename));
         }
     }
 

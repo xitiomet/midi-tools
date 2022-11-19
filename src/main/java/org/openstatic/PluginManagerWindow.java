@@ -2,7 +2,6 @@ package org.openstatic;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.openstatic.midi.*;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -11,7 +10,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.ListCellRenderer;
-import javax.swing.ListModel;
 import javax.swing.ScrollPaneConstants;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -24,8 +22,6 @@ import javax.swing.event.ListSelectionListener;
 
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
 import java.awt.Toolkit;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -34,8 +30,6 @@ import java.io.File;
 import java.awt.Graphics;
 import java.awt.Component;
 import java.awt.Color;
-
-import java.util.Vector;
 
 public class PluginManagerWindow extends JDialog implements ActionListener, Runnable, ListSelectionListener
 {
@@ -48,12 +42,13 @@ public class PluginManagerWindow extends JDialog implements ActionListener, Runn
     private JButton actionButton;
     private JPanel buttonPanel;
     private ImageIcon gears;
+    private boolean fetchedOk;
 
     private class PluginListRenderer extends JPanel implements ListCellRenderer<JSONObject>
     {
         private Border selectedBorder;
         private JCheckBox checkBox;
-
+        
         public PluginListRenderer() 
         {
             super(new BorderLayout());
@@ -114,11 +109,11 @@ public class PluginManagerWindow extends JDialog implements ActionListener, Runn
     
     public PluginManagerWindow()
     {
-        super(MidiTools.instance, "Plugin Manager", true);
+        super(MidiTools.instance, "MidiTools Plugin Manager", true);
         this.pluginListRenderer = new PluginListRenderer();
         this.setLayout(new BorderLayout());
         this.pluginFetch = new PendingURLFetch("https://openstatic.org/projects/miditools/plugins.json");
-
+        this.fetchedOk = false;
         try
         {
             this.gears = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/gears.gif")));
@@ -130,14 +125,13 @@ public class PluginManagerWindow extends JDialog implements ActionListener, Runn
             public void paintComponent(Graphics g)
             {
                 super.paintComponent(g);
-                int toyCount = PluginManagerWindow.this.pluginList.getVisibleRowCount();
-                if (toyCount <= 0)
+                if (!PluginManagerWindow.this.fetchedOk)
                 {
                     int iconHeight = PluginManagerWindow.this.gears.getIconHeight();
                     int x = (this.getWidth() - PluginManagerWindow.this.gears.getIconWidth()) / 2;
                     int y = ((this.getHeight() - iconHeight) / 2) - 30;
                     PluginManagerWindow.this.gears.paintIcon(this, g, x, y);
-                    g.drawString("Searching for Plugins", x -10, y + iconHeight + 20);
+                    g.drawString("Searching for MidiTools Plugins", x -10, y + iconHeight + 20);
                 }
             }
         };
@@ -160,19 +154,7 @@ public class PluginManagerWindow extends JDialog implements ActionListener, Runn
         this.fetchThread = new Thread(this);
         this.fetchThread.start();
         this.centerWindow();
-    }
-    
-    private GridBagConstraints gbc(int x, int y, double weightx)
-    {
-        GridBagConstraints g = new GridBagConstraints();
-        g.fill = GridBagConstraints.HORIZONTAL;
-        g.weightx = weightx;
-        g.gridx = x;
-        g.gridy = y;
-        g.ipady = 2;
-        g.ipadx = 5;
-        return g;
-    }    
+    } 
 
     public JPanel labelComponent(String label, Component c)
     {
@@ -219,6 +201,7 @@ public class PluginManagerWindow extends JDialog implements ActionListener, Runn
             }
             this.pluginList.setListData(resultArray);
             this.pluginList.repaint();
+            this.fetchedOk = true;
         } catch (Exception pfex) {
             try
             {

@@ -22,6 +22,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
 
@@ -29,12 +30,10 @@ import net.glxn.qrgen.QRCode;
 import net.glxn.qrgen.image.ImageType;
 
 import java.net.URL;
-import java.net.URI;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 
@@ -75,9 +74,9 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 
 import javax.imageio.ImageIO;
-import javax.jmdns.JmDNS;
-import javax.jmdns.impl.DNSRecord.Address;
 
+import java.awt.image.AffineTransformOp;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.BorderLayout;
 import java.awt.Toolkit;
@@ -92,7 +91,6 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Desktop;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
@@ -100,7 +98,9 @@ import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener
 {
-    public static final String VERSION = "1.6";
+    public static LinkedHashMap<String, BufferedImage> cachedImages = new LinkedHashMap<String, BufferedImage>();
+
+    public static final String VERSION = "1.7";
     public static String LOCAL_SERIAL;
     public static long appLaunchTime;
     public static boolean windowWentVisible = false;
@@ -138,6 +138,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JMenuItem exportConfigurationMenuItem;
     private JMenuItem importConfigurationMenuItem;
     private JMenuItem loadPluginMenuItem;
+    private JMenuItem managePluginMenuItem;
     private JMenuItem saveMenuItem;
     private JMenuItem resetConfigurationMenuItem;
     private File lastSavedFile;
@@ -264,10 +265,15 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.importConfigurationMenuItem.addActionListener(this);
         this.importConfigurationMenuItem.setActionCommand("import");
 
-        this.loadPluginMenuItem = new JMenuItem("Install Plugin");
+        this.loadPluginMenuItem = new JMenuItem("Install Plugin from File");
         this.loadPluginMenuItem.setMnemonic(KeyEvent.VK_P);
         this.loadPluginMenuItem.addActionListener(this);
         this.loadPluginMenuItem.setActionCommand("load_plugin");
+
+        this.managePluginMenuItem = new JMenuItem("Manage Plugins");
+        this.managePluginMenuItem.setMnemonic(KeyEvent.VK_M);
+        this.managePluginMenuItem.addActionListener(this);
+        this.managePluginMenuItem.setActionCommand("manage_plugins");
         
         this.aboutMenuItem = new JMenuItem("About");
         this.aboutMenuItem.setMnemonic(KeyEvent.VK_B);
@@ -284,6 +290,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.fileMenu.add(this.exportConfigurationMenuItem);
         this.fileMenu.add(this.importConfigurationMenuItem);
         this.fileMenu.add(new JSeparator());
+        this.fileMenu.add(this.managePluginMenuItem);
         this.fileMenu.add(this.loadPluginMenuItem);
         this.fileMenu.add(this.aboutMenuItem);
         this.fileMenu.add(new JSeparator());
@@ -416,15 +423,13 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         {
             folderIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/folder32.png"));
         } catch (Exception e) {}
-        this.midiPlayer = new MidiPlayerPanel();
 
         ImageIcon folderIcon = new ImageIcon(folderIconImage);
         this.assetManagerPanel = new AssetManagerPanel(getAssetFolder());
         this.mainTabbedPane.addTab("Project Assets", folderIcon, this.assetManagerPanel);
 
         this.bottomTabbedPane.addTab("Logger B", logIcon, this.midi_logger_b);
-        this.bottomTabbedPane.addTab("MIDI Player", this.midiPlayer.getIcon(), this.midiPlayer);
-        this.bottomTabbedPane.setSelectedIndex(0);
+
 
         this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
 
@@ -484,6 +489,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         });
         this.cmpp = new CollectionMidiPortProvider();
+        this.midiPlayer = new MidiPlayerPanel();
+        this.bottomTabbedPane.addTab("MIDI Player", this.midiPlayer.getIcon(), this.midiPlayer);
+        this.bottomTabbedPane.setSelectedIndex(0);
         MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
@@ -492,7 +500,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         MidiTools.this.routeputClient.setAutoReconnect(true);
         MidiTools.this.routeputClient.setCollector(true);
         MidiTools.this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
-        MidiTools.this.routeputClient.setProperty("host", getLocalHost().getHostName());
+        MidiTools.this.routeputClient.setProperty("host", getLocalHostname());
         MidiTools.this.routeputSessionManager = new RoutePutSessionManager(myChannel, MidiTools.this.routeputClient);
         Thread svcs = new Thread(() -> {
             this.rtpMidiPorts = new ArrayList<RTPMidiPort>();
@@ -569,29 +577,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         centerWindow();
     }
 
-    // Figure out the local host ignoring any loopback interfaces.
-    public static InetAddress getLocalHost()
-    {
-        InetAddress ra = null;
-        try
-        {
-            for(Enumeration<NetworkInterface> n = NetworkInterface.getNetworkInterfaces(); n.hasMoreElements();)
-            {
-                NetworkInterface ni = n.nextElement();
-                for(Enumeration<InetAddress> e = ni.getInetAddresses(); e.hasMoreElements();)
-                {
-                    InetAddress ia = e.nextElement();
-                    if (!ia.isLoopbackAddress() && ia.isSiteLocalAddress())
-                    {
-                        System.err.println("Possible Local Address:" + ia.toString());
-                        ra = ia;
-                    }
-                }
-            }
-
-        } catch (Exception e) {}
-        return ra;
-    }
 
     public static String shellExec(String cmd[])
     {
@@ -1064,6 +1049,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     loadProject(fileToLoad);
                 })).start();
             }
+        } else if (cmd.equals("manage_plugins")) {
+            PluginManagerWindow pmw = new PluginManagerWindow();
+            pmw.setVisible(true);
         } else if (cmd.equals("load_plugin")) {
             JFileChooser fileChooser = new JFileChooser();
             fileChooser.setDialogTitle("Specify a file to open");   
@@ -2023,6 +2011,15 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 }
                 this.loadedProjectJSON = configJson;
                 this.setLastSavedFile(file);
+                Thread refreshPlayerThread = new Thread(() -> {
+                    try
+                    {
+                        Thread.sleep(2000l);
+                        MidiTools.this.assetManagerPanel.refresh();
+                        MidiTools.this.midiPlayer.refreshAssetChoices();
+                    } catch (Exception e) {}
+                });
+                refreshPlayerThread.start();
                 logIt("Project Loaded: " + file.getName());
             } catch (Exception e) {
                 MidiTools.instance.midi_logger_b.printException(e);
@@ -2162,7 +2159,134 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return return_mac;
     }
 
-    private boolean loadPlugin(File jarfile)
+    public static BufferedImage resizeImage(String amount, BufferedImage in_image, boolean alpha)
+    {
+        if ("".equals(amount) || amount == null)
+        {
+            return in_image;
+        } else {
+            float scale_to_float = 0;
+            float w = 0;
+            float h = 0;
+            float o_w = (float) in_image.getWidth();
+            float o_h = (float) in_image.getHeight();
+            if (amount.contains("x"))
+            {
+                String[] spl = amount.split("x");
+                w = Float.valueOf(spl[0]).floatValue();
+                h = Float.valueOf(spl[1]).floatValue();
+            } else {
+                scale_to_float = Float.valueOf(amount).floatValue();
+                w = (o_w * scale_to_float);
+                h = (o_h * scale_to_float);
+            }
+            if (!alpha)
+            {
+                AffineTransform at = new AffineTransform();
+                at.scale(w/o_w, h/o_h);
+                AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                BufferedImage rgbi = new BufferedImage(in_image.getWidth(), in_image.getHeight(), BufferedImage.TYPE_INT_RGB);
+                rgbi.createGraphics().drawImage(in_image, 0, 0, Color.WHITE, null);
+                BufferedImage ri = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_RGB);
+                scaleOp.filter(rgbi, ri);
+                return ri;
+            } else {
+                AffineTransform at = new AffineTransform();
+                at.scale(w/o_w, h/o_h);
+                AffineTransformOp scaleOp = new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+                BufferedImage rgbi = new BufferedImage(in_image.getWidth(), in_image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+                rgbi.createGraphics().drawImage(in_image, 0, 0, new Color(1f,1f,1f,0f), null);
+                BufferedImage ri = new BufferedImage((int)w, (int)h, BufferedImage.TYPE_INT_ARGB);
+                scaleOp.filter(rgbi, ri);
+                return ri;
+            }
+        }
+    }
+
+    public static synchronized BufferedImage getCachedImage(String url, String size)
+    {
+        if (size == null)
+            size = "";
+        String key = size + "-" + url;
+        if (MidiTools.cachedImages.containsKey(key))
+        {
+            return MidiTools.cachedImages.get(key);
+        } else {
+            try {
+                BufferedImage image = null;
+                if (url.startsWith("http://") || url.startsWith("https://"))
+                {
+                    System.err.println("Downloading " + url + " ...");
+                    URL url2 = new URL(url);
+                    image = ImageIO.read(url2);
+                } else if (url.startsWith("/")) {
+                    System.err.print("READING " + url + " ...");
+                    image = ImageIO.read(MidiTools.class.getResourceAsStream(url));
+                }
+                if (image != null)
+                {
+                    BufferedImage ri = MidiTools.resizeImage(size, image, true);
+                    MidiTools.cachedImages.put(key, ri);
+                    return ri;
+                }
+            } catch (Exception e) {
+                e.printStackTrace(System.err);
+            }
+            return null;
+        }
+    }
+
+    public boolean removePlugin(String title, String localFile)
+    {
+        try
+        {
+            MidiToolsPlugin removedPlugin = MidiTools.instance.plugins.remove(title);
+            int tabIndex = this.mainTabbedPane.indexOfTab(title);
+            if (tabIndex >=0 )
+                this.mainTabbedPane.removeTabAt(tabIndex);
+            URLClassLoader urlLoader = (URLClassLoader) removedPlugin.getClass().getClassLoader();
+            urlLoader.close();
+            File x = new File(localFile);
+            if (x.exists())
+            {
+                System.err.println("Flagging jar for delete on exit: " + localFile);
+                FileOutputStream out = new FileOutputStream(x);
+                out.write(new byte[0]);
+                out.flush(); out.close();
+            }
+            return true;
+        } catch (Exception ex) {
+            ex.printStackTrace(System.err);
+        }
+        return false;
+    }
+
+    public boolean installPlugin(String urlPath, String filename)
+    {
+        try
+        {
+            File jarFile = new File(getPluginFolder(), filename);
+            URL urlPlugin = new URL(urlPath + filename);
+            InputStream urlInStream = urlPlugin.openStream();
+            //Files.copy(urlInStream, jarFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            FileOutputStream out = new FileOutputStream(jarFile);
+            out.write(new byte[0]);
+            byte[] buffer = new byte[4096];
+            int bytesRead = -1;
+            while ((bytesRead = urlInStream.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+            out.flush(); 
+            out.close();
+            urlInStream.close();
+            return loadPlugin(jarFile);
+        } catch (Exception ex) {
+            ex.printStackTrace(System.err);
+        }
+        return false;
+    }
+
+    public boolean loadPlugin(File jarfile)
     {
         try
         {
@@ -2212,6 +2336,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         } catch (Exception e) {
             e.printStackTrace();
             logIt("Couldn't load plugin: " + jarfile.toString());
+            jarfile.delete();
             return false;
         }
     }

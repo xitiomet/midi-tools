@@ -43,12 +43,14 @@ public class AssetManagerPanel extends JPanel implements ActionListener
     private FolderListModel folderListModel;
     private FileCellRenderer fileCellRenderer;
     private File root;
+    private File lastDirectory;
     private long lastAssetClick;
     
     public AssetManagerPanel(File directory)
     {
         super(new BorderLayout());
         this.root = directory;
+        this.lastDirectory = new File(".");
         this.fileCellRenderer = new FileCellRenderer();
         this.folderListModel = new FolderListModel(directory);
         this.assetJList = new JList<File>(this.folderListModel);
@@ -204,11 +206,13 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             this.assetJList.setSelectedIndices(indices);
         } else if (e.getSource() == this.addFileButton) {
             JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(this.lastDirectory);
             fileChooser.setDialogTitle("Specify a file to import");   
             fileChooser.setMultiSelectionEnabled(true);
             int userSelection = fileChooser.showOpenDialog(this);
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
+                this.lastDirectory = fileChooser.getCurrentDirectory();
                 File[] selectedFiles = fileChooser.getSelectedFiles();
                 for(int i = 0; i < selectedFiles.length; i++)
                 {
@@ -238,11 +242,13 @@ public class AssetManagerPanel extends JPanel implements ActionListener
             }
         } else if (e.getSource() == this.extractFileButton) {
             JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(this.lastDirectory);
             fileChooser.setDialogTitle("Specify a location to export selected files");
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             int userSelection = fileChooser.showOpenDialog(this);
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
+                this.lastDirectory = fileChooser.getCurrentDirectory();
                 Iterator<File> fIterator = this.getSelectedFiles().iterator();
                 while(fIterator.hasNext())
                 {

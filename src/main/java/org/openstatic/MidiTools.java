@@ -120,7 +120,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     private JMenu actionsMenu;
     private JMenu optionsMenu;
     private JMenu qrCodeMenu;
-    private JTabbedPane bottomTabbedPane;
+    //private JTabbedPane bottomTabbedPane;
     private JTabbedPane mainTabbedPane;
 
     private JCheckBoxMenuItem apiServerEnable;
@@ -175,7 +175,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.apiServer = new APIWebServer();
         MidiPortManager.addProvider(this.apiServer);
         this.midi_logger_a = new LoggerMidiPort("Logger A");
-        this.midi_logger_b = new LoggerMidiPort("Logger B");
+        this.midiPlayer = new MidiPlayerPanel();
+        this.midi_logger_b = this.midiPlayer.getLoggerMidiPort();
         this.randomizerPort = new MidiRandomizerPort("Randomizer");
 
         this.setLayout(new BorderLayout());
@@ -370,6 +371,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         });
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane2.setPreferredSize(new Dimension(225,0));
         scrollPane2.setBorder(new TitledBorder("MIDI Devices"));
         
         this.deviceQRPanel = new JPanel(new BorderLayout());
@@ -377,8 +379,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         
         this.add(this.deviceQRPanel, BorderLayout.WEST);
         
-        this.bottomTabbedPane = new JTabbedPane();
-        this.bottomTabbedPane.setPreferredSize(new Dimension(0, 232));
+        //this.bottomTabbedPane = new JTabbedPane();
+        //this.bottomTabbedPane.setPreferredSize(new Dimension(0, 232));
         BufferedImage scriptIconImage = null;
         try
         {
@@ -428,10 +430,10 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         this.assetManagerPanel = new AssetManagerPanel(getAssetFolder());
         this.mainTabbedPane.addTab("Project Assets", folderIcon, this.assetManagerPanel);
 
-        this.bottomTabbedPane.addTab("Logger B", logIcon, this.midi_logger_b);
+        //this.bottomTabbedPane.addTab("Logger B", logIcon, this.midi_logger_b);
 
 
-        this.add(this.bottomTabbedPane, BorderLayout.PAGE_END);
+        this.add(this.midiPlayer, BorderLayout.PAGE_END);
 
         
         //this.midi_logger.start();
@@ -489,9 +491,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         });
         this.cmpp = new CollectionMidiPortProvider();
-        this.midiPlayer = new MidiPlayerPanel();
-        this.bottomTabbedPane.addTab("MIDI Player", this.midiPlayer.getIcon(), this.midiPlayer);
-        this.bottomTabbedPane.setSelectedIndex(0);
+        //this.bottomTabbedPane.addTab("MIDI Player", this.midiPlayer.getIcon(), this.midiPlayer);
+        //this.bottomTabbedPane.setSelectedIndex(0);
         MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
         System.err.println("OpenStatic URI: " + openstaticUri);
@@ -2200,6 +2201,11 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 return ri;
             }
         }
+    }
+
+    public static synchronized ImageIcon getCachedIcon(String url, String size)
+    {
+        return new ImageIcon(getCachedImage(url, size));
     }
 
     public static synchronized BufferedImage getCachedImage(String url, String size)

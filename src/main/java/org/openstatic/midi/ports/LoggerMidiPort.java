@@ -181,6 +181,14 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.add(this.buttonPanel, BorderLayout.WEST);
         this.start();
     }
+
+    public void hidePortControl()
+    {
+        try
+        {
+            this.buttonPanel.remove(this.portControl);
+        } catch (Exception e) {}
+    }
     
     public void open()
     {
@@ -296,40 +304,36 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         return (short) ((0xff & data[0]) << 8 | (0xff & data[1]));
     }
     
+    public static float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+    {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
     public static String shortMessageToString(ShortMessage msg)
     {
-        String channelText = " Channel = " + String.valueOf(msg.getChannel()+1);
+        String channelText = "CH " + String.format("%02d", msg.getChannel()+1);
         String commandText = "";
-        String data1Name = "?";
         String data1Value = "?";
-        String data2Name = "value";
         if (msg.getCommand() == ShortMessage.PITCH_BEND)
         {
-            data1Name = "BEND";
-            data2Name = "MSB";
             int bendValue = (msg.getData2() << 7) | msg.getData1();
-            data1Value = String.valueOf(bendValue - 8192);
+            float bendAmount = mapFloat(bendValue, 0, 16383, -1.0f, 1.0f);
             commandText = "<b style=\"color: orange;\">PITCH BEND</b>";
-            String data1Text = data1Name + " = " + data1Value;
-            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
+            String bendText = String.format("%1.2f",bendAmount);
+            if (!bendText.startsWith("-"))
+                bendText = "+" + bendText;
+            return channelText + " " + commandText + " " + bendText;
         } else if (msg.getCommand() == ShortMessage.CONTROL_CHANGE) {
-            data1Name = "CC";
-            data1Value = String.valueOf(msg.getData1());
-            commandText = "<b style=\"color: yellow;\">CONTROL CHANGE</b>";
-            String data1Text = data1Name + " = " + data1Value;
-            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
+            commandText = "<b style=\"color: yellow;\">CONTROL CHANGE " + String.format("%3d", msg.getData1()) + "</b>";
+            return channelText + " " + commandText + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == ShortMessage.NOTE_ON) {
-            data1Name = "Note";
             data1Value = MidiPortManager.noteNumberToString(msg.getData1());
             commandText = "<b style=\"color: green;\">NOTE ON</b>";
-            String data1Text = data1Name + " = " + data1Value;
-            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
+            return channelText + " " + commandText + " " +  data1Value + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == ShortMessage.NOTE_OFF) {
-            data1Name = "Note";
             data1Value = MidiPortManager.noteNumberToString(msg.getData1());
             commandText = "<b style=\"color: red;\">NOTE OFF</b>";
-            String data1Text = data1Name + " = " + data1Value;
-            return commandText + channelText + ", " + data1Text + ", " + data2Name + " = " + String.valueOf(msg.getData2());
+            return channelText + " " + commandText + " " + data1Value + " = " + String.valueOf(msg.getData2());
         } else if (msg.getCommand() == 240) {
             byte[] data = msg.getMessage();
             data1Value = String.valueOf(Byte.toUnsignedInt(data[0]));
@@ -362,7 +366,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                 data1Value += ", " + String.valueOf(Byte.toUnsignedInt(data[i]));
             }
             data1Value += "]";
-            return commandText + channelText + ", " + data1Value;
+            return channelText + " " + commandText + " " + data1Value;
         }
     }
 
@@ -414,7 +418,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                     }
                     if (table != null)
                     {
-                        if (table.getElementCount() > 10000)
+                        if (table.getElementCount() > 5000)
                         {
                             Element el = table.getElement(0);
                             doc_html.removeElement(el);

@@ -16,14 +16,17 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextPane;
 import javax.swing.JToggleButton;
+import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.openstatic.midi.MidiPort;
 import org.openstatic.midi.MidiPortManager;
+import org.openstatic.midi.ports.LoggerMidiPort;
 
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -41,6 +44,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     private Sequencer sequencer;
     private Sequence sequence;
     private File midiFile;
+    private File lastDirectory;
     private boolean opened;
     private JButton playButton;
     private JButton stopButton;
@@ -58,6 +62,8 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     private long lastDisplayUpdate;
     private ImageIcon myIcon;
     private boolean userPaused;
+    private JPanel playerPanel;
+    private LoggerMidiPort midilogger;
 
     private Receiver seqReceiver = new Receiver() {
 
@@ -70,6 +76,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
                     r.send(message, timeStamp);
                 });
             }
+            //MidiPlayerPanel.this.midilogger.send(message, timeStamp);
         }
 
         @Override
@@ -81,6 +88,9 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     public MidiPlayerPanel()
     {
         super(new BorderLayout());
+        this.lastDirectory = new File(".");
+        this.setPreferredSize(new Dimension(0, 200));
+        this.setBorder(new EmptyBorder(3, 3, 3, 3));
         this.userPaused = true;
         this.receivers = new Vector<Receiver>();
         try
@@ -122,43 +132,53 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         this.buttonPanel = new JPanel();
         buttonPanel.setLayout(new GridLayout(1,5));
         
-        this.previousButton = new JButton(getIcon("/midi-tools-res/prev.png"));
+        this.previousButton = new JButton(MidiTools.getCachedIcon("/midi-tools-res/prev.png","16x16"));
         this.previousButton.setActionCommand("previous");
         this.previousButton.addActionListener(this);
 		buttonPanel.add(this.previousButton);
 
-        this.playButton = new JButton(getIcon("/midi-tools-res/play.png"));
+        this.playButton = new JButton(MidiTools.getCachedIcon("/midi-tools-res/play.png", "16x16"));
         this.playButton.setActionCommand("play");
         this.playButton.addActionListener(this);
         buttonPanel.add(this.playButton);
 
-        this.pauseButton = new JButton(getIcon("/midi-tools-res/pause.png"));
+        this.pauseButton = new JButton(MidiTools.getCachedIcon("/midi-tools-res/pause.png", "16x16"));
         this.pauseButton.setActionCommand("pause");
         this.pauseButton.addActionListener(this);
         buttonPanel.add(this.pauseButton);
 
-        this.stopButton = new JButton(getIcon("/midi-tools-res/stop.png"));
+        this.stopButton = new JButton(MidiTools.getCachedIcon("/midi-tools-res/stop.png", "16x16"));
         this.stopButton.setActionCommand("stop");
         this.stopButton.addActionListener(this);
         buttonPanel.add(this.stopButton);
 
-        this.repeatButton = new JToggleButton(getIcon("/midi-tools-res/repeat.png"));
+        this.repeatButton = new JToggleButton(MidiTools.getCachedIcon("/midi-tools-res/repeat.png", "16x16"));
         this.repeatButton.setActionCommand("repeat");
         this.repeatButton.addActionListener(this);
         buttonPanel.add(this.repeatButton);
 
         this.selectTrackPanel = new JPanel(new BorderLayout());
-        this.selectTrackPanel.add(new JLabel(" Select MIDI Track "), BorderLayout.WEST);
+        this.selectTrackPanel.add(new JLabel(" Select File "), BorderLayout.WEST);
         this.selectTrackPanel.add(this.selectFileField, BorderLayout.CENTER);
         this.selectFileButton = new JButton("...");
+        this.selectFileButton.setToolTipText("Select a file from your computer");
         this.selectFileButton.addActionListener(this);
         this.selectTrackPanel.add(this.selectFileButton, BorderLayout.EAST);
-
-        this.add(this.selectTrackPanel, BorderLayout.PAGE_START);
-        this.add(this.viewArea, BorderLayout.CENTER);
-        this.add(buttonPanel, BorderLayout.PAGE_END);
+        this.playerPanel = new JPanel(new BorderLayout());
+        this.playerPanel.add(this.selectTrackPanel, BorderLayout.PAGE_START);
+        this.playerPanel.add(this.viewArea, BorderLayout.CENTER);
+        this.playerPanel.add(buttonPanel, BorderLayout.PAGE_END);
+        this.playerPanel.setPreferredSize(new Dimension(225,0));
+        this.add(this.playerPanel, BorderLayout.WEST);
+        this.midilogger = new LoggerMidiPort("Logger B");
+        this.add(this.midilogger, BorderLayout.CENTER);
         this.clockThread = new Thread(this);
         this.clockThread.start();
+    }
+
+    public LoggerMidiPort getLoggerMidiPort()
+    {
+        return this.midilogger;
     }
 
     public void refreshAssetChoices()
@@ -187,7 +207,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     {
         try
         {
-            System.err.println("Player Loading: " + file.toString());
+            midilogger.println("(Internal Player) LOADED " + file.getName());
             this.midiFile = file;
             this.sequence = MidiSystem.getSequence(this.midiFile);
             this.sequencer.setSequence(this.sequence);
@@ -224,6 +244,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
                     this.sequencer.setMicrosecondPosition(0);
                 }
                 this.sequencer.start();
+                midilogger.println("(Internal Player) PLAYING " + this.midiFile.getName());
             }
         }
     }
@@ -235,6 +256,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         {
             this.sequencer.stop();
             this.sequencer.setMicrosecondPosition(0);
+            midilogger.println("(Internal Player) STOPPED " + this.midiFile.getName());
         }
     }
 
@@ -242,13 +264,16 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     {
         this.userPaused = true;
         if (this.sequencer.isRunning())
+        {
             this.sequencer.stop();
+            midilogger.println("(Internal Player) PAUSED " + this.midiFile.getName());
+        }
     }
     
     public void restartTrack()
     {
         this.sequencer.setTickPosition(0);
-            loadSelectedFile();
+        loadSelectedFile();
     }
 
 
@@ -279,6 +304,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         if (e.getSource() == this.selectFileButton)
         {
             JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(this.lastDirectory);
             fileChooser.setDialogTitle("Select a Midi file"); 
             FileNameExtensionFilter filter = new FileNameExtensionFilter("Midi File", "mid", "midi");
             fileChooser.setFileFilter(filter);  
@@ -286,6 +312,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
             if (userSelection == JFileChooser.APPROVE_OPTION)
             {
                 final File fileToLoad = fileChooser.getSelectedFile();
+                this.lastDirectory = fileChooser.getCurrentDirectory();
                 if (fileToLoad != null)
                 {
                     Thread x = new Thread()
@@ -505,7 +532,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
                     long trackProgressSeconds = this.getMicrosecondPosition() / 1000000l;
                     String trackProgress = getDurationBreakdown(trackProgressSeconds)+ " / " + getDurationBreakdown(durationSecond);
 
-                    this.viewArea.setText("<html><body style=\"color: white; font-size: 24px; text-align: center; vertical-align: middle;\"><B>" + state + " " + midiFileName + "</B> [" + trackProgress + "]</body></html>");
+                    this.viewArea.setText("<html><body style=\"color: white; font-size: 18px; text-align: center; vertical-align: middle;\"><B>" + midiFileName + "</B><br />" + state + " [" + trackProgress + "]</body></html>");
 
                 }
             } catch (Exception e) {

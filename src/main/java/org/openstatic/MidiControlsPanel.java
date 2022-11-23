@@ -37,6 +37,7 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
     private JButton createRuleButton;
     private JButton deleteButton;
     private JButton labelButton;
+    private JButton selectAllButton;
 
     public MidiControlsPanel()
     {
@@ -100,6 +101,12 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
             this.labelButton.setActionCommand("label_control");
             this.labelButton.setToolTipText("Rename selected controls");
 
+            ImageIcon selectAllIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/selectall32.png")));
+            this.selectAllButton = new JButton(selectAllIcon);
+            this.selectAllButton.addActionListener(this);
+            this.selectAllButton.setActionCommand("select_all");
+            this.selectAllButton.setToolTipText("Select All");
+
             ImageIcon trashIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/trash32.png")));
             this.deleteButton = new JButton(trashIcon);
             this.deleteButton.addActionListener(this);
@@ -111,6 +118,7 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
         this.buttonPanel.add(this.createControlButton);
         this.buttonPanel.add(this.createRuleButton);
         this.buttonPanel.add(this.labelButton);
+        this.buttonPanel.add(this.selectAllButton);
         this.buttonPanel.add(this.deleteButton);
         this.add(buttonPanel, BorderLayout.WEST);
     }
@@ -233,6 +241,12 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
             }
         } else if (cmd.equals("new_control")) {
             CreateControlDialog editr = new CreateControlDialog();
+        } else if (cmd.equals("select_all")) {
+            int rs = this.controls.size();
+            int[] indices = new int[rs];
+            for(int i = 0; i < rs; i++)
+                indices[i] = i;
+            this.controlList.setSelectedIndices(indices);
         }
         
     }

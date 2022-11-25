@@ -54,6 +54,9 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         for (int i = 0; i < rules.length(); i++)
         {
             JSONObject randRule = rules.getJSONObject(i);
+            long changeDelay = randRule.optLong("changeDelay",5000);
+            if (changeDelay < 100)
+                randRule.put("changeDelay", changeDelay * 1000l);
             addRandomRule(randRule);
         }
     }
@@ -74,7 +77,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
         newRule.put("min", 0);
         newRule.put("max", 127);
         newRule.put("smooth", true);
-        newRule.put("changeDelay", 5);
+        newRule.put("changeDelay", 5000);
         newRule.put("enabled", true);
         return newRule;
     }
@@ -194,7 +197,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                         int channel = randRule.optInt("channel", 1);
                         int cc = randRule.optInt("cc", 0);
                         boolean smooth = randRule.optBoolean("smooth", true);
-                        int changeDelay = randRule.optInt("changeDelay", 5);
+                        long changeDelayMillis = randRule.optLong("changeDelay", 5000);
                         int target = randRule.optInt("_target", 0);
                         int value = randRule.optInt("_value", 0);
                         int targetSpeed = randRule.optInt("_targetSpeed", 1);
@@ -203,7 +206,6 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                         long lastChangeMillis = randRule.optLong("_lastChangeMillis", 0l);
                         long elapsed = (currentMillis - lastRandomMillis);
                         long lastChangeElapsed = currentMillis - lastChangeMillis;
-                        long changeDelayMillis = (changeDelay * 1000l);
                         
                         int data2 = value;
                         if (elapsed >= changeDelayMillis || lastRandomMillis == 0l)

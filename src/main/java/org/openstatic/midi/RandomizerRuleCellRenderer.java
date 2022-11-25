@@ -39,7 +39,7 @@ public class RandomizerRuleCellRenderer extends JPanel implements ListCellRender
                                                  boolean cellHasFocus)
    {
       String ruleHTML = "<html>CH# "+ String.valueOf(rule.getInt("channel")) +" CC# "+ String.valueOf(rule.getInt("cc")) +" Value Range " + String.valueOf(rule.getInt("min")) + "-" + String.valueOf(rule.getInt("max"))
-                      + " Change Delay " + String.valueOf(rule.getInt("changeDelay")) + (rule.optBoolean("smooth",false) ? " SMOOTH" :"") + "</html>";
+                      + " Change Delay " + String.valueOf(rule.getInt("changeDelay")) + "ms" + (rule.optBoolean("smooth",false) ? " SMOOTH" :"") + "</html>";
       this.checkBox.setText(ruleHTML);
       this.checkBox.setSelected(rule.optBoolean("enabled", true));
       this.setFont(list.getFont());

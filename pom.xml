@@ -405,7 +405,7 @@
                         <generateRpm>false</generateRpm>
                         <wrapJar>false</wrapJar>
                         <categories>
-                            <category>Utility</category>
+                            <category>AudioVideo</category>
                         </categories>
                     </linuxConfig>
                   </configuration>

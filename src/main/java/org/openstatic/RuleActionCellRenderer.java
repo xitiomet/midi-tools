@@ -67,6 +67,8 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.label.setIcon(this.disableIcon);
         } else if ("TOGGLE RULE GROUP".equals(value)) {
             this.label.setIcon(this.toggleIcon);
+        } else if ("INVERTED TOGGLE RULE GROUP".equals(value)) {
+            this.label.setIcon(this.toggleIcon);
         } else if ("LOGGER A MESSAGE".equals(value)) {
             this.label.setIcon(this.logIcon);
         } else if ("LOGGER B MESSAGE".equals(value)) {
@@ -81,7 +83,9 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
             this.label.setIcon(this.mappingIcon);
         } else if ("MAPPING TOGGLE".equals(value)) {
             this.label.setIcon(this.mappingIcon);
-        }else {
+        } else if ("INVERTED MAPPING TOGGLE".equals(value)) {
+            this.label.setIcon(this.mappingIcon);
+        } else {
             this.label.setIcon(this.gearsIcon);
         }
         return this;

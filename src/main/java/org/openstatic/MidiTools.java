@@ -1433,21 +1433,44 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         logIt("Finished Startup");
     }
 
-    public static void setRuleGroupEnabled(String groupName, boolean v)
+    public static boolean isRuleGroupEnabled(String groupName)
     {
-        if (v)
-        {
-            MidiTools.instance.midi_logger_b.println("Rule Group Enabled " + groupName);
-        } else {
-            MidiTools.instance.midi_logger_b.println("Rule Group Disabled " + groupName);
-        }
         for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
         {
             MidiControlRule mcr = mcre.nextElement();
             if (mcr.getRuleGroup().equals(groupName))
             {
-                mcr.setEnabled(v);
+                if (!mcr.isEnabled())
+                    return false;
             }
+        }
+        return true;
+    }
+
+    public static void setRuleGroupEnabled(String groupName, boolean v)
+    {
+        boolean groupEnabled = isRuleGroupEnabled(groupName);
+        if (v && !groupEnabled)
+        {
+            for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
+            {
+                MidiControlRule mcr = mcre.nextElement();
+                if (mcr.getRuleGroup().equals(groupName))
+                {
+                    mcr.setEnabled(true);
+                }
+            }
+            MidiTools.instance.midi_logger_b.println("Rule Group Enabled " + groupName);
+        } else if (!v && groupEnabled) {
+            for (Enumeration<MidiControlRule> mcre = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); mcre.hasMoreElements();)
+            {
+                MidiControlRule mcr = mcre.nextElement();
+                if (mcr.getRuleGroup().equals(groupName))
+                {
+                    mcr.setEnabled(false);
+                }
+            }
+            MidiTools.instance.midi_logger_b.println("Rule Group Disabled " + groupName);
         }
     }
     

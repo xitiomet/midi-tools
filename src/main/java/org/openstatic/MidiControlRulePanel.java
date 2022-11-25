@@ -182,14 +182,14 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);
         }
-        if (filenameLower.endsWith(".exe") || filenameLower.endsWith(".bat") || filenameLower.endsWith(".cmd") || filenameLower.endsWith(".php"))
+        if (filenameLower.endsWith(".exe") || filenameLower.endsWith(".bat") || filenameLower.endsWith(".cmd") || filenameLower.endsWith(".php") || filenameLower.endsWith(".sh"))
         {
             MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_SETTLE, MidiControlRule.ACTION_PROC, file.getAbsolutePath() + ",{{value}}");
             newRule.setNickname(filename.substring(0, filename.length()-4));
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);
         }
-        if (filenameLower.endsWith(".jpg") || filenameLower.endsWith(".gif") || filenameLower.endsWith(".png") || filenameLower.endsWith(".jpeg"))
+        if (filenameLower.endsWith(".jpg") || filenameLower.endsWith(".gif") || filenameLower.endsWith(".png") || filenameLower.endsWith(".jpeg") || filenameLower.endsWith(".svg") || filenameLower.endsWith(".webp"))
         {
             MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_CHANGE, MidiControlRule.ACTION_SHOW_IMAGE, MidiTools.addProjectAsset(file).getName());
             newRule.setNickname(filename.substring(0, filename.length()-4));

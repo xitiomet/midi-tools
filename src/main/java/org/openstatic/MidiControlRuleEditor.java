@@ -228,6 +228,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 extens.add(".gif");
                 extens.add(".jpg");
                 extens.add(".jpeg");
+                extens.add(".webp");
+                extens.add(".svg");
                 this.canvasSelectorField.setEnabled(true);
                 this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
             }
@@ -247,10 +249,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     String mode = st.nextToken();
                     this.showImageModeSelector.setSelectedItem(mode);
                 }
-                this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
+                Object selectedItem = this.selectFileField.getSelectedItem();
+                if (selectedItem != null)
+                    this.actionValueField.setText(selectedItem.toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
             } else {
                 this.selectFileField.setSelectedItem(this.actionValueField.getText());
-                this.actionValueField.setText(this.selectFileField.getSelectedItem().toString());
+                Object selectedItem = this.selectFileField.getSelectedItem();
+                if (selectedItem != null)
+                    this.actionValueField.setText(selectedItem.toString());
             }
         } else if (i == MidiControlRule.ACTION_TRANSMIT) {
             this.actionValueLabel.setText("MIDI Message");
@@ -275,14 +281,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
+        } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP || i == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
             this.actionValueLabel.setText("Rule Group");
             this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
             this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_DISABLE_MAPPING || i == MidiControlRule.ACTION_ENABLE_MAPPING || i == MidiControlRule.ACTION_TOGGLE_MAPPING) {
+        } else if (i == MidiControlRule.ACTION_DISABLE_MAPPING || i == MidiControlRule.ACTION_ENABLE_MAPPING || i == MidiControlRule.ACTION_TOGGLE_MAPPING || i == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
             this.actionValueLabel.setText("Port Mapping");
             this.selectMappingDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectMappingDropdown, BorderLayout.CENTER);
@@ -342,12 +348,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 14; i++)
+        for(int i = 0; i < 16; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }
         Vector<String> eventModeList = new Vector<String>();
-        for(int i = 0; i < 8; i++)
+        for(int i = 0; i < 17; i++)
         {
             eventModeList.add(MidiControlRule.eventModeToString(i));
         }

@@ -41,15 +41,26 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_MAPPING = 11;
     public static final int ACTION_DISABLE_MAPPING = 12;
     public static final int ACTION_TOGGLE_MAPPING = 13;
+    public static final int ACTION_INVERTED_TOGGLE_RULE_GROUP = 14;
+    public static final int ACTION_INVERTED_TOGGLE_MAPPING = 15;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_SETTLE = 1;
-    public static final int EVENT_HIGH = 2;
-    public static final int EVENT_LOW = 3;
+    public static final int EVENT_ENTERED_HIGH = 2;
+    public static final int EVENT_ENTERED_LOW = 3;
     public static final int EVENT_INCREASE = 4;
     public static final int EVENT_DECREASE = 5;
     public static final int EVENT_SETTLED_INCREASE = 6;
     public static final int EVENT_SETTLED_DECREASE = 7;
+    public static final int EVENT_ENTERED_HIGH_LOW = 8;
+    public static final int EVENT_BOTTOM_THIRD = 9;
+    public static final int EVENT_MIDDLE_THIRD = 10;
+    public static final int EVENT_TOP_THIRD = 11;
+    public static final int EVENT_ENTERED_BOTTOM_THIRD = 12;
+    public static final int EVENT_ENTERED_MIDDLE_THIRD = 13;
+    public static final int EVENT_ENTERED_TOP_THIRD = 14;
+    public static final int EVENT_HIGH = 15;
+    public static final int EVENT_LOW = 16;
     
     public MidiControlRule(JSONObject jo)
     {
@@ -60,7 +71,7 @@ public class MidiControlRule implements MidiControlListener
         this.action_type = jo.optInt("actionType", 0);
         this.action_value = jo.optString("actionValue", null);
         this.nickname = jo.optString("nickname", null);
-        this.canvasName = jo.optString("canvas", "(NONE)");
+        this.canvasName = jo.optString("canvas", "(ALL)");
         this.enabled = jo.optBoolean("enabled", true);
         this.lastTriggered = jo.optLong("lastTriggered", 0l);
         this.lastFailed = jo.optLong("lastFailed", 0l);
@@ -99,7 +110,7 @@ public class MidiControlRule implements MidiControlListener
         this.event_mode = event_mode;
         this.action_type = action_type;
         this.action_value = action_value;
-        this.canvasName = "(NONE)";
+        this.canvasName = "(ALL)";
         this.enabled = true;
         this.actionValueChanged();
     }
@@ -109,13 +120,31 @@ public class MidiControlRule implements MidiControlListener
         if (this.event_mode == MidiControlRule.EVENT_CHANGE)
         {
             executeAction(control, old_value, new_value);
-        } else if (this.event_mode == MidiControlRule.EVENT_HIGH && new_value >= 64 && old_value <= 63) {
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_HIGH && new_value >= 64 && old_value <= 63) {
             executeAction(control, old_value, new_value);
-        } else if (this.event_mode == MidiControlRule.EVENT_LOW && new_value <= 63 && old_value >= 64) {
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_LOW && new_value <= 63 && old_value >= 64) {
             executeAction(control, old_value, new_value);
         } else if (this.event_mode == MidiControlRule.EVENT_INCREASE && new_value > old_value) {
             executeAction(control, old_value, new_value);
         } else if (this.event_mode == MidiControlRule.EVENT_DECREASE && new_value < old_value) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_HIGH_LOW && ((new_value >= 64 && old_value <= 63) || (new_value <= 63 && old_value >= 64))) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_BOTTOM_THIRD && (new_value <= 42 && old_value >= 43)) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_MIDDLE_THIRD && new_value >= 43 && new_value <= 85 && (old_value <= 42 || old_value >= 86)) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_ENTERED_TOP_THIRD && new_value >= 86 && old_value <= 85) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_BOTTOM_THIRD && new_value <= 42) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_MIDDLE_THIRD && new_value >= 43 && new_value <= 85) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_TOP_THIRD && new_value >= 86) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_HIGH && new_value >= 64) {
+            executeAction(control, old_value, new_value);
+        } else if (this.event_mode == MidiControlRule.EVENT_LOW && new_value <= 63) {
             executeAction(control, old_value, new_value);
         }
     }
@@ -129,7 +158,6 @@ public class MidiControlRule implements MidiControlListener
             executeAction(control, old_value, new_value);
         } else if (this.event_mode == MidiControlRule.EVENT_SETTLED_DECREASE && new_value < old_value) {
             executeAction(control, old_value, new_value);
-
         }
     }
     
@@ -290,6 +318,14 @@ public class MidiControlRule implements MidiControlListener
                             MidiTools.setRuleGroupEnabled(avparsed, false);
                         }
                         success = true;
+                    } else if (this.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
+                        if (new_value >= 64)
+                        {
+                            MidiTools.setRuleGroupEnabled(avparsed, false);
+                        } else {
+                            MidiTools.setRuleGroupEnabled(avparsed, true);
+                        }
+                        success = true;
                     } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
                         MidiTools.instance.midi_logger_a.println(avparsed);
                         success = true;
@@ -321,6 +357,14 @@ public class MidiControlRule implements MidiControlListener
                         if (mapping != null)
                         {
                             boolean changeTo = (new_value >= 64);
+                            mapping.setOpen(changeTo);
+                            success = (mapping.isOpened() == changeTo);
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
+                        MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
+                        if (mapping != null)
+                        {
+                            boolean changeTo = (new_value < 64);
                             mapping.setOpen(changeTo);
                             success = (mapping.isOpened() == changeTo);
                         }
@@ -455,10 +499,10 @@ public class MidiControlRule implements MidiControlListener
             return "onChanged";
         } else if (n == MidiControlRule.EVENT_SETTLE) {
             return "onSettled";
-        } else if (n == MidiControlRule.EVENT_HIGH) {
-            return "onHigh (64+)";
-        } else if (n == MidiControlRule.EVENT_LOW) {
-            return "onLow (63-)";
+        } else if (n == MidiControlRule.EVENT_ENTERED_HIGH) {
+            return "onEnteredHigh (64+)";
+        } else if (n == MidiControlRule.EVENT_ENTERED_LOW) {
+            return "onEnteredLow (63-)";
         } else if (n == MidiControlRule.EVENT_INCREASE) {
             return "onIncrease";
         } else if (n == MidiControlRule.EVENT_DECREASE) {
@@ -467,6 +511,24 @@ public class MidiControlRule implements MidiControlListener
             return "onSettledIncrease";
         } else if (n == MidiControlRule.EVENT_SETTLED_DECREASE) {
             return "onSettledDecrease";
+        } else if (n == MidiControlRule.EVENT_ENTERED_HIGH_LOW) {
+            return "onEnteredHighOrLow";
+        } else if (n == MidiControlRule.EVENT_BOTTOM_THIRD) {
+            return "onBottomThird (0-42)";
+        } else if (n == MidiControlRule.EVENT_MIDDLE_THIRD) {
+            return "onMiddleThird (43-85)";
+        } else if (n == MidiControlRule.EVENT_TOP_THIRD) {
+            return "onTopThird (86-127)";
+        } else if (n == MidiControlRule.EVENT_ENTERED_BOTTOM_THIRD) {
+            return "onEnteredBottomThird (0-42)";
+        } else if (n == MidiControlRule.EVENT_ENTERED_MIDDLE_THIRD) {
+            return "onEnteredMiddleThird (43-85)";
+        } else if (n == MidiControlRule.EVENT_ENTERED_TOP_THIRD) {
+            return "onEnteredTopThird (86-127)";
+        } else if (n == MidiControlRule.EVENT_HIGH) {
+            return "onHigh (64+)";
+        } else if (n == MidiControlRule.EVENT_LOW) {
+            return "onLow (63-)";
         }
         return "";
     }
@@ -502,6 +564,10 @@ public class MidiControlRule implements MidiControlListener
             return "MAPPING DISABLE";
         } else if (n == MidiControlRule.ACTION_TOGGLE_MAPPING) {
             return "MAPPING TOGGLE";
+        } else if (n == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
+            return "INVERTED TOGGLE RULE GROUP";
+        }else if (n == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
+            return "INVERTED MAPPING TOGGLE";
         }
         return "";
     }

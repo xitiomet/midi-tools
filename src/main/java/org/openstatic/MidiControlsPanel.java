@@ -193,7 +193,7 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
                 
             } else {
                 Iterator<MidiControl> controlIterator = selectedControls.iterator();
-                int defaultEventMode = 1;
+                int defaultEventMode = 0;
                 int defaultActionType = 0;
                 String defaultRuleGroupName = "all";
                 String defaultActionValue = null;

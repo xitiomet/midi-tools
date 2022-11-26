@@ -495,7 +495,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         //this.bottomTabbedPane.setSelectedIndex(0);
         MidiPortManager.addProvider(cmpp);
         String openstaticUri = "wss://openstatic.org/channel/";
-        System.err.println("OpenStatic URI: " + openstaticUri);
+        System.err.println("OpenStatic URI: " + openstaticUri);        
         RoutePutChannel myChannel = RoutePutChannel.getChannel("midi-tools-" + MidiTools.LOCAL_SERIAL);
         MidiTools.this.routeputClient = new RoutePutClient(myChannel, openstaticUri);
         MidiTools.this.routeputClient.setAutoReconnect(true);
@@ -503,53 +503,50 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         MidiTools.this.routeputClient.setProperty("description", "MIDI Control Change Tool v" + MidiTools.VERSION);
         MidiTools.this.routeputClient.setProperty("host", getLocalHostname());
         MidiTools.this.routeputSessionManager = new RoutePutSessionManager(myChannel, MidiTools.this.routeputClient);
-        Thread svcs = new Thread(() -> {
-            this.rtpMidiPorts = new ArrayList<RTPMidiPort>();
-            MidiPortManager.addMidiPortListener(this);
-            MidiPortManager.addProvider(new DeviceMidiPortProvider());
-            MidiPortManager.addProvider(new JoystickMidiPortProvider());
-            cmpp.add(this.midi_logger_a);
-            cmpp.add(this.midi_logger_b);
-            cmpp.add(this.midiPlayer);
-            cmpp.add(this.randomizerPort);
-            String localHostname = getLocalHostname();
-            try
+        this.rtpMidiPorts = new ArrayList<RTPMidiPort>();
+        MidiPortManager.addMidiPortListener(this);
+        MidiPortManager.addProvider(new DeviceMidiPortProvider());
+        MidiPortManager.addProvider(new JoystickMidiPortProvider());
+        cmpp.add(this.midi_logger_a);
+        cmpp.add(this.midi_logger_b);
+        cmpp.add(this.midiPlayer);
+        cmpp.add(this.randomizerPort);
+        String localHostname = getLocalHostname();
+        try
+        {
+            Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+            for (NetworkInterface netint : Collections.list(nets))
             {
-                Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-                for (NetworkInterface netint : Collections.list(nets))
-                {
-                    //System.err.println("Interface: " + netint.getDisplayName());
-                    // Create a JmDNS instance
-                    Enumeration<InetAddress> addresses = netint.getInetAddresses();
-                    Collections.list(addresses).forEach((address) -> {
-                        if (address.isSiteLocalAddress())
+                //System.err.println("Interface: " + netint.getDisplayName());
+                // Create a JmDNS instance
+                Enumeration<InetAddress> addresses = netint.getInetAddresses();
+                Collections.list(addresses).forEach((address) -> {
+                    if (address.isSiteLocalAddress())
+                    {
+                        try
                         {
-                            try
-                            {
-                                RTPMidiPort rtpPort = new RTPMidiPort("RTP " + address.getHostAddress(), localHostname + " MidiTools", address, 5004);
-                                MidiTools.this.rtpMidiPorts.add(rtpPort);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
+                            RTPMidiPort rtpPort = new RTPMidiPort("RTP " + address.getHostAddress(), localHostname + " MidiTools", address, 5004);
+                            MidiTools.this.rtpMidiPorts.add(rtpPort);
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    });
-                }
-                cmpp.addAll(this.rtpMidiPorts);
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
+                    }
+                });
             }
-            MidiPortManager.addProvider(this.routeputSessionManager);
-            try
-            {
-                this.jmpp = new JackMidiPortProvider();
-                MidiPortManager.addProvider(this.jmpp);
-                System.err.println("Initialized Jack Suppport");
-            } catch (Exception jmppex) {
-                jmppex.printStackTrace(System.err);
-            }
-            //MidiPortManager.registerVirtualPort("#lobby", new RouteputMidiPort("lobby", "openstatic.org"));
-        });
-        svcs.start();
+            cmpp.addAll(this.rtpMidiPorts);
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        MidiPortManager.addProvider(this.routeputSessionManager);
+        try
+        {
+            this.jmpp = new JackMidiPortProvider();
+            MidiPortManager.addProvider(this.jmpp);
+            System.err.println("Initialized Jack Suppport");
+        } catch (Exception jmppex) {
+            jmppex.printStackTrace(System.err);
+        }
+        MidiPortManager.refresh();
         logIt("Finished MidiTools Constructor");
         File plugin_root = getPluginFolder();
         if (plugin_root.exists())
@@ -875,7 +872,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.isVisible())
+            if (MidiTools.windowWentVisible)
             {
                 if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 1)
                 {
@@ -892,7 +889,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.isVisible())
+            if (MidiTools.windowWentVisible)
             {
                 if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 0)
                 {
@@ -909,7 +906,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.isVisible())
+            if (MidiTools.windowWentVisible)
             {
                 if (MidiTools.instance.midiList != null)
                 {
@@ -923,7 +920,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     {
         if (MidiTools.instance != null)
         {
-            if (MidiTools.instance.isVisible())
+            if (MidiTools.windowWentVisible)
             {
                 if (MidiTools.instance.mainTabbedPane.getSelectedIndex() == 2)
                 {
@@ -1436,14 +1433,19 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         }
         mlb.loadConfig(loadFile);
-        try
+        SwingUtilities.invokeLater(new Runnable() 
         {
-            System.err.println("TRYING TO BRING WINDOW VISIBLE");
-            mlb.setVisible(true);
-            System.err.println("WINDOW BROUGHT VISIBLE");
-        } catch (Throwable goVisible) {
-            System.exit(1);
-        }
+            public void run() {
+            try
+            {
+                System.err.println("TRYING TO BRING WINDOW VISIBLE");
+                mlb.setVisible(true);
+                System.err.println("WINDOW BROUGHT VISIBLE");
+            } catch (Throwable goVisible) {
+                System.exit(1);
+            }
+            }
+        });
         logIt("Finished Startup");
     }
 
@@ -1752,12 +1754,15 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             while(pIterator.hasNext())
             {
                 MidiToolsPlugin plugin = pIterator.next();
-                try
+                if (plugin != null)
                 {
-                    this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
-                } catch (Throwable pluginEx) {
-                    System.err.println("TRAPPED PLUGIN THROWABLE....");
-                    pluginEx.printStackTrace(System.err);
+                    try
+                    {
+                        this.pluginSettings.put(plugin.getTitle(), plugin.getSettings());
+                    } catch (Throwable pluginEx) {
+                        System.err.println("TRAPPED PLUGIN THROWABLE....");
+                        pluginEx.printStackTrace(System.err);
+                    }
                 }
             }
             configJson.put("plugins", this.pluginSettings);

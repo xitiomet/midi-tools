@@ -89,7 +89,7 @@ public class MidiPortManager
         return MidiPortManager.keepRunning;
     }
 
-    private static synchronized void refresh()
+    public static synchronized void refresh()
     {   
         Vector<MidiPort> updatedSources = new Vector<MidiPort>();
         for (MidiPortProvider midiPortProvider : ((Vector<MidiPortProvider>) MidiPortManager.providers.clone())) 

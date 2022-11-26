@@ -5,6 +5,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JTextField;
@@ -58,7 +59,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JTextField ccAVF;
     private JTextField valueAVF;
     private JPanel transmitMidiPanel;
+    private JCheckBox valueInvertedCheckBox;
+    private JCheckBox valueSettledCheckBox;
 
+
+    private JPanel modifierPanel;
     private JPanel selectFilePanel;
     private JButton selectFileButton;
     private JComboBox<String> selectFileField;
@@ -187,6 +192,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.rule.setMidiControl(MidiTools.getMidiControlByIndex(ci));
             if (!MidiTools.instance.midiControlRulePanel.contains(this.rule))
                 MidiTools.instance.midiControlRulePanel.addElement(this.rule);
+            this.rule.setValueInverted(this.valueInvertedCheckBox.isSelected());
+            this.rule.setValueSettled(this.valueSettledCheckBox.isSelected());
             this.rule.updateRule();
             this.dispose();
         }
@@ -281,14 +288,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP || i == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
+        } else if (i == MidiControlRule.ACTION_DISABLE_RULE_GROUP || i == MidiControlRule.ACTION_ENABLE_RULE_GROUP || i == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
             this.actionValueLabel.setText("Rule Group");
             this.selectRuleGroupDropdown.setModel(getRuleGroupModel());
             this.selectRuleGroupDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectRuleGroupDropdown, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_DISABLE_MAPPING || i == MidiControlRule.ACTION_ENABLE_MAPPING || i == MidiControlRule.ACTION_TOGGLE_MAPPING || i == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
+        } else if (i == MidiControlRule.ACTION_DISABLE_MAPPING || i == MidiControlRule.ACTION_ENABLE_MAPPING || i == MidiControlRule.ACTION_TOGGLE_MAPPING) {
             this.actionValueLabel.setText("Port Mapping");
             this.selectMappingDropdown.setSelectedItem(this.actionValueField.getText());
             this.actionValuePanel.add(this.selectMappingDropdown, BorderLayout.CENTER);
@@ -348,12 +355,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.rule = rule;
 
         Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 16; i++)
+        for(int i = 0; i < 14; i++)
         {
             actionList.add(MidiControlRule.actionNumberToString(i));
         }
         Vector<String> eventModeList = new Vector<String>();
-        for(int i = 0; i < 17; i++)
+        for(int i = 0; i < 14; i++)
         {
             eventModeList.add(MidiControlRule.eventModeToString(i));
         }
@@ -507,6 +514,16 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         transmitMidiPanel.add(new JLabel("Value", SwingConstants.LEFT), gbc(1, 4, .4d));
         transmitMidiPanel.add(this.valueAVF, gbc(2, 4, .6d));
         
+        this.modifierPanel = new JPanel(new GridLayout(2,1));
+        this.valueInvertedCheckBox = new JCheckBox("Value Inverted");
+        this.valueInvertedCheckBox.setSelected(this.rule.isValueInverted());
+        this.valueInvertedCheckBox.setToolTipText("Invert the received value from 0-127 to 127-0");
+        this.modifierPanel.add(this.valueInvertedCheckBox);
+        this.valueSettledCheckBox = new JCheckBox("Value Settled");
+        this.valueSettledCheckBox.setSelected(this.rule.shouldValueSettle());
+        this.valueSettledCheckBox.setToolTipText("Dont fire the rule until the value stops changing");
+        this.modifierPanel.add(this.valueSettledCheckBox);
+
         this.actionValuePanel = new JPanel(new BorderLayout());
 
         JPanel formPanel = new JPanel(new GridBagLayout());
@@ -520,18 +537,21 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         formPanel.add(new JLabel("Select Control", SwingConstants.LEFT), gbc(1, 3, .4d));
         formPanel.add(this.controlSelector, gbc(2, 3, .6d));
 
-        formPanel.add(new JLabel("Select Event", SwingConstants.LEFT), gbc(1, 4, .4d));
-        formPanel.add(this.eventSelector, gbc(2, 4, .6d));
+        formPanel.add(new JLabel("Modifiers", SwingConstants.LEFT), gbc(1, 4, .4d));
+        formPanel.add(this.modifierPanel, gbc(2, 4, .6d));        
 
-        formPanel.add(new JLabel("Action Type", SwingConstants.LEFT), gbc(1, 5, .4d));
-        formPanel.add(this.actionSelector, gbc(2, 5, .6d));
+        formPanel.add(new JLabel("Select Event", SwingConstants.LEFT), gbc(1, 5, .4d));
+        formPanel.add(this.eventSelector, gbc(2, 5, .6d));
 
-        formPanel.add(new JLabel("Target Canvas", SwingConstants.LEFT), gbc(1, 6, .4d));
-        formPanel.add(this.canvasSelectorField, gbc(2, 6, .6d));
+        formPanel.add(new JLabel("Action Type", SwingConstants.LEFT), gbc(1, 6, .4d));
+        formPanel.add(this.actionSelector, gbc(2, 6, .6d));
+
+        formPanel.add(new JLabel("Target Canvas", SwingConstants.LEFT), gbc(1, 7, .4d));
+        formPanel.add(this.canvasSelectorField, gbc(2, 7, .6d));
         
         this.actionValueLabel = new JLabel("Action Value", SwingConstants.LEFT);
-        formPanel.add(this.actionValueLabel, gbc(1, 7, .4d));
-        formPanel.add(this.actionValuePanel, gbc(2, 7, .6d));
+        formPanel.add(this.actionValueLabel, gbc(1, 8, .4d));
+        formPanel.add(this.actionValuePanel, gbc(2, 8, .6d));
         
         
         
@@ -687,7 +707,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         final float WIDTH = screenSize.width;
         final float HEIGHT = screenSize.height;
         int wWidth = 400;
-        int wHeight = 350;
+        int wHeight = 450;
         int x = (int) ((WIDTH/2f) - ( ((float)wWidth) /2f ));
         int y = (int) ((HEIGHT/2f) - ( ((float)wHeight) /2f ));
         this.setBounds(x, y, wWidth, wHeight);

@@ -85,7 +85,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.enableIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {
          this.checkBox.setIcon(this.disableIcon);
-      } else if (rule.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP || rule.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
+      } else if (rule.getActionType() == MidiControlRule.ACTION_TOGGLE_RULE_GROUP) {
          this.checkBox.setIcon(this.toggleIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_PLUGIN) {
          MidiToolsPlugin plugin = rule.getSelectedPlugin();
@@ -105,7 +105,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.urlIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
          this.checkBox.setIcon(this.imageIcon);
-      } else if (rule.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
+      } else if (rule.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
          this.checkBox.setIcon(this.mappingIcon);
       } else {
          this.checkBox.setIcon(this.gearsIcon);

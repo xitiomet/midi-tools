@@ -248,9 +248,14 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                         }
                     }
                 }
-                Thread.sleep(10);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
+            }
+            try
+            {
+                Thread.sleep(10);
+            } catch (Exception sleep_e) {
+                
             }
         }
     }

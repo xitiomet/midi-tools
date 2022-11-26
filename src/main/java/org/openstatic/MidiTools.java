@@ -162,6 +162,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public MidiPlayerPanel midiPlayer;
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
+    private ImageIcon diceIcon;
 
     public MidiTools(String os_name)
     {
@@ -416,9 +417,8 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         {
             diceIconImage = ImageIO.read(getClass().getResource("/midi-tools-res/dice32.png"));
         } catch (Exception e) {}
-        ImageIcon diceIcon = new ImageIcon(diceIconImage);
+        this.diceIcon = new ImageIcon(diceIconImage);
         this.randomizerControlBox = new RandomizerControlBox(this.randomizerPort);
-        this.mainTabbedPane.addTab("Randomizer", diceIcon, this.randomizerControlBox);
 
         BufferedImage folderIconImage = null;
         try
@@ -736,6 +736,10 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             RTPControlBox controlBox = new RTPControlBox(rtpPort);
             MidiTools.this.mainTabbedPane.addTab(rtpPort.getName(), controlBox.getIcon(), controlBox);
         }
+        if (port instanceof MidiRandomizerPort)
+        {
+            this.mainTabbedPane.addTab("Randomizer", this.diceIcon, this.randomizerControlBox);
+        }
         repaintDevices();
     }
     
@@ -748,6 +752,11 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             RTPMidiPort rtpPort = (RTPMidiPort) port;
             String portName = rtpPort.getName();
             int tabIndex = MidiTools.this.mainTabbedPane.indexOfTab(portName);
+            MidiTools.this.mainTabbedPane.remove(tabIndex);
+        }
+        if (port instanceof MidiRandomizerPort)
+        {
+            int tabIndex = MidiTools.this.mainTabbedPane.indexOfTab("Randomizer");
             MidiTools.this.mainTabbedPane.remove(tabIndex);
         }
         repaintDevices();
@@ -1016,7 +1025,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             MIDIChannelMidiPort rpcmp = new MIDIChannelMidiPort(newRule.optString("channel","lobby"));
             this.cmpp.add(rpcmp);
         } else if (cmd.equals("about")) {
-            browseTo("http://openstatic.org/projects/miditools/");
+            browseTo("https://openstatic.org/projects/miditools/");
         } else if (cmd.equals("open_api")) {
             browseTo(getWebInterfaceURL());
         } else if (cmd.equals("open_canvas")) {
@@ -1322,12 +1331,15 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     String newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION;
                     if (this.lastSavedFile != null)
                     {
-                        boolean unsavedProjectChanges = MidiTools.this.hasUnsavedProjectChanges();
-                        if (unsavedProjectChanges)
+                        if (!this.lastSavedFile.getParentFile().equals(MidiTools.getConfigFolder()))
                         {
-                            newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [*" + this.lastSavedFile.getName() + "]";
-                        } else {
-                            newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.getName() + "]";
+                            boolean unsavedProjectChanges = MidiTools.this.hasUnsavedProjectChanges();
+                            if (unsavedProjectChanges)
+                            {
+                                newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [*" + this.lastSavedFile.getName() + "]";
+                            } else {
+                                newTitle = "MIDI Control Change Tool v" + MidiTools.VERSION + " - [" + this.lastSavedFile.getName() + "]";
+                            }
                         }
                     }
                     if (!newTitle.equals(this.getTitle()))
@@ -1426,7 +1438,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         mlb.loadConfig(loadFile);
         try
         {
+            System.err.println("TRYING TO BRING WINDOW VISIBLE");
             mlb.setVisible(true);
+            System.err.println("WINDOW BROUGHT VISIBLE");
         } catch (Throwable goVisible) {
             System.exit(1);
         }
@@ -1801,28 +1815,48 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 String state = configJson.optString("showQrType", "none");
                 this.setShowQR(state);
             }
+            Vector<Thread> pluginLoads = new Vector<Thread>();
             if (configJson.has("plugins"))
             {
                 this.pluginSettings = configJson.getJSONObject("plugins");
                 Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
                 while(pIterator.hasNext())
                 {
-                    MidiToolsPlugin plugin = pIterator.next();
+                    final MidiToolsPlugin plugin = pIterator.next();
                     JSONObject pluginSettingData = this.pluginSettings.optJSONObject(plugin.getTitle());
                     if (pluginSettingData == null)
                         pluginSettingData = new JSONObject();
-                    try
-                    {
-                        plugin.loadSettings(MidiTools.this, pluginSettingData);
-                    } catch (Throwable plugEx) {
-                        System.err.println("TRAPPED PLUGIN THROWABLE....");
-                        plugEx.printStackTrace(System.err);
-                    }
+                    final JSONObject finalPluginSettingData = pluginSettingData;
+                    Thread plugin_load_thread = new Thread(() -> {
+                        try
+                        {
+                            plugin.loadSettings(MidiTools.this, finalPluginSettingData);
+                        } catch (Throwable plugEx) {
+                            System.err.println("TRAPPED PLUGIN THROWABLE....");
+                            plugEx.printStackTrace(System.err);
+                        }
+                    });
+                    plugin_load_thread.start();
+                    pluginLoads.add(plugin_load_thread);
                 }
             } else {
                 if (this.pluginSettings == null)
                     this.pluginSettings = new JSONObject();
             }
+
+            // Wait for each plugin to load its settings, 4 seconds max!
+            pluginLoads.forEach((thread) -> {
+                try
+                {
+                    synchronized(thread)
+                    {
+                        if (thread.isAlive())
+                            thread.wait(4000);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace(System.err);
+                }
+            });
             if (loadProject == null)
             {
                 if (configJson.has("lastSavedFile"))
@@ -1845,7 +1879,9 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             {
                 this.setLocation(newWindowLocation);
             }
+            System.err.println("CONFIG LOAD FINISHED");
         } catch (Exception e) {
+            e.printStackTrace(System.err);
             MidiTools.instance.midi_logger_b.printException(e);
         }
     }
@@ -2013,26 +2049,44 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                     JSONArray rulesArray = configJson.getJSONArray("randomizerRules");
                     this.randomizerPort.setAllRules(rulesArray);
                 }
+                Vector<Thread> pluginLoads = new Vector<Thread>();
                 if (configJson.has("plugins"))
                 {
                     JSONObject pluginProjectSettings = configJson.getJSONObject("plugins");
                     Iterator<MidiToolsPlugin> pIterator = this.plugins.values().iterator();
                     while(pIterator.hasNext())
                     {
-                        MidiToolsPlugin plugin = pIterator.next();
-                        JSONObject pluginSettingData = pluginProjectSettings.optJSONObject(plugin.getTitle());
+                        final MidiToolsPlugin plugin = pIterator.next();
+                        final JSONObject pluginSettingData = pluginProjectSettings.optJSONObject(plugin.getTitle());
                         if (pluginSettingData != null)
                         {
-                            try
-                            {
-                                plugin.loadProject(pluginSettingData);
-                            } catch (Throwable pluginEx) {
-                                System.err.println("TRAPPED PLUGIN THROWABLE....");
-                                pluginEx.printStackTrace(System.err);
-                            }
+                            Thread pluginLoadThread = new Thread(() -> {
+                                try
+                                {
+                                    plugin.loadProject(pluginSettingData);
+                                } catch (Throwable pluginEx) {
+                                    System.err.println("TRAPPED PLUGIN THROWABLE....");
+                                    pluginEx.printStackTrace(System.err);
+                                }
+                            });
+                            pluginLoadThread.start();
+                            pluginLoads.add(pluginLoadThread);
                         }
                     }
                 }
+                // Wait for each plugin to load its settings, 4 seconds max!
+                pluginLoads.forEach((thread) -> {
+                    try
+                    {
+                        synchronized(thread)
+                        {
+                            if (thread.isAlive())
+                                thread.wait(4000);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                    }
+                });
                 this.loadedProjectJSON = configJson;
                 this.setLastSavedFile(file);
                 Thread refreshPlayerThread = new Thread(() -> {

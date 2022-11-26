@@ -31,10 +31,12 @@ import java.awt.Color;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
 import java.awt.Rectangle;
 import javax.swing.JComponent;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.event.FocusListener;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractButton;
@@ -56,8 +58,9 @@ import javax.swing.text.Element;
 import javax.swing.JToggleButton;
 import javax.swing.JButton;
 
-public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, Runnable
+public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, Runnable, FocusListener
 {
+    private boolean hasFocus;
     private boolean opened;
     private boolean keep_running;
     private String name;
@@ -180,6 +183,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.add(midi_log_scroller, BorderLayout.CENTER);
         this.add(this.buttonPanel, BorderLayout.WEST);
         this.start();
+        this.addFocusListener(this);
     }
 
     public void hidePortControl()
@@ -442,7 +446,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                 {
                     final ArrayList<Runnable> taskArray = new ArrayList<Runnable>();
                     this.taskQueue.drainTo(taskArray);
-                    SwingUtilities.invokeLater(() -> {
+                    SwingUtilities.invokeAndWait(() -> {
                         for(Iterator<Runnable> taskIterator = taskArray.iterator(); taskIterator.hasNext();)
                         {
                             Runnable swingTask = taskIterator.next();
@@ -499,5 +503,17 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     public String toString()
     {
         return this.name;
+    }
+
+    @Override
+    public void focusGained(FocusEvent e) {
+        this.hasFocus = true;
+        
+    }
+
+    @Override
+    public void focusLost(FocusEvent e) {
+        this.hasFocus = false;
+        
     }
 }

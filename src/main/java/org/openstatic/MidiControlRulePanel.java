@@ -178,13 +178,15 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
         if (filenameLower.endsWith(".wav"))
         {
             MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_INCREASE, MidiControlRule.ACTION_SOUND, MidiTools.addProjectAsset(file).getName());
+            newRule.setValueSettled(true);
             newRule.setNickname(filename.substring(0, filename.length()-4));
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);
         }
         if (filenameLower.endsWith(".exe") || filenameLower.endsWith(".bat") || filenameLower.endsWith(".cmd") || filenameLower.endsWith(".php") || filenameLower.endsWith(".sh"))
         {
-            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_SETTLE, MidiControlRule.ACTION_PROC, file.getAbsolutePath() + ",{{value}}");
+            MidiControlRule newRule = new MidiControlRule(null, MidiControlRule.EVENT_CHANGE, MidiControlRule.ACTION_PROC, file.getAbsolutePath() + ",{{value}}");
+            newRule.setValueSettled(true);
             newRule.setNickname(filename.substring(0, filename.length()-4));
             if (!MidiControlRulePanel.this.contains(newRule))
                 MidiControlRulePanel.this.addElement(newRule);
@@ -205,7 +207,7 @@ public class MidiControlRulePanel extends JPanel implements ActionListener
         String cmd = e.getActionCommand();
 
         if (cmd.equals("create_rule")) {
-            MidiControlRule newRule = new MidiControlRule(null, 1, 0, null);
+            MidiControlRule newRule = new MidiControlRule(null, 0, 0, null);
             MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
         } else if (cmd.equals("enable_selected")) {
             Collection<MidiControlRule> selectedRules = this.getSelectedRules();

@@ -76,7 +76,7 @@ public class FileCellRenderer extends JPanel implements ListCellRenderer<File>
          this.checkBox.setIcon(this.midiFileIcon);
       } else if (exten.equals(".sf2")) {
          this.checkBox.setIcon(this.soundFontIcon);
-      } else if (exten.equals(".gif") || exten.equals(".png") || exten.equals(".jpg") || exten.equals(".jpeg") || exten.equals(".bmp")) {
+      } else if (exten.equals(".gif") || exten.equals(".png") || exten.equals(".jpg") || exten.equals(".jpeg") || exten.equals(".bmp") || exten.equals(".svg")) {
          this.checkBox.setIcon(this.imageIcon);
       } else if (exten.equals(".exe") || exten.equals(".cmd") || exten.equals(".bat") || exten.equals(".sh") || exten.equals(".php") || exten.equals(".py")) {
          this.checkBox.setIcon(this.gearsIcon);

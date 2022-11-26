@@ -26,6 +26,8 @@ public class MidiControlRule implements MidiControlListener
     private SoundFile sound;
     private long lastTriggered;
     private long lastFailed;
+    private boolean valueInverted;
+    private boolean valueSettled;
     
     public static final int ACTION_URL = 0;
     public static final int ACTION_PROC = 1;
@@ -41,26 +43,22 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_MAPPING = 11;
     public static final int ACTION_DISABLE_MAPPING = 12;
     public static final int ACTION_TOGGLE_MAPPING = 13;
-    public static final int ACTION_INVERTED_TOGGLE_RULE_GROUP = 14;
-    public static final int ACTION_INVERTED_TOGGLE_MAPPING = 15;
     
     public static final int EVENT_CHANGE = 0;
-    public static final int EVENT_SETTLE = 1;
-    public static final int EVENT_ENTERED_HIGH = 2;
-    public static final int EVENT_ENTERED_LOW = 3;
-    public static final int EVENT_INCREASE = 4;
-    public static final int EVENT_DECREASE = 5;
-    public static final int EVENT_SETTLED_INCREASE = 6;
-    public static final int EVENT_SETTLED_DECREASE = 7;
-    public static final int EVENT_ENTERED_HIGH_LOW = 8;
-    public static final int EVENT_BOTTOM_THIRD = 9;
-    public static final int EVENT_MIDDLE_THIRD = 10;
-    public static final int EVENT_TOP_THIRD = 11;
-    public static final int EVENT_ENTERED_BOTTOM_THIRD = 12;
-    public static final int EVENT_ENTERED_MIDDLE_THIRD = 13;
-    public static final int EVENT_ENTERED_TOP_THIRD = 14;
-    public static final int EVENT_HIGH = 15;
-    public static final int EVENT_LOW = 16;
+    public static final int EVENT_INCREASE = 1;
+    public static final int EVENT_DECREASE = 2;
+    public static final int EVENT_HIGH = 3;
+    public static final int EVENT_LOW = 4;
+    public static final int EVENT_ENTERED_HIGH = 5;
+    public static final int EVENT_ENTERED_LOW = 6;
+    public static final int EVENT_ENTERED_HIGH_LOW = 7;
+    public static final int EVENT_BOTTOM_THIRD = 8;
+    public static final int EVENT_MIDDLE_THIRD = 9;
+    public static final int EVENT_TOP_THIRD = 10;
+    public static final int EVENT_ENTERED_BOTTOM_THIRD = 11;
+    public static final int EVENT_ENTERED_MIDDLE_THIRD = 12;
+    public static final int EVENT_ENTERED_TOP_THIRD = 13;
+    
     
     public MidiControlRule(JSONObject jo)
     {
@@ -68,13 +66,18 @@ public class MidiControlRule implements MidiControlListener
         this.ruleId = jo.optString("ruleId", MidiPortManager.generateBigAlphaKey(24));
         this.ruleGroup = jo.optString("ruleGroup", "all");
         this.event_mode = jo.optInt("eventMode", 0);
+        if (this.event_mode > 13) this.event_mode = 0;
         this.action_type = jo.optInt("actionType", 0);
+        if (this.action_type > 13) this.action_type = 5;
         this.action_value = jo.optString("actionValue", null);
         this.nickname = jo.optString("nickname", null);
         this.canvasName = jo.optString("canvas", "(ALL)");
         this.enabled = jo.optBoolean("enabled", true);
         this.lastTriggered = jo.optLong("lastTriggered", 0l);
         this.lastFailed = jo.optLong("lastFailed", 0l);
+        this.valueInverted = jo.optBoolean("valueInverted", false);
+        this.valueSettled = jo.optBoolean("valueSettled", false);
+
         if (jo.has("control"))
         {
             JSONObject ctrl = jo.getJSONObject("control");
@@ -112,10 +115,12 @@ public class MidiControlRule implements MidiControlListener
         this.action_value = action_value;
         this.canvasName = "(ALL)";
         this.enabled = true;
+        this.valueInverted = false;
+        this.valueSettled = false;
         this.actionValueChanged();
     }
-    
-    public void controlValueChanged(MidiControl control, int old_value, int new_value)
+
+    public void controlValueAction(MidiControl control, int old_value, int new_value)
     {
         if (this.event_mode == MidiControlRule.EVENT_CHANGE)
         {
@@ -149,18 +154,52 @@ public class MidiControlRule implements MidiControlListener
         }
     }
     
-    public void controlValueSettled(MidiControl control, int old_value, int new_value)
+    public void controlValueChanged(MidiControl control, int old_value, int new_value)
     {
-        if (this.event_mode == MidiControlRule.EVENT_SETTLE)
+        if (!this.valueSettled)
         {
-            executeAction(control, old_value, new_value);
-        } else if (this.event_mode == MidiControlRule.EVENT_SETTLED_INCREASE && new_value > old_value) {
-            executeAction(control, old_value, new_value);
-        } else if (this.event_mode == MidiControlRule.EVENT_SETTLED_DECREASE && new_value < old_value) {
-            executeAction(control, old_value, new_value);
+            if (this.valueInverted)
+            {
+                new_value = (127-new_value);
+                old_value = (127-old_value);
+            }
+            controlValueAction(control, old_value, new_value);
         }
     }
     
+    public void controlValueSettled(MidiControl control, int old_value, int new_value)
+    {
+        if (this.valueSettled)
+        {
+            if (this.valueInverted)
+            {
+                new_value = (127-new_value);
+                old_value = (127-old_value);
+            }
+            controlValueAction(control, old_value, new_value);
+        }
+    }
+    
+    public boolean isValueInverted()
+    {
+        return this.valueInverted;
+    }
+
+    public void setValueInverted(boolean v)
+    {
+        this.valueInverted = v;
+    }
+
+    public void setValueSettled(boolean v)
+    {
+        this.valueSettled = v;
+    }
+
+    public boolean shouldValueSettle()
+    {
+        return this.valueSettled;
+    }
+
     public static String mapReplace(String source, int value)
     {
         Pattern p = Pattern.compile("\\{\\{value.map\\((\\d+)\\,(\\d+)\\)\\}\\}");
@@ -318,14 +357,6 @@ public class MidiControlRule implements MidiControlListener
                             MidiTools.setRuleGroupEnabled(avparsed, false);
                         }
                         success = true;
-                    } else if (this.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
-                        if (new_value >= 64)
-                        {
-                            MidiTools.setRuleGroupEnabled(avparsed, false);
-                        } else {
-                            MidiTools.setRuleGroupEnabled(avparsed, true);
-                        }
-                        success = true;
                     } else if (this.getActionType() == MidiControlRule.LOGGER_A_MESSAGE) {
                         MidiTools.instance.midi_logger_a.println(avparsed);
                         success = true;
@@ -333,11 +364,14 @@ public class MidiControlRule implements MidiControlListener
                         MidiTools.instance.midi_logger_b.println(avparsed);
                         success = true;
                     } else if (this.getActionType() == MidiControlRule.ACTION_PLUGIN) {
-                        String[] avparsed2 = this.action_value.split(",");
-                        if (avparsed2.length > 1)
-                            success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, avparsed2[1], old_value, new_value);
-                        else
-                        success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, null, old_value, new_value);
+                        if (!this.action_value.equals("") && this.action_value != null)
+                        {
+                            String[] avparsed2 = this.action_value.split(",");
+                            if (avparsed2.length > 1)
+                                success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, avparsed2[1], old_value, new_value);
+                            else
+                                success = MidiTools.instance.plugins.get(avparsed2[0]).onRule(this, null, old_value, new_value);
+                        }
                     } else if (this.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING) {
                         MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
                         if (mapping != null)
@@ -360,14 +394,6 @@ public class MidiControlRule implements MidiControlListener
                             mapping.setOpen(changeTo);
                             success = (mapping.isOpened() == changeTo);
                         }
-                    } else if (this.getActionType() == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
-                        MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(avparsed);
-                        if (mapping != null)
-                        {
-                            boolean changeTo = (new_value < 64);
-                            mapping.setOpen(changeTo);
-                            success = (mapping.isOpened() == changeTo);
-                        }
                     }
                 }
             } catch (Exception e) {
@@ -383,7 +409,12 @@ public class MidiControlRule implements MidiControlListener
 
     public static float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
     {
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
+
+    public static int mapInt(int x, int in_min, int in_max, int out_min, int out_max)
+    {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
     public MidiToolsPlugin getSelectedPlugin()
@@ -497,28 +528,22 @@ public class MidiControlRule implements MidiControlListener
         if (n == MidiControlRule.EVENT_CHANGE)
         {
             return "onChanged";
-        } else if (n == MidiControlRule.EVENT_SETTLE) {
-            return "onSettled";
         } else if (n == MidiControlRule.EVENT_ENTERED_HIGH) {
             return "onEnteredHigh (64+)";
         } else if (n == MidiControlRule.EVENT_ENTERED_LOW) {
             return "onEnteredLow (63-)";
         } else if (n == MidiControlRule.EVENT_INCREASE) {
-            return "onIncrease";
+            return "onChangedIncrease";
         } else if (n == MidiControlRule.EVENT_DECREASE) {
-            return "onDecrease";
-        } else if (n == MidiControlRule.EVENT_SETTLED_INCREASE) {
-            return "onSettledIncrease";
-        } else if (n == MidiControlRule.EVENT_SETTLED_DECREASE) {
-            return "onSettledDecrease";
+            return "onChangedDecrease";
         } else if (n == MidiControlRule.EVENT_ENTERED_HIGH_LOW) {
             return "onEnteredHighOrLow";
         } else if (n == MidiControlRule.EVENT_BOTTOM_THIRD) {
-            return "onBottomThird (0-42)";
+            return "onChangedBottomThird (0-42)";
         } else if (n == MidiControlRule.EVENT_MIDDLE_THIRD) {
-            return "onMiddleThird (43-85)";
+            return "onChangedMiddleThird (43-85)";
         } else if (n == MidiControlRule.EVENT_TOP_THIRD) {
-            return "onTopThird (86-127)";
+            return "onChangedTopThird (86-127)";
         } else if (n == MidiControlRule.EVENT_ENTERED_BOTTOM_THIRD) {
             return "onEnteredBottomThird (0-42)";
         } else if (n == MidiControlRule.EVENT_ENTERED_MIDDLE_THIRD) {
@@ -526,9 +551,9 @@ public class MidiControlRule implements MidiControlListener
         } else if (n == MidiControlRule.EVENT_ENTERED_TOP_THIRD) {
             return "onEnteredTopThird (86-127)";
         } else if (n == MidiControlRule.EVENT_HIGH) {
-            return "onHigh (64+)";
+            return "onChangedHigh (64+)";
         } else if (n == MidiControlRule.EVENT_LOW) {
-            return "onLow (63-)";
+            return "onChangedLow (63-)";
         }
         return "";
     }
@@ -564,10 +589,6 @@ public class MidiControlRule implements MidiControlListener
             return "MAPPING DISABLE";
         } else if (n == MidiControlRule.ACTION_TOGGLE_MAPPING) {
             return "MAPPING TOGGLE";
-        } else if (n == MidiControlRule.ACTION_INVERTED_TOGGLE_RULE_GROUP) {
-            return "INVERTED TOGGLE RULE GROUP";
-        }else if (n == MidiControlRule.ACTION_INVERTED_TOGGLE_MAPPING) {
-            return "INVERTED MAPPING TOGGLE";
         }
         return "";
     }
@@ -620,6 +641,8 @@ public class MidiControlRule implements MidiControlListener
         jo.put("canvas", this.canvasName);
         jo.put("enabled", this.enabled);
         jo.put("lastTriggered", this.lastTriggered);
+        jo.put("valueInverted", this.valueInverted);
+        jo.put("valueSettled", this.valueSettled);
         return jo;
     }
 
@@ -636,6 +659,8 @@ public class MidiControlRule implements MidiControlListener
         jo.put("nickname", this.nickname);
         jo.put("canvas", this.canvasName);
         jo.put("enabled", this.enabled);
+        jo.put("valueInverted", this.valueInverted);
+        jo.put("valueSettled", this.valueSettled);
         return jo;
     }
 
@@ -648,13 +673,36 @@ public class MidiControlRule implements MidiControlListener
     {
         return this.lastFailed;
     }
+
+    private static String addWordBeforeSpace(String sentence, String word)
+    {
+        if (sentence.contains(" "))
+        {
+            StringTokenizer st = new StringTokenizer(sentence, " ");
+            StringBuffer sb = new StringBuffer();
+            sb.append(st.nextToken());
+            sb.append(word);
+            while(st.hasMoreTokens())
+            {
+                sb.append(" ");
+                sb.append(st.nextToken());
+            }
+            return sb.toString();
+        } else {
+            return sentence + word;
+        }
+    }
     
     public String toShortString()
     {
         String controlText = "(No Control Selected)";
         if (this.control != null)
             controlText = this.control.toString();
+        if (this.valueInverted)
+            controlText = "Inverted " + controlText;
         String eventModeText = eventModeToString(this.getEventMode());
+        if (this.shouldValueSettle())
+            eventModeText = addWordBeforeSpace(eventModeText, "AndSettled");
         if (this.nickname == null)
         {
             return controlText + " [" + eventModeText + "]";
@@ -665,26 +713,42 @@ public class MidiControlRule implements MidiControlListener
 
     public String toString()
     {
+        String returnText = "";
         String controlText = "(No Control Selected)";
         if (this.control != null)
             controlText = this.control.toString();
+        if (this.valueInverted)
+            controlText = "Inverted " + controlText;
         String actionText = actionNumberToString(this.getActionType());
         String eventModeText = eventModeToString(this.getEventMode());
+        if (this.shouldValueSettle())
+            eventModeText = addWordBeforeSpace(eventModeText, "AndSettled");
         String targetText = this.getActionValue();
         if (this.getActionType() == MidiControlRule.ACTION_PLUGIN)
         {
             String[] avparsed2 = this.action_value.split(",");
             if (avparsed2.length > 1)
-                return controlText + " [" + eventModeText + "] >> " + avparsed2[0] + " - " + avparsed2[1];
+                returnText = controlText + " [" + eventModeText + "] >> " + avparsed2[0] + " - " + avparsed2[1];
             else
-                return controlText + " [" + eventModeText + "] >> " + avparsed2[0];
+                returnText = controlText + " [" + eventModeText + "] >> " + avparsed2[0];
         } else if (this.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || this.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || this.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
             MidiPortMapping mapping = MidiPortManager.findMidiPortMappingById(targetText);
             if (mapping != null)
                 targetText = mapping.toString();
-            return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
+            returnText = controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
         } else {
-            return controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
+            returnText = controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
+        }
+        if (this.getRuleGroup() != null)
+        {
+            if (!this.getRuleGroup().equals("all"))
+            {
+                return "#"+this.getRuleGroup() + " " + returnText;
+            } else {
+                return returnText;
+            }
+        } else {
+            return returnText;
         }
     }
 }

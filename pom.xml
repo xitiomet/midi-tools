@@ -398,6 +398,24 @@
                           <additionalResource>${project.basedir}/target/natives/</additionalResource>
                           <additionalResource>${project.basedir}/src/main/resources/MidiTools.l4j.ini</additionalResource>
                       </additionalResources>
+                      <additionalModules>
+                        <additionalModule>jdk.crypto.ec</additionalModule>
+                        <additionalModule>java.base</additionalModule>
+                        <additionalModule>java.desktop</additionalModule>
+                        <additionalModule>java.logging</additionalModule>
+                        <additionalModule>java.management</additionalModule>
+                        <additionalModule>java.naming</additionalModule>
+                        <additionalModule>java.security.jgss</additionalModule>
+                        <additionalModule>java.sql</additionalModule>
+                        <additionalModule>java.xml</additionalModule>
+                      </additionalModules>
+                      <fileAssociations>
+                        <FileAssociation>
+                          <mimeType>application/mtz</mimeType>
+                          <extension>mtz</extension>
+                          <description>MIDI Control Change Tools Project</description>
+                        </FileAssociation>
+                      </fileAssociations>
                       <linuxConfig>
                         <pngFile>${project.basedir}/src/main/resources/MidiTools.png</pngFile>
                         <generateAppImage>true</generateAppImage>

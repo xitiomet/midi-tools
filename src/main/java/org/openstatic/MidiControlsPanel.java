@@ -61,11 +61,50 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
                             removeMidiControl(t);
                         })).start();
                     }
+                } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
+                    if (t != null)
+                    {
+                        t.manualAdjust(t.getValue()+1);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+                    MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
+                    if (t != null)
+                    {
+                        t.manualAdjust(t.getValue()-1);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
+                    if (t != null)
+                    {
+                        if (t.getValue() != 127)
+                            t.manualAdjust(127);
+                    }
+                } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
+                    if (t != null)
+                    {
+                        if (t.getValue() == 127)
+                            t.manualAdjust(0);
+                        else
+                            t.manualAdjust(127);
+                    }
                 }
+
             }
 
             @Override
-            public void keyReleased(KeyEvent e) { }
+            public void keyReleased(KeyEvent e) 
+            {
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    MidiControl t = (MidiControl) MidiControlsPanel.this.controlList.getSelectedValue();
+                    if (t != null)
+                    {
+                        if (t.getValue() != 0)
+                            t.manualAdjust(0);
+                    }
+                }
+            }
 
             @Override
             public void keyTyped(KeyEvent e) { }
@@ -197,16 +236,22 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
                 int defaultActionType = 0;
                 String defaultRuleGroupName = "all";
                 String defaultActionValue = null;
+                boolean defaultInverted = false;
+                boolean defaultSettled = false;
                 while (controlIterator.hasNext())
                 {
                     MidiControl control = controlIterator.next();
                     MidiControlRule newRule = new MidiControlRule(control, defaultEventMode, defaultActionType, defaultActionValue);
+                    newRule.setValueInverted(defaultInverted);
+                    newRule.setValueSettled(defaultSettled);
                     newRule.setRuleGroup(defaultRuleGroupName);
                     MidiControlRuleEditor editor = new MidiControlRuleEditor(newRule, true);
                     defaultEventMode = newRule.getEventMode();
                     defaultActionType = newRule.getActionType();
                     defaultRuleGroupName = newRule.getRuleGroup();
                     defaultActionValue = newRule.getActionValue();
+                    defaultInverted = newRule.isValueInverted();
+                    defaultSettled = newRule.shouldValueSettle();
                 }
                 MidiControlsPanel.this.repaint();
             }

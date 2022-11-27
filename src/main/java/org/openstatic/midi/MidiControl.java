@@ -210,20 +210,23 @@ public class MidiControl
         }
     }
     
-    public void manualAdjust(final int new_value)
+    public synchronized void manualAdjust(final int new_value)
     {
-        final int old_value = this.value;
-        if (old_value != new_value)
+        if (new_value <= 127 && new_value >= 0)
         {
-            this.value = new_value;
-            this.lastChangeAt = System.currentTimeMillis();
-            this.settled = false;
-            for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
+            final int old_value = this.value;
+            if (old_value != new_value)
             {
-                final MidiControlListener mcl = mcle.nextElement();
-                (new Thread(() -> {
-                    mcl.controlValueChanged(MidiControl.this, old_value, new_value);
-                })).start();
+                this.value = new_value;
+                this.lastChangeAt = System.currentTimeMillis();
+                this.settled = false;
+                for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
+                {
+                    final MidiControlListener mcl = mcle.nextElement();
+                    (new Thread(() -> {
+                        mcl.controlValueChanged(MidiControl.this, old_value, new_value);
+                    })).start();
+                }
             }
         }
     }

@@ -103,7 +103,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.gearsIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_URL) {
          this.checkBox.setIcon(this.urlIcon);
-      } else if (rule.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
+      } else if (rule.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE || rule.getActionType() == MidiControlRule.ACTION_EFFECT_IMAGE) {
          this.checkBox.setIcon(this.imageIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_ENABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_DISABLE_MAPPING || rule.getActionType() == MidiControlRule.ACTION_TOGGLE_MAPPING) {
          this.checkBox.setIcon(this.mappingIcon);

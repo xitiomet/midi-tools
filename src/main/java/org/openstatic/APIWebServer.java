@@ -553,6 +553,23 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     response.put("rules", MidiTools.instance.rulesAsJSONArray());
                 } else if ("/controls/".equals(target)) {
                     response.put("controls", MidiTools.instance.controlsAsJSONArray());
+                } else if ("/control/".equals(target)) {
+                    String cc = request.getParameter("cc");
+                    String channel = request.getParameter("channel");
+                    String value = request.getParameter("value");
+                    if (cc != null && channel != null)
+                    {
+                        MidiControl control = MidiTools.getMidiControlByChannelCC(Integer.valueOf(channel).intValue(), Integer.valueOf(cc).intValue());
+                        if (control != null)
+                        {
+                            if (value != null)
+                            {
+                                int intValue = Integer.valueOf(value).intValue();
+                                control.manualAdjust(intValue);
+                            }
+                            response.put("control", control.toJSONObject());
+                        }
+                    }
                 } else if ("/mappings/add/".equals(target)) {
                     String source = request.getParameter("source");
                     String destination = request.getParameter("destination");

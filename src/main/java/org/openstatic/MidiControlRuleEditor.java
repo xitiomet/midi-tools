@@ -45,7 +45,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> pluginSelector;
     private JComboBox<String> pluginTargetSelector;
     private JComboBox<String> showImageModeSelector;
-    private JComboBox<String> actionSelector;
+    private JComboBox<Integer> actionSelector;
     private JTextField nicknameField;
     private JComboBox<String> ruleGroupField;
     private JComboBox<String> canvasSelectorField;
@@ -93,7 +93,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     File assetFile = MidiTools.addProjectAsset(fileToLoad);
                     String filename = assetFile.getName();
                     this.selectFileField.setSelectedItem(filename);
-                    if (this.actionSelector.getSelectedIndex() == MidiControlRule.ACTION_SHOW_IMAGE)
+                    if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_SHOW_IMAGE)
                         this.actionValueField.setText(filename + "," + this.showImageModeSelector.getSelectedItem().toString());
                     else
                         this.actionValueField.setText(filename);
@@ -117,7 +117,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         if (e.getSource() == this.selectFileField)
         {
             String fileName = this.selectFileField.getSelectedItem().toString();
-            if (this.actionSelector.getSelectedIndex() == MidiControlRule.ACTION_SHOW_IMAGE)
+            if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_SHOW_IMAGE)
                 this.actionValueField.setText(fileName + "," + this.showImageModeSelector.getSelectedItem().toString());
             else
                 this.actionValueField.setText(fileName);
@@ -132,7 +132,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         
         if (e.getSource() == this.actionSelector)
         {
-            int avi = this.actionSelector.getSelectedIndex();
+            int avi = (Integer) this.actionSelector.getSelectedItem();
             this.rule.setActionType(avi);
             this.changeActionSelector(avi);
         }
@@ -214,7 +214,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_SHOW_IMAGE) {
+        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE) {
             ArrayList<String> extens = new ArrayList<String>();
             if (i == MidiControlRule.ACTION_PROC)
             {
@@ -229,7 +229,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 extens.add(".wav");
                 this.canvasSelectorField.setEnabled(true);
                 this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
-            } else if (i == MidiControlRule.ACTION_SHOW_IMAGE) {
+            } else if (i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE) {
                 this.actionValueLabel.setText("Asset Filename");
                 extens.add(".png");
                 extens.add(".gif");
@@ -242,7 +242,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
-            if (i == MidiControlRule.ACTION_SHOW_IMAGE)
+            if (i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE)
             {
                 this.actionValuePanel.add(this.showImageModeSelector, BorderLayout.PAGE_END);
                 StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
@@ -354,11 +354,24 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.setLayout(new BorderLayout());
         this.rule = rule;
 
-        Vector<String> actionList = new Vector<String>();
-        for(int i = 0; i < 14; i++)
-        {
-            actionList.add(MidiControlRule.actionNumberToString(i));
-        }
+        Vector<Integer> actionList = new Vector<Integer>();
+        actionList.add(MidiControlRule.ACTION_PLUGIN);
+        actionList.add(MidiControlRule.ACTION_SHOW_IMAGE);
+        actionList.add(MidiControlRule.ACTION_EFFECT_IMAGE);
+        actionList.add(MidiControlRule.ACTION_URL);
+        actionList.add(MidiControlRule.ACTION_PROC);
+        actionList.add(MidiControlRule.ACTION_SOUND);
+        actionList.add(MidiControlRule.ACTION_TRANSMIT);
+        actionList.add(MidiControlRule.LOGGER_A_MESSAGE);
+        actionList.add(MidiControlRule.LOGGER_B_MESSAGE);
+        actionList.add(MidiControlRule.ACTION_ENABLE_RULE_GROUP);
+        actionList.add(MidiControlRule.ACTION_DISABLE_RULE_GROUP);
+        actionList.add(MidiControlRule.ACTION_TOGGLE_RULE_GROUP);
+        actionList.add(MidiControlRule.ACTION_ENABLE_MAPPING);
+        actionList.add(MidiControlRule.ACTION_DISABLE_MAPPING);
+        actionList.add(MidiControlRule.ACTION_TOGGLE_MAPPING);
+
+
         Vector<String> eventModeList = new Vector<String>();
         for(int i = 0; i < 14; i++)
         {
@@ -388,7 +401,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.eventSelector.addActionListener(this);
         this.eventSelector.setBackground(Color.WHITE);
 
-        this.actionSelector = new JComboBox<String>(actionList);
+        this.actionSelector = new JComboBox<Integer>(actionList);
         this.actionSelector.setEditable(false);
         this.actionSelector.setRenderer(new RuleActionCellRenderer());
         this.actionSelector.addActionListener(this);
@@ -418,7 +431,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         imageModes.add("opacity rotate scale");
         this.showImageModeSelector.setModel(new DefaultComboBoxModel<String>(imageModes));
 
-        this.selectRuleGroupDropdown = new JComboBox<String>(actionList);
+        this.selectRuleGroupDropdown = new JComboBox<String>();
         this.selectRuleGroupDropdown.setEditable(true);
         this.selectRuleGroupDropdown.addActionListener(this);
         this.selectRuleGroupDropdown.setBackground(Color.WHITE);
@@ -588,7 +601,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         else
             this.canvasSelectorField.setSelectedItem("");
         int avi = this.rule.getActionType();
-        this.actionSelector.setSelectedIndex(avi);
+        this.actionSelector.setSelectedItem(avi);
         this.changeActionSelector(avi);
         
         centerWindow();

@@ -34,14 +34,9 @@ function sendEvent(wsEvent)
     }
 }
 
-function updateImage(jsonObject)
+function handleEffects(jsonObject, imageChange)
 {
-    var imgUrl = httpUrl + '/assets/' + jsonObject.image;
-    var imageChange = (jsonObject.image != lastImageFile);
     var imgElement = document.getElementById('imgTag');
-    imgElement.src = imgUrl;
-    imgElement.style.display = 'inline-block';
-    
     if (jsonObject.hasOwnProperty('scale'))
     {
         imgElement.style.height = (jsonObject.scale * 100)+'%';
@@ -50,21 +45,39 @@ function updateImage(jsonObject)
         imgElement.style.height = '100%';
         imgElement.style.top = '0px';
     }
-    
     if (jsonObject.hasOwnProperty('opacity'))
     {
         imgElement.style.opacity = jsonObject.opacity;
     } else if (imageChange) {
         imgElement.style.opacity = 1;
     }
-
     if (jsonObject.hasOwnProperty('rotate'))
     {
         imgElement.style.transform = 'rotate(' + jsonObject.rotate + 'deg)';
     } else if (imageChange) {
         imgElement.style.transform = 'rotate(0deg)';
     }
-    lastImageFile = jsonObject.image;
+}
+
+function updateImage(jsonObject)
+{
+    var imgUrl = httpUrl + '/assets/' + jsonObject.image;
+    var imageChange = (jsonObject.image != lastImageFile);
+    var imgElement = document.getElementById('imgTag');
+    var showImage = false;
+    if (jsonObject.hasOwnProperty('show'))
+        showImage = jsonObject.show;
+    if (showImage)
+    {
+        console.log("Show Image: " + jsonObject.image);
+        imgElement.src = imgUrl;
+        imgElement.style.display = 'inline-block';
+        lastImageFile = jsonObject.image;
+        handleEffects(jsonObject, imageChange);
+    } else if (!imageChange) {
+        console.log("Effect Image: " + lastImageFile);
+        handleEffects(jsonObject, imageChange);
+    }
 }
 
 function loadSound(file)

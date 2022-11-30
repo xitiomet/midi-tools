@@ -10,7 +10,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
-public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<String> 
+public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<Integer> 
 {
     public JLabel label;
     private ImageIcon speakerIcon;
@@ -49,8 +49,9 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
     }
 
     @Override
-    public Component getListCellRendererComponent(JList<? extends String> list, String value, int index,
+    public Component getListCellRendererComponent(JList<? extends Integer> list, Integer v, int index,
             boolean isSelected, boolean cellHasFocus) {
+        String value = MidiControlRule.actionNumberToString(v);
         this.label.setText(value);
         if ("CALL URL".equals(value))
         {
@@ -76,6 +77,8 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<S
         } else if ("PLUGIN".equals(value)) {
             this.label.setIcon(this.pluginIcon);
         } else if ("SHOW IMAGE".equals(value)) {
+            this.label.setIcon(this.imageIcon);
+        } else if ("EFFECT IMAGE".equals(value)) {
             this.label.setIcon(this.imageIcon);
         } else if ("MAPPING ENABLE".equals(value)) {
             this.label.setIcon(this.mappingIcon);

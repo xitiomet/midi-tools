@@ -43,6 +43,7 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_MAPPING = 11;
     public static final int ACTION_DISABLE_MAPPING = 12;
     public static final int ACTION_TOGGLE_MAPPING = 13;
+    public static final int ACTION_EFFECT_IMAGE = 14;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_INCREASE = 1;
@@ -68,7 +69,7 @@ public class MidiControlRule implements MidiControlListener
         this.event_mode = jo.optInt("eventMode", 0);
         if (this.event_mode > 13) this.event_mode = 0;
         this.action_type = jo.optInt("actionType", 0);
-        if (this.action_type > 13) this.action_type = 5;
+        if (this.action_type > 14) this.action_type = 5;
         this.action_value = jo.optString("actionValue", null);
         this.nickname = jo.optString("nickname", null);
         this.canvasName = jo.optString("canvas", "(ALL)");
@@ -296,6 +297,26 @@ public class MidiControlRule implements MidiControlListener
                             }
                         }
                     } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
+                        if (!"(NONE)".equals(this.canvasName) && canvasName != null)
+                        {
+                            StringTokenizer st = new StringTokenizer(avparsed, ",");
+                            String filename = st.nextToken();
+                            String mode = "opacity";
+                            if (st.hasMoreTokens())
+                                mode = st.nextToken();
+                            JSONObject canvasEvent = new JSONObject();
+                            canvasEvent.put("image", filename);
+                            canvasEvent.put("show", true);
+                            if (mode.contains("opacity"))
+                                canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("scale"))
+                                canvasEvent.put("scale", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("rotate"))
+                                canvasEvent.put("rotate", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 360f));
+                            canvasEvent.put("canvas", this.canvasName);
+                            success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_EFFECT_IMAGE) {
                         if (!"(NONE)".equals(this.canvasName) && canvasName != null)
                         {
                             StringTokenizer st = new StringTokenizer(avparsed, ",");
@@ -589,6 +610,8 @@ public class MidiControlRule implements MidiControlListener
             return "MAPPING DISABLE";
         } else if (n == MidiControlRule.ACTION_TOGGLE_MAPPING) {
             return "MAPPING TOGGLE";
+        } else if (n == MidiControlRule.ACTION_EFFECT_IMAGE) {
+            return "EFFECT IMAGE";
         }
         return "";
     }
@@ -739,6 +762,11 @@ public class MidiControlRule implements MidiControlListener
         } else {
             returnText = controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
         }
+        if (!"(NONE)".equals(this.getCanvasName()) && !"".equals(this.getCanvasName()) && this.getCanvasName() != null)
+        {
+            returnText = returnText + " @" + this.getCanvasName();
+        }
+
         if (this.getRuleGroup() != null)
         {
             if (!this.getRuleGroup().equals("all"))

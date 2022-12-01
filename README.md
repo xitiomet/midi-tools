@@ -14,7 +14,7 @@ Features
  - Media Canvas feature lets you create audio/visual content triggered by MIDI messages
  - Mobile friendly remote control interface
 
-![](https://openstatic.org/projects/miditools/img/miditools11.png)
+![](https://openstatic.org/projects/miditools/img/miditools12.png)
 
 ### How do I use it? ###
 Simply launch the app and check off what MIDI devices you want to use. Then toggle the ear on the MIDI Controls tab, as you play with the physical controls on your device, those controls will appear in the "Midi Controls" section. Each control represents a channel and a control change number. In order to create a rule for a control, select control by clicking on it. Then click the "script" button (third one on the left of the midi controls tab)
@@ -22,20 +22,29 @@ Simply launch the app and check off what MIDI devices you want to use. Then togg
 ### Creating a rule ###
 "Rules" are a way to create mappings from your MIDI Controls to an event 
 
-![](https://openstatic.org/projects/miditools/img/rule6.png)
+![](https://openstatic.org/projects/miditools/img/rule7.png)
 
 - Rule Name - This is just a label for the rule
 - Rule Group - The group this rule belongs to (optional)
 - Select Control - Midi Control to listen for events on (A control represents a channel and cc#)
+- Modifiers
+	- Value Inverted - reverse the value from 0-127 to 127-0
+	- Value Settled - Wait for the value to finish changing before triggering the rule
 - Select Event - When should this rule trigger?
-	- onChange - Whenever there is a change in value
-	- onSettled - When the value has settled for at least 500ms
-	- onHigh (64+) - whenever the value passes the middle of its range in the upperbound direction
-	- onLow (63-) - whenever the value passes the middle of its range in the lowerbound direction
-	- onIncrease - whenever the value increases
-	- onDecrease - whenever the value decreases
-	- onSettledIncrease - whenever the value settles higher then the previous value
-	- onSettledDecrease - whenever the value settles lower then the previous value
+	- onChange - Whenever there is a change in value, best option if you are looking to detect any change in the slider or knob
+    - onChangedIncrease - whenever the value goes higher then the previous value
+    - onChangedDecrease - whenever the value goes lower then the previous value
+    - onChangedHigh (64+) - whenever the value changes above the middle of its range in the upperbound direction
+    - onChangedLow (63-) - whenever the value changes above the middle of its range in the lowerbound direction
+    - onEnteredHigh (64+) - whenever the value changes and passes the middle of its range in the upperbound direction
+    - onEnteredLow (63-) - whenever the value changes and passes the middle of its range in the lowerbound direction
+    - onEnteredHighOrLow - whenever the value changes and passes the middle of its range in the either direction
+    - onChangeBottomThird (0-42) - whenever the value changes below 42
+    - onChangeMiddleThird (43-85) - whenever the value changes above 42 below 86
+    - onChangeTopThird (86-127) - whenever the value changes above 85
+    - onEnteredBottomThird (0-42) - whenever the value enteres a range below 42
+    - onEnteredMiddleThird (43-85) - whenever the value enteres a range above 42 below 86
+    - onEnteredTopThird (86-127) - whenever the value enteres a range above 85
 - Action Type - What Kind of action do you want to take?
 	- CALL URL - Make a request to a URL (response is ignored)
 	- PLUGIN - Make a call to a MidiTools Plugin

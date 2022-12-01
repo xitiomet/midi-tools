@@ -762,7 +762,7 @@ public class MidiControlRule implements MidiControlListener
         } else {
             returnText = controlText + " [" + eventModeText + "] >> " + actionText + " " + targetText;
         }
-        if (!"(NONE)".equals(this.getCanvasName()) && !"".equals(this.getCanvasName()) && this.getCanvasName() != null)
+        if (!"(ALL)".equals(this.getCanvasName()) && !"(NONE)".equals(this.getCanvasName()) && !"".equals(this.getCanvasName()) && this.getCanvasName() != null)
         {
             returnText = returnText + " @" + this.getCanvasName();
         }

@@ -39,11 +39,10 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_RULE_GROUP = 7;
     public static final int ACTION_DISABLE_RULE_GROUP = 8;
     public static final int ACTION_TOGGLE_RULE_GROUP = 9;
-    public static final int ACTION_SHOW_IMAGE = 10;
+    public static final int ACTION_EFFECT_IMAGE = 10;
     public static final int ACTION_ENABLE_MAPPING = 11;
     public static final int ACTION_DISABLE_MAPPING = 12;
     public static final int ACTION_TOGGLE_MAPPING = 13;
-    public static final int ACTION_EFFECT_IMAGE = 14;
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_INCREASE = 1;
@@ -296,26 +295,6 @@ public class MidiControlRule implements MidiControlListener
                                 success = true;
                             }
                         }
-                    } else if (this.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE) {
-                        if (!"(NONE)".equals(this.canvasName) && canvasName != null)
-                        {
-                            StringTokenizer st = new StringTokenizer(avparsed, ",");
-                            String filename = st.nextToken();
-                            String mode = "opacity";
-                            if (st.hasMoreTokens())
-                                mode = st.nextToken();
-                            JSONObject canvasEvent = new JSONObject();
-                            canvasEvent.put("image", filename);
-                            canvasEvent.put("show", true);
-                            if (mode.contains("opacity"))
-                                canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
-                            if (mode.contains("scale"))
-                                canvasEvent.put("scale", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
-                            if (mode.contains("rotate"))
-                                canvasEvent.put("rotate", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 360f));
-                            canvasEvent.put("canvas", this.canvasName);
-                            success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
-                        }
                     } else if (this.getActionType() == MidiControlRule.ACTION_EFFECT_IMAGE) {
                         if (!"(NONE)".equals(this.canvasName) && canvasName != null)
                         {
@@ -326,8 +305,14 @@ public class MidiControlRule implements MidiControlListener
                                 mode = st.nextToken();
                             JSONObject canvasEvent = new JSONObject();
                             canvasEvent.put("image", filename);
+                            if (mode.contains("solo"))
+                                canvasEvent.put("solo", true);
+                            if (mode.contains("none"))
+                                canvasEvent.put("none", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("opacity"))
                                 canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("curtain"))
+                                canvasEvent.put("curtain", mapFloat(Float.valueOf(new_value), 127f, 0f, 0f, 1f));
                             if (mode.contains("scale"))
                                 canvasEvent.put("scale", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("rotate"))
@@ -602,8 +587,6 @@ public class MidiControlRule implements MidiControlListener
             return "LOGGER B MESSAGE";
         } else if (n == MidiControlRule.ACTION_PLUGIN) {
             return "PLUGIN";
-        } else if (n == MidiControlRule.ACTION_SHOW_IMAGE) {
-            return "SHOW IMAGE";
         } else if (n == MidiControlRule.ACTION_ENABLE_MAPPING) {
             return "MAPPING ENABLE";
         } else if (n == MidiControlRule.ACTION_DISABLE_MAPPING) {

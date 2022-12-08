@@ -121,6 +121,7 @@
             <include>*.gif</include>
             <include>*.jks</include>
             <include>*.json</include>
+            <include>*.ico</include>
           </includes>
           <targetPath>midi-tools-res</targetPath>
         </resource>

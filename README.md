@@ -13,6 +13,7 @@ Features
  - Detailed MIDI logging for troubleshooting issues with MIDI devices
  - Media Canvas feature lets you create audio/visual content triggered by MIDI messages
  - Mobile friendly remote control interface
+ - Internal MIDI file player with virtual device for mappings
 
 ![](https://openstatic.org/projects/miditools/img/miditools12.png)
 
@@ -61,7 +62,8 @@ Simply launch the app and check off what MIDI devices you want to use. Then togg
 	- TOGGLE RULE GROUP - Toggle a group of rules if the value >= 64 the group is enabled otherwise its disabled.
 	- LOGGER A MESSAGE - Add some text to Logger A
 	- LOGGER B MESSAGE - Add some text to Logger B
-	- SHOW IMAGE - Display an image on the Canvas
+	- SHOW IMAGE - Change the image displayed on the Canvas and apply effects
+	- EFFECT IMAGE - Change the effects on an image if its presently visible on the canvas
 	- MAPPING ENABLE - Enable a port mapping
 	- MAPPING DISABLE - Disable a port mapping
 	- MAPPING TOGGLE - Toggle a Port Mapping if the value >= 64 the mapping is enabled otherwise its disabled.
@@ -99,7 +101,7 @@ The Port Mappings tab allows you to create virtual connections between MIDI devi
 The Project Assets tab is for adding media and additional files to your project. These assets will be available to your rules and are saved as part of the project file. To add an asset simply drag and drop the file into this tab, or click on the "Add File" button on the left hand side.
 
 Supported Assets include:
- - Images (gif/jpeg/png)
+ - Images (gif/jpeg/png/webp/svg)
  - Sound clips (wav files only)
  - Sound Fonts (sf2)
  - Shell Scripts (cmd/bat/sh)

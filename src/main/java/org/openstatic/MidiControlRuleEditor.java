@@ -45,6 +45,9 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> pluginSelector;
     private JComboBox<String> pluginTargetSelector;
     private JComboBox<String> showImageModeSelector;
+    private JCheckBox soloImageCheckBox;
+    private JPanel imageOptionsPanel;
+
     private JComboBox<Integer> actionSelector;
     private JTextField nicknameField;
     private JComboBox<String> ruleGroupField;
@@ -93,17 +96,17 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                     File assetFile = MidiTools.addProjectAsset(fileToLoad);
                     String filename = assetFile.getName();
                     this.selectFileField.setSelectedItem(filename);
-                    if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_SHOW_IMAGE)
-                        this.actionValueField.setText(filename + "," + this.showImageModeSelector.getSelectedItem().toString());
+                    if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_EFFECT_IMAGE)
+                        this.actionValueField.setText(filename + "," + getImageEffects());
                     else
                         this.actionValueField.setText(filename);
                 }
             }
         }
 
-        if (e.getSource() == this.showImageModeSelector)
+        if (e.getSource() == this.showImageModeSelector || e.getSource() == this.soloImageCheckBox)
         {
-            this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
+            this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
         }
 
         if (e.getSource() == this.pluginSelector)
@@ -117,8 +120,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         if (e.getSource() == this.selectFileField)
         {
             String fileName = this.selectFileField.getSelectedItem().toString();
-            if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_SHOW_IMAGE)
-                this.actionValueField.setText(fileName + "," + this.showImageModeSelector.getSelectedItem().toString());
+            if (((Integer)this.actionSelector.getSelectedItem()) == MidiControlRule.ACTION_EFFECT_IMAGE)
+                this.actionValueField.setText(fileName + "," + getImageEffects());
             else
                 this.actionValueField.setText(fileName);
         }
@@ -199,6 +202,14 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         }
     }
 
+    private String getImageEffects()
+    {
+        String extras = "";
+        if (this.soloImageCheckBox.isSelected())
+            extras += " solo";
+        return this.showImageModeSelector.getSelectedItem().toString() + extras;
+    }
+
     public void changeActionSelector(int i)
     {
         this.actionValuePanel.removeAll();
@@ -214,7 +225,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
-        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE) {
+        } else if (i == MidiControlRule.ACTION_PROC || i == MidiControlRule.ACTION_SOUND || i == MidiControlRule.ACTION_EFFECT_IMAGE) {
             ArrayList<String> extens = new ArrayList<String>();
             if (i == MidiControlRule.ACTION_PROC)
             {
@@ -229,7 +240,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 extens.add(".wav");
                 this.canvasSelectorField.setEnabled(true);
                 this.canvasSelectorField.setSelectedItem(this.rule.getCanvasName());
-            } else if (i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE) {
+            } else if (i == MidiControlRule.ACTION_EFFECT_IMAGE) {
                 this.actionValueLabel.setText("Asset Filename");
                 extens.add(".png");
                 extens.add(".gif");
@@ -242,9 +253,9 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
             this.actionValuePanel.add(this.selectFilePanel, BorderLayout.CENTER);
             this.selectFileField.setModel(MidiTools.getAssetComboBoxModel(extens));
-            if (i == MidiControlRule.ACTION_SHOW_IMAGE || i == MidiControlRule.ACTION_EFFECT_IMAGE)
+            if (i == MidiControlRule.ACTION_EFFECT_IMAGE)
             {
-                this.actionValuePanel.add(this.showImageModeSelector, BorderLayout.PAGE_END);
+                this.actionValuePanel.add(this.imageOptionsPanel, BorderLayout.PAGE_END);
                 StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
                 if (st.hasMoreTokens())
                 {
@@ -254,11 +265,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 if (st.hasMoreTokens())
                 {
                     String mode = st.nextToken();
-                    this.showImageModeSelector.setSelectedItem(mode);
+                    this.showImageModeSelector.setSelectedItem(mode.replace(" solo", ""));
+                    this.soloImageCheckBox.setSelected(mode.contains("solo"));
                 }
                 Object selectedItem = this.selectFileField.getSelectedItem();
                 if (selectedItem != null)
-                    this.actionValueField.setText(selectedItem.toString() + "," + this.showImageModeSelector.getSelectedItem().toString());
+                    this.actionValueField.setText(selectedItem.toString() + "," + getImageEffects());
             } else {
                 this.selectFileField.setSelectedItem(this.actionValueField.getText());
                 Object selectedItem = this.selectFileField.getSelectedItem();
@@ -356,7 +368,6 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
 
         Vector<Integer> actionList = new Vector<Integer>();
         actionList.add(MidiControlRule.ACTION_PLUGIN);
-        actionList.add(MidiControlRule.ACTION_SHOW_IMAGE);
         actionList.add(MidiControlRule.ACTION_EFFECT_IMAGE);
         actionList.add(MidiControlRule.ACTION_URL);
         actionList.add(MidiControlRule.ACTION_PROC);
@@ -417,19 +428,31 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.pluginTargetSelector.addActionListener(this);
         this.pluginTargetSelector.setBackground(Color.WHITE);
 
+        this.soloImageCheckBox = new JCheckBox();
+        this.soloImageCheckBox.addActionListener(this);
+
         this.showImageModeSelector = new JComboBox<String>();
         this.showImageModeSelector.setEditable(false);
         this.showImageModeSelector.addActionListener(this);
         this.showImageModeSelector.setBackground(Color.WHITE);
+        
         Vector<String> imageModes = new Vector<String>();
+        imageModes.add("none");
         imageModes.add("opacity");
         imageModes.add("scale");
         imageModes.add("rotate");
+        imageModes.add("curtain");
         imageModes.add("opacity scale");
         imageModes.add("rotate scale");
         imageModes.add("opacity rotate");
         imageModes.add("opacity rotate scale");
         this.showImageModeSelector.setModel(new DefaultComboBoxModel<String>(imageModes));
+
+        this.imageOptionsPanel = new JPanel(new GridLayout(2,2));
+        this.imageOptionsPanel.add(new JLabel("Image Effect (by value)"));
+        this.imageOptionsPanel.add(this.showImageModeSelector);
+        this.imageOptionsPanel.add(new JLabel("Solo (clear canvas first)"));
+        this.imageOptionsPanel.add(this.soloImageCheckBox);
 
         this.selectRuleGroupDropdown = new JComboBox<String>();
         this.selectRuleGroupDropdown.setEditable(true);

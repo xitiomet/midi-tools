@@ -19,6 +19,7 @@ import javax.swing.JToggleButton;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import org.json.JSONObject;
 import org.openstatic.midi.MidiPort;
 import org.openstatic.midi.MidiPortManager;
 import org.openstatic.midi.ports.LoggerMidiPort;
@@ -558,5 +559,23 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         sb.append(":");
         sb.append(formatter.format(seconds));
         return(sb.toString());
+    }
+
+    public void loadProject(JSONObject project)
+    {
+        if (project != null)
+        {
+            this.repeatButton.setSelected(project.optBoolean("repeat"));
+            this.selectFileField.setSelectedItem(project.optString("loadedFile"));
+            this.loadSelectedFile();
+        }
+    }
+
+    public JSONObject getProjectJSON()
+    {
+        JSONObject project = new JSONObject();
+        project.put("repeat", this.repeatButton.isSelected());
+        project.put("loadedFile", (String) this.selectFileField.getSelectedItem());
+        return project;
     }
 }

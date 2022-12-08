@@ -458,6 +458,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                 JSONObject welcomeObject = new JSONObject();
                 welcomeObject.put("canvasList", new JSONArray(canvasNames));
                 welcomeObject.put("sounds", new JSONArray(MidiTools.getSoundAssets()));
+                welcomeObject.put("images", new JSONArray(MidiTools.getImageAssets()));
                 String projectName = MidiTools.getProjectName();
                 if (projectName != null)
                     welcomeObject.put("projectName", projectName);

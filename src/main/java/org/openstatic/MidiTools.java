@@ -1150,6 +1150,23 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         return assetNames;
     }
 
+    public static Vector<String> getImageAssets()
+    {
+        Vector<String> assetNames = new Vector<String>();
+        Iterator<File> files = MidiTools.instance.assetManagerPanel.getAllAssets().iterator();
+        while (files.hasNext())
+        {
+            File file = files.next();
+            String filename = file.getName();
+            String filenameLower = filename.toLowerCase();
+            if (filenameLower.endsWith(".png") || filenameLower.endsWith(".gif") || filenameLower.endsWith(".webp") || filenameLower.endsWith(".jpg") || filenameLower.endsWith(".jpeg") || filenameLower.endsWith(".svg"))
+            {
+                assetNames.add(filename);
+            }
+        }
+        return assetNames;
+    }
+
     public String getShowQr()
     {
         if (this.noneQrMenuItem.isSelected())
@@ -1236,7 +1253,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); newRuleEnum.hasMoreElements();)
             {
                 MidiControlRule mcr = newRuleEnum.nextElement();
-                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE)
+                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_EFFECT_IMAGE)
                 {
                     String canvasName = mcr.getCanvasName();
                     if (canvasName != null && !canvasNames.contains(canvasName))
@@ -1245,7 +1262,6 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                 
             }
         } catch (Exception e) {
-
         }
         return canvasNames;
     }
@@ -1259,7 +1275,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             for(Enumeration<MidiControlRule> newRuleEnum = MidiTools.instance.midiControlRulePanel.getRulesEnumeration(); newRuleEnum.hasMoreElements();)
             {
                 MidiControlRule mcr = newRuleEnum.nextElement();
-                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_SHOW_IMAGE || mcr.getActionType() == MidiControlRule.ACTION_PROC)
+                if (mcr.getActionType() == MidiControlRule.ACTION_SOUND || mcr.getActionType() == MidiControlRule.ACTION_PROC)
                 {
                     String actionValue = mcr.getActionValue();
                     if (actionValue != null)
@@ -1436,14 +1452,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         SwingUtilities.invokeLater(new Runnable() 
         {
             public void run() {
-            try
-            {
-                System.err.println("TRYING TO BRING WINDOW VISIBLE");
-                mlb.setVisible(true);
-                System.err.println("WINDOW BROUGHT VISIBLE");
-            } catch (Throwable goVisible) {
-                System.exit(1);
-            }
+                try
+                {
+                    System.err.println("TRYING TO BRING WINDOW VISIBLE");
+                    mlb.setVisible(true);
+                    System.err.println("WINDOW BROUGHT VISIBLE");
+                } catch (Throwable goVisible) {
+                    System.exit(1);
+                }
             }
         });
         logIt("Finished Startup");
@@ -1915,6 +1931,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         }
         configJson.put("plugins", projectPluginJson);
         configJson.put("assets", new JSONArray(this.assetManagerPanel.getAllAssets()));
+        configJson.put("player", this.midiPlayer.getProjectJSON());
         return configJson;
     }
 
@@ -2100,6 +2117,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         Thread.sleep(2000l);
                         MidiTools.this.assetManagerPanel.refresh();
                         MidiTools.this.midiPlayer.refreshAssetChoices();
+                        MidiTools.this.midiPlayer.loadProject(MidiTools.this.loadedProjectJSON.optJSONObject("player"));
                     } catch (Exception e) {}
                 });
                 refreshPlayerThread.start();

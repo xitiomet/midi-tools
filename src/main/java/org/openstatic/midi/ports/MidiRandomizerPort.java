@@ -63,7 +63,8 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     
     public void clearAllRules()
     {
-        for (int i = 0; i <= this.randomRules.length()+1; i++)
+        int rrl = this.randomRules.length();
+        for (int i = 0; i <= rrl; i++)
         {
             this.removeRandomRule(0);
         }

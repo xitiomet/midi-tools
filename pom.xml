@@ -86,7 +86,7 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>routeput</artifactId>
-        <version>1.2022.0907</version>
+        <version>1.2022.1209</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jaudiolibs/jnajack -->
     <dependency>

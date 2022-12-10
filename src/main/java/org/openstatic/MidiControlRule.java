@@ -307,12 +307,18 @@ public class MidiControlRule implements MidiControlListener
                             canvasEvent.put("image", filename);
                             if (mode.contains("solo"))
                                 canvasEvent.put("solo", true);
+                            if (mode.contains("fill-x"))
+                                canvasEvent.put("fill", "x");
+                            else if (mode.contains("fill-y"))
+                                canvasEvent.put("fill", "y");
                             if (mode.contains("none"))
                                 canvasEvent.put("none", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("opacity"))
                                 canvasEvent.put("opacity", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("curtain"))
-                                canvasEvent.put("curtain", mapFloat(Float.valueOf(new_value), 127f, 0f, 0f, 1f));
+                                canvasEvent.put("curtain", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
+                            if (mode.contains("riser"))
+                                canvasEvent.put("riser", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("scale"))
                                 canvasEvent.put("scale", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 1f));
                             if (mode.contains("rotate"))

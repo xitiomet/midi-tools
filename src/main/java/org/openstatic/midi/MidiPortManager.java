@@ -2,6 +2,9 @@ package org.openstatic.midi;
 
 import javax.sound.midi.*;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
@@ -15,7 +18,8 @@ public class MidiPortManager
     private static Vector<MidiPortListener> listeners = new Vector<MidiPortListener>();
     private static Vector<MidiPortMapping> mappings = new Vector<MidiPortMapping>();
     private static boolean keepRunning;
-    private static Thread taskThread;
+    private static Thread refreshThread;
+    private static ExecutorService executorService;
     
     public static synchronized String generateBigAlphaKey(int key_length)
     {
@@ -36,10 +40,27 @@ public class MidiPortManager
         return randKey;
     }
 
+    public static void addTask(Runnable r)
+    {
+        MidiPortManager.executorService.submit(r);
+    }
+
     public static void init()
     {
         MidiPortManager.keepRunning = true;
-        if (MidiPortManager.taskThread == null)
+        if (MidiPortManager.executorService == null)
+        {
+            ThreadFactory tf = new ThreadFactory() {
+                public Thread newThread(Runnable r) {
+                    Thread x = new Thread(r);
+                    x.setPriority(Thread.MAX_PRIORITY);
+                    x.setName("MidiPortManager Realtime");
+                    return x;
+                  }
+            };
+            MidiPortManager.executorService = Executors.newFixedThreadPool(6, tf);
+        }
+        if (MidiPortManager.refreshThread == null)
         {
             //refresh();
             Runtime.getRuntime().addShutdownHook(new Thread() 
@@ -50,7 +71,7 @@ public class MidiPortManager
                     System.out.println("Shutdown MidiPortManager!"); 
                 } 
             }); 
-            MidiPortManager.taskThread = new Thread()
+            MidiPortManager.refreshThread = new Thread()
             {
                 public void run()
                 {
@@ -74,14 +95,16 @@ public class MidiPortManager
                     }
                 }
             };
-            MidiPortManager.taskThread.setDaemon(true);
-            MidiPortManager.taskThread.start();
+            MidiPortManager.refreshThread.setDaemon(true);
+            MidiPortManager.refreshThread.start();
         }
     }
 
     public static void shutdown()
     {
         MidiPortManager.keepRunning = false;
+        if (MidiPortManager.executorService != null)
+            MidiPortManager.executorService.shutdown();
     }
 
     public static boolean isRunning()

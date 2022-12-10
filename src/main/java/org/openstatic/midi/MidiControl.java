@@ -223,9 +223,9 @@ public class MidiControl
                 for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
                 {
                     final MidiControlListener mcl = mcle.nextElement();
-                    (new Thread(() -> {
+                    MidiPortManager.addTask(() -> {
                         mcl.controlValueChanged(MidiControl.this, old_value, new_value);
-                    })).start();
+                    });
                 }
             }
         }
@@ -278,9 +278,9 @@ public class MidiControl
             for (Enumeration<MidiControlListener> mcle = ((Vector<MidiControlListener>) MidiControl.this.listeners.clone()).elements(); mcle.hasMoreElements();)
             {
                 final MidiControlListener mcl = mcle.nextElement();
-                (new Thread(() -> {
+                MidiPortManager.addTask(() -> {
                     mcl.controlValueSettled(MidiControl.this, old_value, final_value);
-                })).start();
+                });
             }
         }
     }

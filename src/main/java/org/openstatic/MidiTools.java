@@ -2118,6 +2118,16 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
                         MidiTools.this.assetManagerPanel.refresh();
                         MidiTools.this.midiPlayer.refreshAssetChoices();
                         MidiTools.this.midiPlayer.loadProject(MidiTools.this.loadedProjectJSON.optJSONObject("player"));
+                        Vector<String> canvasNames = MidiTools.getCanvasNames();
+                
+                        JSONObject welcomeObject = new JSONObject();
+                        welcomeObject.put("canvasList", new JSONArray(canvasNames));
+                        welcomeObject.put("sounds", new JSONArray(MidiTools.getSoundAssets()));
+                        welcomeObject.put("images", new JSONArray(MidiTools.getImageAssets()));
+                        String projectName = MidiTools.getProjectName();
+                        if (projectName != null)
+                            welcomeObject.put("projectName", projectName);
+                        MidiTools.this.apiServer.broadcastCanvasJSONObject(welcomeObject);
                     } catch (Exception e) {}
                 });
                 refreshPlayerThread.start();

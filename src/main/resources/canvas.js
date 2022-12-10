@@ -7,8 +7,10 @@ var port = location.port;
 var wsProtocol = 'ws';
 var sounds = new Map();
 var images = new Map();
+var imageEffects = new Map();
 var httpUrl = '';
 var canvasStarted = false;
+var nextZ = 0;
 
 function getParameterByName(name, url = window.location.href) 
 {
@@ -37,7 +39,25 @@ function sendEvent(wsEvent)
 
 function handleEffects(jsonObject)
 {
-    var imgElement = document.getElementById('img_' + jsonObject.image);
+    var imageName = jsonObject.image;
+    var imgElement = document.getElementById('img_' + imageName);
+    var fill = 'y';
+    var height = '100%';
+    var width = '100%';
+    var left = '50%';
+    var top = '50%';
+    var rotate = 0;
+    var opacity = 1;
+    if (imageEffects.has(imageName))
+    {
+        var ie = imageEffects.get(imageName);
+        height = ie.height;
+        width = ie.width;
+        rotate = ie.rotate;
+        left = ie.left;
+        top = ie.top;
+        opacity = ie.opacity;
+    }
     if (imgElement.style.display == 'none')
     {
         //console.log("bringing image visible: " + jsonObject.image);
@@ -48,38 +68,59 @@ function handleEffects(jsonObject)
         if (jsonObject.solo)
             hideImagesExcept(jsonObject.image);
     }
+    if (jsonObject.hasOwnProperty('fill'))
+    {
+        fill = jsonObject.fill;
+    }
+    
     if (jsonObject.hasOwnProperty('none'))
     {
-        imgElement.style.height = '100%';
-        imgElement.style.width = 'auto';
-        imgElement.style.top = '0px';
-        imgElement.style.left = "50%;"
-        imgElement.style.transform = 'translateX(-50%) rotate(0deg)';
+        top = '50%';
+        left = "50%;"
+        rotate = 0;
         imgElement.style.opacity = 1;
     } else {
         if (jsonObject.hasOwnProperty('curtain'))
         {
-            imgElement.style.top = '-' + (jsonObject.curtain * 100) + '%';
-            imgElement.style.height = '100%';
-            imgElement.style.width = '100%';
-            imgElement.style.transform = 'translateX(-50%) rotate(0deg)';
+            top = ((-100 + (jsonObject.curtain * 100))+50) + '%';
+            rotate = 0;
+        }
+        if (jsonObject.hasOwnProperty('riser'))
+        {
+            top = (150 - (jsonObject.riser * 100)) + '%';
+            rotate = 0;
         }
         if (jsonObject.hasOwnProperty('scale')) 
         {
-            imgElement.style.height = (jsonObject.scale * 100)+'%';
-            imgElement.style.top = (50-(jsonObject.scale * 50))+'%';
-            imgElement.style.width = 'auto';
+            if (fill == 'y')
+            {
+                height = (jsonObject.scale * 100)+'%';
+            } else {
+                width = (jsonObject.scale * 100)+'%';
+            }
         }
         if (jsonObject.hasOwnProperty('opacity'))
         {
-            imgElement.style.opacity = jsonObject.opacity;
+            opacity = jsonObject.opacity;
         }
-
         if (jsonObject.hasOwnProperty('rotate'))
         {
-            imgElement.style.transform = 'translateX(-50%) rotate(' + jsonObject.rotate + 'deg)';
+            rotate = jsonObject.rotate;
         }
     }
+    if (fill == 'x')
+    {
+        imgElement.style.height = 'auto';
+        imgElement.style.width = width;
+    } else if (fill == 'y') {
+        imgElement.style.height = height;
+        imgElement.style.width = 'auto';
+    }
+    imgElement.left = left;
+    imgElement.top = top;
+    imgElement.style.opacity = opacity;
+    imgElement.style.transform = 'translateX(-50%) translateY(-50%) rotate(' + rotate + 'deg)';
+    imageEffects.set(imageName, {"width": width, "height": height, "rotate": rotate, "left": left, "top": top, "opacity": opacity});
 }
 
 function updateImage(jsonObject)
@@ -100,7 +141,6 @@ function loadSound(file)
 
 function loadImage(file)
 {
-    var nextZ = 0;
     var existingImg = document.getElementById('img_' + file);
     if (existingImg == null)
     {
@@ -114,13 +154,22 @@ function loadImage(file)
         img.style.maxWidth = "100%";
         img.style.align = "center";
         img.style.position = "absolute";
-        img.style.top = "0px";
+        img.style.top = "50%";
         img.style.left = "50%;"
-        img.style.transform = "translateX(-50%)";
+        img.style.transform = "translateX(-50%) translateY(-50%)";
         img.style.zIndex = nextZ;
         nextZ++;
         images.set(file, img);
+        imageEffects.set(file, {"width": "auto", "height": "100%", "rotate": 0, "left": "50%", "top": "50%", "opacity": 1});
         document.getElementById('bodyId').appendChild(img);
+    }
+}
+
+function hideAllImages()
+{
+    for (let [key, value] of images)
+    {
+        value.style.display = 'none';
     }
 }
 
@@ -178,10 +227,12 @@ function setupWebsocket()
         connection = new WebSocket(wsProtocol + '://' + hostname + ':' + port + '/canvas/');
         
         connection.onopen = function () {
-            
+            document.getElementById('connectingDiv').style.display = 'none';
         };
         
         connection.onerror = function (error) {
+            document.getElementById('connectingDiv').style.display = 'inline-block';
+            document.getElementById('selectCanvasDiv').style.display = 'none';
         };
 
         //Code for handling incoming Websocket messages from the server
@@ -193,10 +244,11 @@ function setupWebsocket()
             var jsonObject = JSON.parse(e.data);
             if (jsonObject.hasOwnProperty("canvasList"))
             {
-                if (canvasName == null)
+                var canvasNames = jsonObject.canvasList;
+                if (canvasName == null || !canvasNames.includes(canvasName))
                 {
                     var canvasSelect = document.getElementById('selectCanvas');
-                    var canvasNames = jsonObject.canvasList;
+                    canvasSelect.innerHTML = "";
                     if (canvasNames.length > 2)
                     {
                         canvasNames.sort();
@@ -210,14 +262,17 @@ function setupWebsocket()
                                 canvasSelect.appendChild(option);
                             }
                         }
+                        hideAllImages();
                         document.getElementById('selectCanvasDiv').style.display = "block";
                     } else {
                         sendEvent({"identify": "(ALL)"});
                         canvasStarted = true;
+                        document.getElementById('selectCanvasDiv').style.display = "none";
                     }
                 } else {
                     sendEvent({"identify": canvasName});
                     canvasStarted = true;
+                    document.getElementById('selectCanvasDiv').style.display = "none";
                 }
             }
 
@@ -265,6 +320,8 @@ function setupWebsocket()
         
         connection.onclose = function () {
           console.log('WebSocket connection closed');
+          document.getElementById('connectingDiv').style.display = 'inline-block';
+          document.getElementById('selectCanvasDiv').style.display = 'none';
           reconnectTimeout = setTimeout(setupWebsocket, 10000);
         };
     } catch (err) {

@@ -47,6 +47,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> showImageModeSelector;
     private JCheckBox soloImageCheckBox;
     private JPanel imageOptionsPanel;
+    private JComboBox<String> fillOptions;
 
     private JComboBox<Integer> actionSelector;
     private JTextField nicknameField;
@@ -104,7 +105,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
         }
 
-        if (e.getSource() == this.showImageModeSelector || e.getSource() == this.soloImageCheckBox)
+        if (e.getSource() == this.showImageModeSelector || e.getSource() == this.soloImageCheckBox || e.getSource() == this.fillOptions)
         {
             this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
         }
@@ -207,7 +208,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         String extras = "";
         if (this.soloImageCheckBox.isSelected())
             extras += " solo";
-        return this.showImageModeSelector.getSelectedItem().toString() + extras;
+        return this.showImageModeSelector.getSelectedItem().toString() + extras + " " + this.fillOptions.getSelectedItem().toString();
     }
 
     public void changeActionSelector(int i)
@@ -265,8 +266,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 if (st.hasMoreTokens())
                 {
                     String mode = st.nextToken();
-                    this.showImageModeSelector.setSelectedItem(mode.replace(" solo", ""));
+                    this.showImageModeSelector.setSelectedItem(mode.replace(" solo", "").replace(" fill-x", "").replace(" fill-y", ""));
                     this.soloImageCheckBox.setSelected(mode.contains("solo"));
+                    if (mode.contains("fill-x"))
+                        this.fillOptions.setSelectedItem("fill-x");
+                    else
+                        this.fillOptions.setSelectedItem("fill-y");
                 }
                 Object selectedItem = this.selectFileField.getSelectedItem();
                 if (selectedItem != null)
@@ -437,20 +442,32 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.showImageModeSelector.setBackground(Color.WHITE);
         
         Vector<String> imageModes = new Vector<String>();
-        imageModes.add("none");
         imageModes.add("opacity");
+        imageModes.add("none");
         imageModes.add("scale");
         imageModes.add("rotate");
         imageModes.add("curtain");
+        imageModes.add("riser");
         imageModes.add("opacity scale");
         imageModes.add("rotate scale");
         imageModes.add("opacity rotate");
         imageModes.add("opacity rotate scale");
         this.showImageModeSelector.setModel(new DefaultComboBoxModel<String>(imageModes));
 
-        this.imageOptionsPanel = new JPanel(new GridLayout(2,2));
+        Vector<String> fills = new Vector<String>();
+        fills.add("fill-y");
+        fills.add("fill-x");
+        this.fillOptions = new JComboBox<String>();
+        this.fillOptions.setModel(new DefaultComboBoxModel<String>(fills));
+        this.fillOptions.addActionListener(this);
+        this.fillOptions.setBackground(Color.WHITE);
+        this.fillOptions.setEditable(false);
+
+        this.imageOptionsPanel = new JPanel(new GridLayout(3,2));
         this.imageOptionsPanel.add(new JLabel("Image Effect (by value)"));
         this.imageOptionsPanel.add(this.showImageModeSelector);
+        this.imageOptionsPanel.add(new JLabel("Image Stretch"));
+        this.imageOptionsPanel.add(this.fillOptions);
         this.imageOptionsPanel.add(new JLabel("Solo (clear canvas first)"));
         this.imageOptionsPanel.add(this.soloImageCheckBox);
 

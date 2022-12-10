@@ -302,10 +302,12 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
     public boolean broadcastCanvasJSONObject(JSONObject jo) 
     {
         boolean sent = false;
-        String canvas = jo.optString("canvas");
+        String canvas = jo.optString("canvas", null);
         String message = jo.toString();
-        for (WebSocketSession s : this.wsCanvasSessions) {
-            try {
+        for (WebSocketSession s : this.wsCanvasSessions) 
+        {
+            try 
+            {
                 if (canvas == null || "(ALL)".equals(canvas))
                 {
                     s.getRemote().sendStringByFuture(message);
@@ -319,7 +321,7 @@ public class APIWebServer implements MidiControlListener, MidiPortListener, Midi
                     }
                 }
             } catch (Exception e) {
-
+                e.printStackTrace(System.err);
             }
         }
         return sent;

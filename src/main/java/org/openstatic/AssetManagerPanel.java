@@ -11,6 +11,12 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +37,7 @@ import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
 
-public class AssetManagerPanel extends JPanel implements ActionListener
+public class AssetManagerPanel extends JPanel implements ActionListener, ListDataListener
 {
     private JList<File> assetJList;
     private JPanel buttonPanel;
@@ -53,6 +59,7 @@ public class AssetManagerPanel extends JPanel implements ActionListener
         this.lastDirectory = new File(".");
         this.fileCellRenderer = new FileCellRenderer();
         this.folderListModel = new FolderListModel(directory);
+        this.folderListModel.addListDataListener(this);
         this.assetJList = new JList<File>(this.folderListModel);
         this.assetJList.setOpaque(true);
         this.assetJList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
@@ -303,5 +310,26 @@ public class AssetManagerPanel extends JPanel implements ActionListener
     public Collection<File> getAllAssets()
     {
         return new ArrayList<File>(Arrays.asList(this.folderListModel.files));
+    }
+
+    @Override
+    public void intervalAdded(ListDataEvent e) {
+        System.err.println("Interval Added!");
+        JSONObject updatedAssets = new JSONObject();
+        updatedAssets.put("images", new JSONArray(MidiTools.getImageAssets()));
+        updatedAssets.put("sounds", new JSONArray(MidiTools.getSoundAssets()));
+        MidiTools.instance.apiServer.broadcastCanvasJSONObject(updatedAssets);
+    }
+
+    @Override
+    public void intervalRemoved(ListDataEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void contentsChanged(ListDataEvent e) {
+        // TODO Auto-generated method stub
+        
     }
 }

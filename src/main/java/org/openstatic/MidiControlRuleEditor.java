@@ -62,6 +62,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<MidiPortMapping> selectMappingDropdown;
     private JTextField ccAVF;
     private JTextField valueAVF;
+    private JTextField zIndexField;
     private JPanel transmitMidiPanel;
     private JCheckBox valueInvertedCheckBox;
     private JCheckBox valueSettledCheckBox;
@@ -105,7 +106,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             }
         }
 
-        if (e.getSource() == this.showImageModeSelector || e.getSource() == this.soloImageCheckBox || e.getSource() == this.fillOptions)
+        if (e.getSource() == this.showImageModeSelector || e.getSource() == this.soloImageCheckBox || e.getSource() == this.fillOptions || e.getSource() == this.zIndexField)
         {
             this.actionValueField.setText(this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
         }
@@ -208,7 +209,9 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         String extras = "";
         if (this.soloImageCheckBox.isSelected())
             extras += " solo";
-        return this.showImageModeSelector.getSelectedItem().toString() + extras + " " + this.fillOptions.getSelectedItem().toString();
+        String rs = this.showImageModeSelector.getSelectedItem().toString() + extras + " " + this.fillOptions.getSelectedItem().toString() + "," + this.zIndexField.getText();
+        System.err.println("Image Effects: " + rs);
+        return rs;
     }
 
     public void changeActionSelector(int i)
@@ -272,6 +275,11 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                         this.fillOptions.setSelectedItem("fill-x");
                     else
                         this.fillOptions.setSelectedItem("fill-y");
+                }
+                if (st.hasMoreTokens())
+                {
+                    String zIn = st.nextToken();
+                    this.zIndexField.setText(zIn);
                 }
                 Object selectedItem = this.selectFileField.getSelectedItem();
                 if (selectedItem != null)
@@ -463,13 +471,35 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         this.fillOptions.setBackground(Color.WHITE);
         this.fillOptions.setEditable(false);
 
-        this.imageOptionsPanel = new JPanel(new GridLayout(3,2));
+        this.zIndexField = new JTextField("0");
+        this.zIndexField.getDocument().addDocumentListener(new DocumentListener() {
+
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                MidiControlRuleEditor.this.actionValueField.setText(MidiControlRuleEditor.this.selectFileField.getSelectedItem().toString() + "," + getImageEffects());
+            }
+            
+        });
+
+        this.imageOptionsPanel = new JPanel(new GridLayout(4,2));
         this.imageOptionsPanel.add(new JLabel("Image Effect (by value)"));
         this.imageOptionsPanel.add(this.showImageModeSelector);
         this.imageOptionsPanel.add(new JLabel("Image Stretch"));
         this.imageOptionsPanel.add(this.fillOptions);
         this.imageOptionsPanel.add(new JLabel("Solo (clear canvas first)"));
         this.imageOptionsPanel.add(this.soloImageCheckBox);
+        this.imageOptionsPanel.add(new JLabel("Layer number (zIndex)"));
+        this.imageOptionsPanel.add(this.zIndexField);
 
         this.selectRuleGroupDropdown = new JComboBox<String>();
         this.selectRuleGroupDropdown.setEditable(true);

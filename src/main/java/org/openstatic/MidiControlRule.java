@@ -301,8 +301,11 @@ public class MidiControlRule implements MidiControlListener
                             StringTokenizer st = new StringTokenizer(avparsed, ",");
                             String filename = st.nextToken();
                             String mode = "opacity";
+                            String zIndex = "0";
                             if (st.hasMoreTokens())
                                 mode = st.nextToken();
+                            if (st.hasMoreTokens())
+                                zIndex = st.nextToken();
                             JSONObject canvasEvent = new JSONObject();
                             canvasEvent.put("image", filename);
                             if (mode.contains("solo"))
@@ -324,6 +327,12 @@ public class MidiControlRule implements MidiControlListener
                             if (mode.contains("rotate"))
                                 canvasEvent.put("rotate", mapFloat(Float.valueOf(new_value), 0f, 127f, 0f, 360f));
                             canvasEvent.put("canvas", this.canvasName);
+                            int zIndexInt = 0;
+                            try
+                            {
+                                zIndexInt = Integer.valueOf(zIndex).intValue();
+                            } catch (Exception zException) {}
+                            canvasEvent.put("zIndex", zIndexInt);
                             success = MidiTools.instance.apiServer.broadcastCanvasJSONObject(canvasEvent);
                         }
                     } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT) {

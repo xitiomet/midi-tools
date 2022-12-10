@@ -84,18 +84,26 @@ function handleEffects(jsonObject)
         {
             top = ((-100 + (jsonObject.curtain * 100))+50) + '%';
             rotate = 0;
+            if (fill == 'x')
+                width = '100%';
+            else if (fill == 'y')
+                height = '100%';
         }
         if (jsonObject.hasOwnProperty('riser'))
         {
             top = (150 - (jsonObject.riser * 100)) + '%';
             rotate = 0;
+            if (fill == 'x')
+                width = '100%';
+            else if (fill == 'y')
+                height = '100%';
         }
         if (jsonObject.hasOwnProperty('scale')) 
         {
             if (fill == 'y')
             {
                 height = (jsonObject.scale * 100)+'%';
-            } else {
+            } else if (fill == 'x') {
                 width = (jsonObject.scale * 100)+'%';
             }
         }
@@ -116,8 +124,15 @@ function handleEffects(jsonObject)
         imgElement.style.height = height;
         imgElement.style.width = 'auto';
     }
-    imgElement.left = left;
-    imgElement.top = top;
+    if (jsonObject.hasOwnProperty('zIndex'))
+    {
+        if (jsonObject.zIndex > 0)
+        {
+            imgElement.style.zIndex = jsonObject.zIndex;
+        }
+    }
+    imgElement.style.left = left;
+    imgElement.style.top = top;
     imgElement.style.opacity = opacity;
     imgElement.style.transform = 'translateX(-50%) translateY(-50%) rotate(' + rotate + 'deg)';
     imageEffects.set(imageName, {"width": width, "height": height, "rotate": rotate, "left": left, "top": top, "opacity": opacity});

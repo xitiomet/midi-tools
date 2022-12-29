@@ -7,6 +7,7 @@ import io.github.leovr.rtipmidi.*;
 import io.github.leovr.rtipmidi.messages.AppleMidiInvitationAccepted;
 import io.github.leovr.rtipmidi.messages.AppleMidiInvitationDeclined;
 import io.github.leovr.rtipmidi.messages.AppleMidiInvitationRequest;
+import io.github.leovr.rtipmidi.model.AppleMidiServerAddress;
 import io.github.leovr.rtipmidi.session.AppleMidiSession;
 import io.github.leovr.rtipmidi.session.AppleMidiSessionClient;
 
@@ -106,14 +107,15 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                 }
             }
 
-            protected void onMidiInvitation(AppleMidiInvitationRequest req, AppleMidiServer server)
+            @Override
+            public void onMidiInvitation(@Nonnull final AppleMidiInvitationRequest invitation, @Nonnull final AppleMidiServerAddress appleMidiServer)
             {
-                MidiTools.logIt("RTP Invitation from " + req.getName());
+                MidiTools.logIt("RTP Invitation from " + invitation.getName());
             }
 
             @Override
             public void onMidiInvitationAccepted(@Nonnull AppleMidiInvitationAccepted arg0,
-                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServer arg1) {
+                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServerAddress arg1) {
                 MidiTools.logIt("RTP Invitation accepted by " + arg0.getName());
 
                 
@@ -121,7 +123,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
 
             @Override
             public void onMidiInvitationDeclined(@Nonnull AppleMidiInvitationDeclined arg0,
-                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServer arg1) {
+                    @Nonnull io.github.leovr.rtipmidi.model.AppleMidiServerAddress arg1) {
                 MidiTools.logIt("RTP Invitation declined by " + arg0.getName());
 
                 
@@ -218,7 +220,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                     String strHostname = this.hostname.getHostName();
                     System.err.println("Launching RTP on " + strHostname + ":" + String.valueOf(this.port));
                     this.appleMidiServer = new AppleMidiServer(this.hostname, this.rtp_name, this.port);
-                    this.appleMidiServer.addAppleMidiSession(this.session);
+                    this.appleMidiServer.setAppleMidiSession(this.session);
                     this.appleMidiServer.start();
                 } catch (Exception e2) {
                     Thread t2 = new Thread(() -> {
@@ -264,7 +266,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                 t.start();
                 if (this.appleMidiServer != null)
                 {
-                    this.appleMidiServer.removeAppleMidiSession(this.session);
+                    this.appleMidiServer.setAppleMidiSession(null);
                     this.appleMidiServer.stop();
                     this.appleMidiServer = null;
                 }

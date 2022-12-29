@@ -31,6 +31,7 @@ import java.awt.Component;
 
 import java.util.Vector;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.StringTokenizer;
@@ -749,7 +750,12 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
             while(pIterator.hasNext())
             {
                 MidiToolsPlugin plugin = pIterator.next();
-                plugins.add(plugin.getTitle());
+                Collection<String> rule_targets = plugin.getRuleTargets();
+                if (rule_targets != null)
+                {
+                    if (rule_targets.size() > 0)
+                        plugins.add(plugin.getTitle());
+                }
             }
             DefaultComboBoxModel<String> pluginModel = new DefaultComboBoxModel<String>(plugins);
             return pluginModel;

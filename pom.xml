@@ -14,6 +14,13 @@
     <jettyVersion>9.4.30.v20200611</jettyVersion>
     <jinputVersion>2.0.9</jinputVersion>
   </properties>
+  <distributionManagement>
+   <repository>
+     <id>github-xitiomet</id>
+     <name>GitHub xitiomet Apache Maven Packages</name>
+     <url>https://maven.pkg.github.com/xitiomet/midi-tools</url>
+   </repository>
+  </distributionManagement>
   <repositories>
     <repository>
       <id>local.repo</id>

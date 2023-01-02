@@ -10,6 +10,8 @@ import javax.swing.ListCellRenderer;
 
 import javax.swing.border.Border;
 
+import org.openstatic.MidiTools;
+
 public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<MidiPort>
 {
    private Border selectedBorder;
@@ -40,6 +42,11 @@ public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<
       } else if (device.canReceiveMessages()) {
           direction = "&#10094;&#10094;";
       }
+      if (device.isOpened())
+         this.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiport.png", "32x32"));
+      else
+         this.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiportclosed.png", "32x32"));
+
       this.setText("<html>" + direction + " " + device.getName() + "</html>");
       this.setSelected(device.isOpened());
       if ((System.currentTimeMillis() -  device.getLastRxAt()) < 1000l)

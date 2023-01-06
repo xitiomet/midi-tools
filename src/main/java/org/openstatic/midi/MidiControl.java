@@ -16,6 +16,7 @@ public class MidiControl
     private String nickname;
     private boolean settled;
     private long lastChangeAt;
+    private MidiPort lastReceivedFrom;
     private Vector<MidiControlListener> listeners = new Vector<MidiControlListener>();
 
     public MidiControl(JSONObject jo)
@@ -23,7 +24,7 @@ public class MidiControl
         this.channel = jo.optInt("channel", 0);
         this.cc = jo.optInt("cc", -1);
         this.note = jo.optInt("note", -1);
-        this.nickname = jo.optString("nickname", nameControl(cc));
+        this.nickname = jo.optString("nickname", nameControl(channel, cc));
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
         this.value = jo.optInt("value", 0);
@@ -36,7 +37,7 @@ public class MidiControl
         this.cc = cc;
         this.note = -1;
         this.value = 0;
-        this.nickname = nameControl(cc);
+        this.nickname = nameControl(channel, cc);
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
     }
@@ -47,94 +48,30 @@ public class MidiControl
         this.cc = -1;
         this.note = note;
         this.value = 0;
-        this.nickname = "Note - " + nameNote(note);
+        this.nickname = "Note - " + MidiPortManager.nameNote(note);
         this.settled = true;
         this.lastChangeAt = System.currentTimeMillis();
     }
     
-    private static String nameControl(int cc)
+    private static String nameControl(int channel, int cc)
     {
-        switch(cc)
+        MidiPort sourcePort = MidiPortManager.findTransmittingPortByChannelCC(channel, cc);
+        if (sourcePort != null)
         {
-            case 0:
-                return "Bank Select";
-            case 1:
-                return "Mod Wheel";
-            case 2:
-                return "Breath Controller";
-            case 4:
-                return "Foot Controller";
-            case 5:
-                return "Portamento Time";
-            case 7:
-                return "Volume";
-            case 8:
-                return "Balance";
-            case 10:
-                return "Pan";
-            case 11:
-                return "Expression";
-            case 12:
-                return "Effect Controller 1";
-            case 13:
-                return "Effect Controller 2";
-            case 64:
-                return "Sustain Pedal";
-            case 65:
-                return "Portamento Switch";
-            case 66:
-                return "Sostenuto Switch";
-            case 91:
-                return "Effect 1 Depth";
-            case 92:
-                return "Effect 2 Depth";
-            case 93:
-                return "Effect 3 Depth";
-            case 94:
-                return "Effect 4 Depth";
-            case 95:
-                return "Effect 5 Depth";
-            default:
-                return "Control " + String.valueOf(cc);
+            String name = sourcePort.getCCName(channel, cc);
+            System.err.println("name Control found Source port for " + String.valueOf(channel) + " "  + String.valueOf(cc));
+            if (name != null)
+            {
+                System.err.println("Name Found " + name);
+                return name;
+            }
         }
-    }
-
-    private static String nameNote(int note)
-    {
-        switch(note)
-        {
-            case 0:
-                return "C";
-            case 1:
-                return "C#";
-            case 2:
-                return "D";
-            case 3:
-                return "D#";
-            case 4:
-                return "E";
-            case 5:
-                return "F";
-            case 6:
-                return "F#";
-            case 7:
-                return "G";
-            case 8:
-                return "G#";
-            case 9:
-                return "A";
-            case 10:
-                return "A#";
-            case 11:
-                return "B";
-            default:
-                return "??" + String.valueOf(note);
-        }
+        return MidiPortManager.nameCC(cc);
     }
 
     public String getNoteName()
     {
-        return nameNote(this.note);
+        return MidiPortManager.nameNote(this.note);
     }
 
     public int getNoteNumber()
@@ -192,11 +129,18 @@ public class MidiControl
         return false;
     }
 
+    // Last port to send a message to this control
+    public MidiPort getLastReceivedFromMidiPort()
+    {
+        return this.lastReceivedFrom;
+    }
+
     public void processMessage(ShortMessage msg)
     {
         if (this.cc >= 0)
         {
             manualAdjust(msg.getData2());
+            this.lastReceivedFrom = MidiPortManager.findTransmittingPortByChannelCC(this.getChannel(), this.getControlNumber());
         } else if (this.note >= 0) {
             int incomingNote = msg.getData1() % 12;
             if (incomingNote == this.note)
@@ -268,7 +212,7 @@ public class MidiControl
     
     public void settle()
     {
-        if ((System.currentTimeMillis() - this.lastChangeAt) > 250)
+        if ((System.currentTimeMillis() - this.lastChangeAt) > 250 && this.settled == false)
         {
             this.settled = true;
             final int old_value = this.settled_value;
@@ -328,7 +272,7 @@ public class MidiControl
             if (this.cc >= 0)
                 return "Control " + String.valueOf(cc) + " (CH-" + String.valueOf(this.channel) + ")";
             else if (this.note >= 0)
-                return nameNote(this.note) + " (CH-" + String.valueOf(this.channel) + ")";
+                return MidiPortManager.nameNote(this.note) + " (CH-" + String.valueOf(this.channel) + ")";
             else
                 return "";
         }

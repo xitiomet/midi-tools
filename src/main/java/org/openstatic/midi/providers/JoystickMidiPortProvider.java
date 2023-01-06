@@ -6,7 +6,11 @@ import java.util.LinkedHashMap;
 import java.util.Vector;
 
 import org.openstatic.midi.ports.JoystickMidiPort;
+
+import de.ralleytn.plugins.jinput.xinput.XInputEnvironmentPlugin;
+
 import org.openstatic.midi.MidiPort;
+import org.openstatic.midi.MidiPortManager;
 import org.openstatic.midi.MidiPortProvider;
 
 import java.util.Iterator;
@@ -21,10 +25,17 @@ public class JoystickMidiPortProvider implements MidiPortProvider
     public JoystickMidiPortProvider()
     {
         this.localDevices = new LinkedHashMap<String, JoystickMidiPort>();
+        /*
         this.controllerEnvironment = new DirectAndRawInputEnvironmentPlugin();
         if(!this.controllerEnvironment.isSupported())
         {
             //System.err.println("Fallback to default controller environment");
+            this.controllerEnvironment = ControllerEnvironment.getDefaultEnvironment();
+        }*/
+        if (MidiPortManager.isWindows())
+        {
+            this.controllerEnvironment = new XInputEnvironmentPlugin();
+        } else {
             this.controllerEnvironment = ControllerEnvironment.getDefaultEnvironment();
         }
     }
@@ -47,7 +58,7 @@ public class JoystickMidiPortProvider implements MidiPortProvider
 
             if (!this.localDevices.containsKey(devName) && componentCount > 0 && !devName.contains("mouse") && !devName.contains("keyboard"))
             {
-                JoystickMidiPort ms = new JoystickMidiPort(di);
+                JoystickMidiPort ms = new JoystickMidiPort(di, localDevices.size()+1);
                 this.localDevices.put(devName, ms);
                 System.err.println("Gamepad Added: " + devName);
             } else {

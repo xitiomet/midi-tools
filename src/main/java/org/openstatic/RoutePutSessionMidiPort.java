@@ -279,4 +279,9 @@ public class RoutePutSessionMidiPort implements MidiPort
     {
         return this.lastRxAt;
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

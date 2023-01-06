@@ -516,4 +516,9 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
         this.hasFocus = false;
         
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

@@ -27,6 +27,10 @@
       <name>local-repo</name>
       <url>file:/home/xitiomet/.m2/repository/</url>
     </repository>
+		<repository>
+			<id>jitpack.io</id>
+			<url>https://jitpack.io</url>
+		</repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -100,6 +104,12 @@
         <groupId>org.jaudiolibs</groupId>
         <artifactId>jnajack</artifactId>
         <version>1.4.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.RalleYTN</groupId>
+      <artifactId>XInput-Plugin-for-JInput</artifactId>
+      <!-- NOTE: You can also use the commit ID as version number -->
+      <version>1.2.0</version>
     </dependency>
   </dependencies>
   <reporting>
@@ -397,10 +407,11 @@
                       <name>MidiTools</name>
                       <mainClass>${mainClass}</mainClass>
                       <!-- optional -->
-                      <copyDependencies>true</copyDependencies>
+                      <copyDependencies>false</copyDependencies>
                       <generateInstaller>true</generateInstaller>
                       <administratorRequired>false</administratorRequired>
                       <platform>linux</platform>
+                      <runnableJar>${project.basedir}/target/${project.artifactId}-${project.version}.jar</runnableJar>
                       <bundleJre>true</bundleJre>
                       <additionalResources>
                           <additionalResource>${project.basedir}/target/natives/</additionalResource>

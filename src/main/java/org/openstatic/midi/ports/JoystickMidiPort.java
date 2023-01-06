@@ -7,6 +7,8 @@ import java.util.Vector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+
 import net.java.games.input.*;
 
 public class JoystickMidiPort implements MidiPort, Runnable
@@ -19,14 +21,42 @@ public class JoystickMidiPort implements MidiPort, Runnable
     private ArrayList<Component> controls;
     private long lastRxAt;
     private long lastTxAt;
+    private HashMap<Integer, String> ccNames;
+    private Rumbler[] rumblers;
+    private int channel;
 
-    public JoystickMidiPort(Controller controller)
+    public JoystickMidiPort(Controller controller, int channel)
     {
+        this.ccNames = new HashMap<Integer, String>();
+        this.channel = channel;
         this.controller = controller;
+        this.rumblers = controller.getRumblers();
         this.controls = new ArrayList<Component>(Arrays.asList(controller.getComponents()));
         this.name = controller.getName();
+        for (Component control : this.controls) {
+            int cc = controls.indexOf(control)+1;
+            if (!this.ccNames.containsKey(cc))
+                this.ccNames.put(cc, "Gamepad " + control.getName().toUpperCase());
+        }
         this.opened = false;
     }
+
+    private boolean isDigital(Component control)
+    {
+        if (control.getClass().getName().endsWith("Button"))
+            return true;
+        return !control.isAnalog();
+    }
+
+    // Analog but only with 0.0f - 1.0f no negative numbers
+    private boolean isHalfAnalag(Component control)
+    {
+        if (control.getClass().getName().endsWith("Trigger"))
+            return true;
+        return false;
+    }
+
+    
 
     public void run()
     {
@@ -59,7 +89,8 @@ public class JoystickMidiPort implements MidiPort, Runnable
                             */
                         Component comp = event.getComponent();
                         float value = event.getValue();
-
+                        String compName = comp.getName();
+                        String compNameLC = compName.toLowerCase();
                         /*
                             * Check the type of the component and display an
                             * appropriate value
@@ -67,28 +98,32 @@ public class JoystickMidiPort implements MidiPort, Runnable
                         int data2 = 0;
                         int cc = controls.indexOf(comp)+1;
                         //System.err.println("CC = " + String.valueOf(cc));
-                        if (comp.isAnalog()) 
+                        
+                        if (isDigital(comp)) 
                         {
-                            if (comp.getName().toLowerCase().contains("y"))
-                            {
-                                //System.err.println("Y invert");
-                                value = -(value);
-                            }
-                            //System.err.println("value = " + String.valueOf(value));
-                            data2 = (int) ((value + 1f) * 64);
-                            if (data2 > 127) data2 = 127;
-                            if (data2 < 0) data2 = 0;
-                        } else {
                             if (value == 1.0f) {
                                 data2 = 127;
                             } else {
                                 data2 = 0;
                             }
+                        } else {
+                            if (compNameLC.contains("y"))
+                            {
+                                //System.err.println("Y invert");
+                                value = -(value);
+                            }
+                            //System.err.println(compName + " value = " + String.valueOf(value));
+                            if (isHalfAnalag(comp))
+                               data2 = (int) (value * 127f);
+                            else
+                               data2 = (int) ((value + 1f) * 64);
+                            if (data2 > 127) data2 = 127;
+                            if (data2 < 0) data2 = 0;
                         }
                         long timeStamp = this.getMicrosecondPosition();
                         try
                         {
-                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, 0, cc, data2);
+                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, this.channel-1, cc, data2);
                             this.lastRxAt = System.currentTimeMillis();
                             JoystickMidiPort.this.receivers.forEach((r) -> {
                                 r.send(sm, timeStamp);
@@ -119,7 +154,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
     // Does This device Receive MIDI messages
     public boolean canReceiveMessages()
     {
-        return false;
+        return rumblers.length > 0;
     }
 
     public void open()
@@ -172,10 +207,32 @@ public class JoystickMidiPort implements MidiPort, Runnable
             e.printStackTrace(System.err);
         }
     }
+
+    public static float mapFloat(float x, float in_min, float in_max, float out_min, float out_max)
+    {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    }
     
     public void send(MidiMessage message, long timeStamp)
     {
-        
+        this.lastTxAt = System.currentTimeMillis();
+        if (rumblers.length > 0)
+        {
+            if (message instanceof ShortMessage && this.opened)
+            {
+                ShortMessage smsg = (ShortMessage) message;
+                if (smsg.getCommand() == ShortMessage.CONTROL_CHANGE)
+                {
+                    int idx = smsg.getData1() -1;
+                    float rumbleValue = mapFloat(smsg.getData2(), 0, 127, 0, 1);
+                    //System.err.println("Rumbling " + String.valueOf(idx) + " = " + String.valueOf(rumbleValue));
+                    if (idx < rumblers.length)
+                    {
+                        rumblers[idx].rumble(rumbleValue);
+                    }
+                }
+            }
+        }
     }
 
     public void addReceiver(Receiver r)
@@ -216,11 +273,16 @@ public class JoystickMidiPort implements MidiPort, Runnable
 
     public long getLastTxAt()
     {
-        return 0;
+        return this.lastTxAt;
     }
     
     public String toString()
     {
         return this.name;
+    }
+
+    public String getCCName(int channel, int cc)
+    {
+        return this.ccNames.get(cc);
     }
 }

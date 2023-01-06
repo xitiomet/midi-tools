@@ -237,4 +237,8 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
         return this.lastTxAt;
     }
 
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

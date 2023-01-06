@@ -38,6 +38,8 @@ public interface MidiPort extends Receiver
 
     // Last time the port recieved data
     public long getLastRxAt();
-// Last time the port recieved data
+    // Last time the port recieved data
     public long getLastTxAt();
+
+    public String getCCName(int channel, int cc);
 }

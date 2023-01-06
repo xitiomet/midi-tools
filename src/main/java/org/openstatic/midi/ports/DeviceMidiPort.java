@@ -186,4 +186,9 @@ public class DeviceMidiPort implements MidiPort
     {
         return this.lastTxAt;
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

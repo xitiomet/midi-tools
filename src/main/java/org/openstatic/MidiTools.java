@@ -163,10 +163,14 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
     public HashMap<String, MidiToolsPlugin> plugins;
     public JSONObject pluginSettings;
     private ImageIcon diceIcon;
+    public boolean isWindows;
 
     public MidiTools(String os_name)
     {
         super("MIDI Control Change Tool v" + MidiTools.VERSION);
+        this.isWindows = os_name.contains("windows");
+        if (this.isWindows)
+            System.err.println("Windows Detected");
         MidiTools.appLaunchTime = System.currentTimeMillis();
         MidiTools.instance = this;
         this.plugins = new HashMap<String, MidiToolsPlugin>();
@@ -1930,7 +1934,7 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
             }
         }
         configJson.put("plugins", projectPluginJson);
-        configJson.put("assets", new JSONArray(this.assetManagerPanel.getAllAssets()));
+        configJson.put("assets", new JSONArray(getAllAssetNames()));
         configJson.put("player", this.midiPlayer.getProjectJSON());
         return configJson;
     }

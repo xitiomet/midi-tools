@@ -212,4 +212,8 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         return this.getName();
     }
 
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

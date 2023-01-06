@@ -183,5 +183,9 @@ public class JackMidiPort implements MidiPort
     {
         return this.lastTxAt;
     }
-    
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

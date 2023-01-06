@@ -351,4 +351,9 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     {
         return this.name;
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

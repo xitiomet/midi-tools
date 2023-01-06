@@ -578,4 +578,9 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         project.put("loadedFile", (String) this.selectFileField.getSelectedItem());
         return project;
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
 }

@@ -459,5 +459,10 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
             this.listeners.remove(l);
         } catch (Exception e) {}
     }
+
+    public String getCCName(int channel, int cc)
+    {
+        return null;
+    }
     
 }

@@ -52,9 +52,13 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
     private JmDNS jmdns;
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public RTPMidiPort(String name, String rtp_name, InetAddress hostname, int port)
     {
+        this.txCount = 0;
+        this.rxCount = 0;
         this.name = name;
         this.rtp_name = rtp_name;
         this.port = port;
@@ -74,6 +78,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                             {
                                 ShortMessage sm = new ShortMessage(msgData[0], msgData[1], msgData[2]);
                                 RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
+                                RTPMidiPort.this.rxCount++;
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
                                 });
@@ -85,6 +90,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                             {
                                 ShortMessage sm = new ShortMessage(msgData[0], msgData[1], 0);
                                 RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
+                                RTPMidiPort.this.rxCount++;
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
                                 });
@@ -96,6 +102,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
                             {
                                 ShortMessage sm = new ShortMessage(msgData[0] & 0xFF);
                                 RTPMidiPort.this.lastRxAt = System.currentTimeMillis();
+                                RTPMidiPort.this.rxCount++;
                                 RTPMidiPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timestamp);
                                 });
@@ -285,6 +292,7 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
+        this.txCount++;
         if (this.session != null && message instanceof ShortMessage && this.opened)
         {
             byte[] msgData = message.getMessage();
@@ -465,4 +473,15 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
         return null;
     }
     
+    @Override
+    public long getRxCount() 
+    {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() 
+    {
+        return this.txCount;
+    }
 }

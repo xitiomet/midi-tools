@@ -1,29 +1,41 @@
 package org.openstatic.midi;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Component;
 
 import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
+import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 
 import javax.swing.border.Border;
 
 import org.openstatic.MidiTools;
 
-public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<MidiPort>
+public class MidiPortCellRenderer extends JPanel implements ListCellRenderer<MidiPort>
 {
    private Border selectedBorder;
    private Border regularBorder;
+   private JCheckBox checkbox;
+   private Dimension dimension;
 
    public MidiPortCellRenderer()
    {
-       super();
+       super(new BorderLayout());
+       this.dimension = new Dimension(120, 34);
        this.setBackground(Color.WHITE);
        this.setOpaque(true);
-       this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 3);
+       this.setPreferredSize(this.dimension);
+       this.selectedBorder = BorderFactory.createLineBorder(Color.RED, 1);
+       this.regularBorder = BorderFactory.createLineBorder(new Color(1f,1f,1f,1f), 1);
        this.setBorder(this.regularBorder);
+       this.checkbox = new JCheckBox();
+       this.checkbox.setBackground(Color.WHITE);
+       this.checkbox.setOpaque(false);
+       this.add(checkbox, BorderLayout.CENTER);
    }
 
    @Override
@@ -43,12 +55,16 @@ public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<
           direction = "&#10094;&#10094;";
       }
       if (device.isOpened())
-         this.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiport.png", "32x32"));
+         this.checkbox.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiport.png", "32x32"));
       else
-         this.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiportclosed.png", "32x32"));
-
-      this.setText("<html>" + direction + " " + device.getName() + "</html>");
-      this.setSelected(device.isOpened());
+         this.checkbox.setIcon(MidiTools.getCachedIcon("/midi-tools-res/midiportclosed.png", "32x32"));
+      String devName = device.getName();
+      if (devName.length() > 23)
+      {
+        devName = devName.substring(0, 20) + "...";
+      }
+      this.checkbox.setText("<html><b style=\"font-size: 10px;\">" + direction + " " + devName + "</b><br /><i>Tx "+ String.valueOf(device.getTxCount()) +" Rx " + String.valueOf(device.getRxCount()) + "</i></html>");
+      this.checkbox.setSelected(device.isOpened());
       if ((System.currentTimeMillis() -  device.getLastRxAt()) < 1000l)
       {
          this.setBackground(new Color(102,255,102));
@@ -64,7 +80,12 @@ public class MidiPortCellRenderer extends JCheckBox implements ListCellRenderer<
       }
       this.setFont(list.getFont());
       this.setEnabled(list.isEnabled());
-
+      if (isSelected && list.hasFocus())
+      {
+        this.setBorder(this.selectedBorder);
+      } else {
+        this.setBorder(this.regularBorder);
+      }
       return this;
    }
 }

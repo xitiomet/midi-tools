@@ -55,12 +55,9 @@ public class MidiPortMapping
         {
             public void send(MidiMessage message, long timeStamp)
             {
-                if (MidiPortMapping.this.destination.isOpened())
-                {
-                    MidiPortMapping.this.destination.send(message, timeStamp);
-                    MidiPortMapping.this.messageCounter++;
-                    MidiPortMapping.this.lastActiveAt = System.currentTimeMillis();
-                }
+                MidiPortMapping.this.destination.send(message, timeStamp);
+                MidiPortMapping.this.messageCounter++;
+                MidiPortMapping.this.lastActiveAt = System.currentTimeMillis();
             }
             
             public void close()

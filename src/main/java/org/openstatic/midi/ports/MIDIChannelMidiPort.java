@@ -21,10 +21,14 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
     private String channelName;
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public MIDIChannelMidiPort(String channelName)
     {
         this.channelName = channelName;
+        this.txCount = 0;
+        this.rxCount = 0;
         String hostname = MidiTools.getLocalHostname();
         this.channel = RoutePutChannel.getChannel("midichannel-" + this.channelName);
         this.upstreamClient = new RoutePutClient(this.channel, "wss://midichannel.net/channel/");
@@ -240,5 +244,15 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount() {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() {
+        return this.txCount;
     }
 }

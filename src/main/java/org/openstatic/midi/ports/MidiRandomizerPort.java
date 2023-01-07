@@ -18,6 +18,8 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     private Vector<RandomizerRulesListener> listeners;
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public MidiRandomizerPort(String name)
     {
@@ -242,6 +244,7 @@ public class MidiRandomizerPort implements MidiPort, Runnable
                                 randRule.put("_lastChangeMillis", currentMillis);
                                 final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, (channel-1), cc, data2);
                                 this.lastRxAt = System.currentTimeMillis();
+                                this.rxCount++;
                                 MidiRandomizerPort.this.receivers.forEach((r) -> {
                                     r.send(sm, timeStamp);
                                 });
@@ -355,5 +358,17 @@ public class MidiRandomizerPort implements MidiPort, Runnable
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount()
+    {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount()
+    {
+        return this.txCount;
     }
 }

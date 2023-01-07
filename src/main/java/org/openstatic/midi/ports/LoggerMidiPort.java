@@ -75,7 +75,9 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     private Thread taskThread;
     private int beatPulse;
     private long lastTxAt;
-    
+    private long txCount;
+    private long rxCount;
+
     /*
     class ScrollingDocumentListener implements DocumentListener
     {
@@ -474,6 +476,7 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
+        this.txCount++;
         if (message instanceof ShortMessage && this.opened)
         {
             ShortMessage smsg = (ShortMessage) message;
@@ -520,5 +523,15 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount() {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() {
+        return this.txCount;
     }
 }

@@ -355,28 +355,35 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
         {
             public void mousePressed(MouseEvent e)
             {
-               int index = MidiTools.this.midiList.locationToIndex(e.getPoint());
+                Point point = e.getPoint();
+                if (point.getX() < 34) // only over icon
+                {
+                    int index = MidiTools.this.midiList.locationToIndex(e.getPoint());
 
-               if (index != -1)
-               {
-                  MidiPort source = (MidiPort) MidiTools.this.midiListModel.getElementAt(index);
-                  if (e.getButton() == MouseEvent.BUTTON1)
-                  {
-                    if (source.isOpened())
+                    if (index != -1)
                     {
-                        source.close();
-                        source.removeReceiver(MidiTools.this.midiControlsPanel);
-                    } else {
-                        source.open();
-                        source.addReceiver(MidiTools.this.midiControlsPanel);
+                        MidiPort source = (MidiPort) MidiTools.this.midiListModel.getElementAt(index);
+                        if (source == MidiTools.this.midiList.getSelectedValue())
+                        {
+                            if (e.getButton() == MouseEvent.BUTTON1)
+                            {
+                                if (source.isOpened())
+                                {
+                                    source.close();
+                                    source.removeReceiver(MidiTools.this.midiControlsPanel);
+                                } else {
+                                    source.open();
+                                    source.addReceiver(MidiTools.this.midiControlsPanel);
+                                }
+                            }
+                        }
                     }
-                  }
-               }
+                }
             }
         });
         this.midiList.setCellRenderer(this.midiRenderer);
         JScrollPane scrollPane2 = new JScrollPane(this.midiList, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane2.setPreferredSize(new Dimension(225,0));
+        scrollPane2.setPreferredSize(new Dimension(255,0));
         scrollPane2.setBorder(new TitledBorder("MIDI Devices"));
         
         this.deviceQRPanel = new JPanel(new BorderLayout());

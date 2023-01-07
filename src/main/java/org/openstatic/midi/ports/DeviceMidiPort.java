@@ -23,16 +23,21 @@ public class DeviceMidiPort implements MidiPort
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public DeviceMidiPort(MidiDevice device)
     {
         this.device = device;
         this.name = device.getDeviceInfo().getName();
+        this.txCount = 0;
+        this.rxCount = 0;
         this.outputReceiver = new Receiver()
         {
             public void send(MidiMessage message, long timeStamp)
             {
                 DeviceMidiPort.this.lastRxAt = System.currentTimeMillis();
+                DeviceMidiPort.this.rxCount++;
                 for (Enumeration<Receiver> re = ((Vector<Receiver>) DeviceMidiPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                 {
                     try
@@ -135,9 +140,13 @@ public class DeviceMidiPort implements MidiPort
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        if (this.deviceReceiver != null)
+        if (this.isOpened())
         {
-            this.deviceReceiver.send(message, timeStamp);
+            this.txCount++;
+            if (this.deviceReceiver != null)
+            {
+                this.deviceReceiver.send(message, timeStamp);
+            }
         }
     }
 
@@ -190,5 +199,15 @@ public class DeviceMidiPort implements MidiPort
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount() {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() {
+        return this.txCount;
     }
 }

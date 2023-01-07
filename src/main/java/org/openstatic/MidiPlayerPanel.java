@@ -65,6 +65,8 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     private boolean userPaused;
     private JPanel playerPanel;
     private LoggerMidiPort midilogger;
+    private long txCount;
+    private long rxCount;
 
     private Receiver seqReceiver = new Receiver() {
 
@@ -73,6 +75,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
             if (MidiPlayerPanel.this.opened)
             {
                 MidiPlayerPanel.this.lastRxAt = System.currentTimeMillis();
+                MidiPlayerPanel.this.rxCount++;
                 MidiPlayerPanel.this.receivers.forEach((r) -> {
                     r.send(message, timeStamp);
                 });
@@ -89,6 +92,8 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     public MidiPlayerPanel()
     {
         super(new BorderLayout());
+        this.rxCount=0;
+        this.txCount=0;
         this.lastDirectory = new File(".");
         this.setPreferredSize(new Dimension(0, 200));
         this.setBorder(new EmptyBorder(3, 3, 3, 3));
@@ -169,7 +174,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
         this.playerPanel.add(this.selectTrackPanel, BorderLayout.PAGE_START);
         this.playerPanel.add(this.viewArea, BorderLayout.CENTER);
         this.playerPanel.add(buttonPanel, BorderLayout.PAGE_END);
-        this.playerPanel.setPreferredSize(new Dimension(225,0));
+        this.playerPanel.setPreferredSize(new Dimension(255,0));
         this.add(this.playerPanel, BorderLayout.WEST);
         this.midilogger = new LoggerMidiPort("Logger B");
         this.add(this.midilogger, BorderLayout.CENTER);
@@ -454,7 +459,7 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
 
     @Override
     public void send(MidiMessage message, long timeStamp) {
-        // TODO Auto-generated method stub
+        this.txCount++;
     }
 
     @Override
@@ -582,5 +587,17 @@ public class MidiPlayerPanel extends JPanel implements ActionListener, MidiPort,
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount()
+    {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount()
+    {
+        return this.txCount;
     }
 }

@@ -18,6 +18,8 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     private int beatPulse;
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public RoutePutClientMidiPort(RoutePutChannel channel, String websocketUri)
     {
@@ -25,6 +27,8 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         this.upstreamClient.setProperty("description", "Midi Control Change Tool");
         this.upstreamClient.addMessageListener(this);
         this.beatPulse = 1;
+        this.txCount = 0;
+        this.rxCount = 0;
     }
 
     public RoutePutClientMidiPort(RoutePutClient client)
@@ -33,6 +37,8 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
         this.upstreamClient.setProperty("description", "Midi Control Change Tool");
         this.upstreamClient.addMessageListener(this);
         this.beatPulse = 1;
+        this.txCount = 0;
+        this.rxCount = 0;
     }
 
     public RoutePutClient getRoutePutClient()
@@ -48,6 +54,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
             if (j.isType(RoutePutMessage.TYPE_MIDI))
             {
                 this.lastRxAt = System.currentTimeMillis();
+                this.rxCount++;
                 JSONArray data = j.getRoutePutMeta().getJSONArray("data");
                 final long timeStamp = j.getRoutePutMeta().optLong("ts", getMicrosecondPosition());
                 int data0 = data.optInt(0, 0);
@@ -134,6 +141,7 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
+        this.txCount++;
         if(message instanceof ShortMessage && this.opened && this.upstreamClient.isConnected())
         {
             final ShortMessage sm = (ShortMessage) message;
@@ -215,5 +223,17 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount() 
+    {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount()
+    {
+        return this.txCount;
     }
 }

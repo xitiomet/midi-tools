@@ -22,6 +22,8 @@ public class MidiAPIPort implements MidiPort
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
 
     public MidiAPIPort(String name, String deviceId, WebSocketSession session, int type)
     {
@@ -29,6 +31,8 @@ public class MidiAPIPort implements MidiPort
         this.session = session;
         this.deviceId = deviceId;
         this.type = type;
+        this.txCount = 0;
+        this.rxCount = 0;
     }
     
     public WebSocketSession getWebSocketSession()
@@ -133,6 +137,7 @@ public class MidiAPIPort implements MidiPort
                         int channel = data0 & 0x0F;
                         final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
                         this.lastRxAt = System.currentTimeMillis();
+                        this.rxCount++;
                         for (Enumeration<Receiver> re = ((Vector<Receiver>) MidiAPIPort.this.receivers.clone()).elements(); re.hasMoreElements();)
                         {
                             try
@@ -228,6 +233,7 @@ public class MidiAPIPort implements MidiPort
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
+        this.txCount++;
         if(message instanceof ShortMessage && this.opened)
         {
             final ShortMessage sm = (ShortMessage) message;
@@ -283,5 +289,17 @@ public class MidiAPIPort implements MidiPort
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount()
+    {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount()
+    {
+        return this.txCount;
     }
 }

@@ -28,6 +28,8 @@ public class JackMidiPort implements MidiPort
     private JackPort jackPort;
     private long lastRxAt;
     private long lastTxAt;
+    private long txCount;
+    private long rxCount;
     private Vector<Receiver> receivers = new Vector<Receiver>();
     private ConcurrentLinkedQueue<JackMidiMessage> jackOutputQueue;
     private boolean opened;
@@ -39,6 +41,8 @@ public class JackMidiPort implements MidiPort
         this.opened = false;
         this.name = portName;
         this.provider = provider;
+        this.txCount = 0;
+        this.rxCount = 0;
         this.direction = direction;
         this.jackOutputQueue = new ConcurrentLinkedQueue<JackMidiMessage>();
         if (direction == INPUT_PORT)
@@ -118,6 +122,7 @@ public class JackMidiPort implements MidiPort
             try
             {
                 JackMidiPort.this.lastRxAt = System.currentTimeMillis();
+                JackMidiPort.this.rxCount++;
                 JackMidiPort.this.receivers.forEach((r) -> {
                     r.send(midiMessage, timestamp);
                 });
@@ -169,6 +174,7 @@ public class JackMidiPort implements MidiPort
         if (this.opened)
         {
             JackMidiPort.this.lastTxAt = System.currentTimeMillis();
+            JackMidiPort.this.txCount++;
             int ts = (int) (this.getMicrosecondPosition() % this.provider.getBufferSize());
             this.jackOutputQueue.add(new JackMidiMessage(message.getMessage(), ts));
         }
@@ -187,5 +193,15 @@ public class JackMidiPort implements MidiPort
     public String getCCName(int channel, int cc)
     {
         return null;
+    }
+
+    @Override
+    public long getRxCount() {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() {
+        return this.txCount;
     }
 }

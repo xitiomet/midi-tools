@@ -24,11 +24,15 @@ public class JoystickMidiPort implements MidiPort, Runnable
     private HashMap<Integer, String> ccNames;
     private Rumbler[] rumblers;
     private int channel;
+    private long txCount;
+    private long rxCount;
 
     public JoystickMidiPort(Controller controller, int channel)
     {
         this.ccNames = new HashMap<Integer, String>();
         this.channel = channel;
+        this.txCount = 0;
+        this.rxCount = 0;
         this.controller = controller;
         this.rumblers = controller.getRumblers();
         this.controls = new ArrayList<Component>(Arrays.asList(controller.getComponents()));
@@ -125,6 +129,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
                         {
                             final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, this.channel-1, cc, data2);
                             this.lastRxAt = System.currentTimeMillis();
+                            this.rxCount++;
                             JoystickMidiPort.this.receivers.forEach((r) -> {
                                 r.send(sm, timeStamp);
                             });
@@ -216,6 +221,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
+        this.txCount++;
         if (rumblers.length > 0)
         {
             if (message instanceof ShortMessage && this.opened)
@@ -284,5 +290,15 @@ public class JoystickMidiPort implements MidiPort, Runnable
     public String getCCName(int channel, int cc)
     {
         return this.ccNames.get(cc);
+    }
+
+    @Override
+    public long getRxCount() {
+        return this.rxCount;
+    }
+
+    @Override
+    public long getTxCount() {
+        return this.txCount;
     }
 }

@@ -233,9 +233,9 @@ public class RoutePutSessionMidiPort implements MidiPort
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        this.txCount++;
         if(message instanceof ShortMessage && this.opened)
         {
+            this.txCount++;
             final ShortMessage sm = (ShortMessage) message;
             int smStatus = sm.getStatus();
             /*

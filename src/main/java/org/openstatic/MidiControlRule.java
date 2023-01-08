@@ -1,6 +1,8 @@
 package org.openstatic;
 
 import org.openstatic.midi.*;
+import org.openstatic.util.PendingURLFetch;
+import org.openstatic.util.SoundFile;
 
 import org.json.*;
 import javax.sound.midi.*;

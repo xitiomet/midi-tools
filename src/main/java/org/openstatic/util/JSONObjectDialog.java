@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.util;
 
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.text.NumberFormat;
 
 import org.json.*;
+import org.openstatic.MidiTools;
 
 public class JSONObjectDialog extends JDialog implements ActionListener
 {

@@ -171,9 +171,9 @@ public class JackMidiPort implements MidiPort
     @Override
     public void send(MidiMessage message, long timeStamp)
     {
+        JackMidiPort.this.lastTxAt = System.currentTimeMillis();
         if (this.opened)
         {
-            JackMidiPort.this.lastTxAt = System.currentTimeMillis();
             JackMidiPort.this.txCount++;
             int ts = (int) (this.getMicrosecondPosition() % this.provider.getBufferSize());
             this.jackOutputQueue.add(new JackMidiMessage(message.getMessage(), ts));

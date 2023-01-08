@@ -94,6 +94,8 @@ import java.awt.Component;
 
 import org.openstatic.routeput.*;
 import org.openstatic.routeput.client.*;
+import org.openstatic.util.CopyOrGo;
+import org.openstatic.util.JSONObjectDialog;
 import org.json.*;
 
 public class MidiTools extends JFrame implements Runnable, ActionListener, MidiPortListener

@@ -142,6 +142,7 @@ public class MidiControl
             manualAdjust(msg.getData2());
             this.lastReceivedFrom = MidiPortManager.findTransmittingPortByChannelCC(this.getChannel(), this.getControlNumber());
         } else if (this.note >= 0) {
+            this.lastReceivedFrom = MidiPortManager.findTransmittingPortByChannelNote(this.getChannel(), this.getNoteNumber());
             int incomingNote = msg.getData1() % 12;
             if (incomingNote == this.note)
             {

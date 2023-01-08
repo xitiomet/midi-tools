@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.util;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -11,6 +11,8 @@ import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.Line;
+
+import org.openstatic.MidiTools;
 
 public class SoundFile
 {

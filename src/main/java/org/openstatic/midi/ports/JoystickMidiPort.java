@@ -221,11 +221,11 @@ public class JoystickMidiPort implements MidiPort, Runnable
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        this.txCount++;
         if (rumblers.length > 0)
         {
             if (message instanceof ShortMessage && this.opened)
             {
+                this.txCount++;
                 ShortMessage smsg = (ShortMessage) message;
                 if (smsg.getCommand() == ShortMessage.CONTROL_CHANGE)
                 {

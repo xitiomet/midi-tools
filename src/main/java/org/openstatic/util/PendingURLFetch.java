@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.util;
 
 import java.net.URLEncoder;
 import java.net.URL;
@@ -6,6 +6,9 @@ import java.net.HttpURLConnection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import org.openstatic.MidiTools;
+
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 

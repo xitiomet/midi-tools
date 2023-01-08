@@ -141,9 +141,9 @@ public class RoutePutClientMidiPort implements MidiPort, RoutePutMessageListener
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        this.txCount++;
         if(message instanceof ShortMessage && this.opened && this.upstreamClient.isConnected())
         {
+            this.txCount++;
             final ShortMessage sm = (ShortMessage) message;
             int smStatus = sm.getStatus();
             if (smStatus == ShortMessage.TIMING_CLOCK)

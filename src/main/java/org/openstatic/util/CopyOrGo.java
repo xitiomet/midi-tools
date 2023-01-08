@@ -1,4 +1,4 @@
-package org.openstatic;
+package org.openstatic.util;
 
 import javax.swing.JDialog;
 import javax.swing.JPanel;

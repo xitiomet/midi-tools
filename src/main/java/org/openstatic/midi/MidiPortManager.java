@@ -459,6 +459,25 @@ public class MidiPortManager
         }
         return returnPort;
     }
+
+    public static MidiPort findTransmittingPortByChannelNote(int channel, int note)
+    {
+        MidiPort returnPort = null;
+        long lastRxAtBest = 0;
+        for(Iterator<Entry<MidiPort, ShortMessage>> portsIterator = MidiPortManager.lastMessages.entrySet().iterator(); portsIterator.hasNext();)
+        {
+            Entry<MidiPort, ShortMessage> t = portsIterator.next();
+            MidiPort port = t.getKey();
+            ShortMessage msg = t.getValue();
+            int incomingNote = msg.getData1() % 12;
+            if (port.canTransmitMessages() && (msg.getChannel()+1) == channel && (msg.getCommand() == ShortMessage.NOTE_ON || msg.getCommand() == ShortMessage.NOTE_OFF) && incomingNote == note && port.getLastRxAt() > lastRxAtBest)
+            {
+                returnPort = port;
+                lastRxAtBest = port.getLastRxAt();
+            }
+        }
+        return returnPort;
+    }
     
     public static MidiPort findTransmittingPortByName(String name)
     {

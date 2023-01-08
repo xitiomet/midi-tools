@@ -2,6 +2,8 @@ package org.openstatic;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.openstatic.util.PendingURLFetch;
+
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;

@@ -3,6 +3,7 @@ package org.openstatic;
 import org.json.JSONObject;
 import org.openstatic.midi.*;
 import org.openstatic.midi.ports.MidiRandomizerPort;
+import org.openstatic.util.JSONObjectDialog;
 
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;

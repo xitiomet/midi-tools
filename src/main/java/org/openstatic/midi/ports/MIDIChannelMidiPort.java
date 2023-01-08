@@ -65,6 +65,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
                     int channel = data0 & 0x0F;
                     final ShortMessage sm = new ShortMessage(command, channel, data1, data2);
                     this.lastRxAt = System.currentTimeMillis();
+                    this.rxCount++;
                     this.receivers.forEach((r) -> {
                         r.send(sm, timeStamp);
                     });
@@ -165,6 +166,7 @@ public class MIDIChannelMidiPort implements MidiPort, RoutePutMessageListener
         this.lastTxAt = System.currentTimeMillis();
         if(message instanceof ShortMessage && this.opened && this.upstreamClient.isConnected())
         {
+            this.txCount++;
             final ShortMessage sm = (ShortMessage) message;
             int smStatus = sm.getStatus();
             if (smStatus == ShortMessage.TIMING_CLOCK)

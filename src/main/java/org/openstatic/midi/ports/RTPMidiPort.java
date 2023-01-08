@@ -292,9 +292,9 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        this.txCount++;
         if (this.session != null && message instanceof ShortMessage && this.opened)
         {
+            this.txCount++;
             byte[] msgData = message.getMessage();
             if (msgData.length == 3)
             {

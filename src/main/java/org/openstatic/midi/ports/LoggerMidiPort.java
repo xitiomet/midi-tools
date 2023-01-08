@@ -476,9 +476,9 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
     public void send(MidiMessage message, long timeStamp)
     {
         this.lastTxAt = System.currentTimeMillis();
-        this.txCount++;
         if (message instanceof ShortMessage && this.opened)
         {
+            this.txCount++;
             ShortMessage smsg = (ShortMessage) message;
             if (smsg.getStatus() == ShortMessage.TIMING_CLOCK)
             {

@@ -16,7 +16,6 @@ import java.net.Inet4Address;
 //import io.github.leovr.rtipmidi.model.MidiMessage;
 
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 
 import javax.annotation.Nonnull;
 import javax.jmdns.JmDNS;
@@ -33,7 +32,6 @@ import javax.swing.event.ListDataListener;
 import java.util.Vector;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
@@ -358,7 +356,6 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
 
     @Override
     public void serviceAdded(ServiceEvent event) {
-        // TODO Auto-generated method stub
         
     }
 
@@ -416,16 +413,16 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
     }
 
     @Override
-    public void serviceRemoved(ServiceEvent event) {
-        // TODO Auto-generated method stub
+    public void serviceRemoved(ServiceEvent event) 
+    {
         ServiceInfo serviceInfo = event.getInfo();
         String serviceName = serviceInfo.getName();
         removeRemoteServer(serviceName);
     }
 
     @Override
-    public void serviceResolved(ServiceEvent event) {
-        // TODO Auto-generated method stub
+    public void serviceResolved(ServiceEvent event) 
+    {
         ServiceInfo serviceInfo = event.getInfo();
         int port = serviceInfo.getPort();
         String serviceName = serviceInfo.getName();
@@ -441,13 +438,12 @@ public class RTPMidiPort implements MidiPort, ServiceListener, ListModel<AppleMi
 
     @Override
     public int getSize() {
-        // TODO Auto-generated method stub
         return this.remoteServers.size();
     }
 
     @Override
-    public AppleMidiSessionClient getElementAt(int index) {
-        // TODO Auto-generated method stub
+    public AppleMidiSessionClient getElementAt(int index) 
+    {
         return remoteServers.values().toArray(new AppleMidiSessionClient[remoteServers.size()])[index];
     }
 

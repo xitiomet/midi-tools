@@ -324,13 +324,11 @@ public class AssetManagerPanel extends JPanel implements ActionListener, ListDat
 
     @Override
     public void intervalRemoved(ListDataEvent e) {
-        // TODO Auto-generated method stub
         
     }
 
     @Override
     public void contentsChanged(ListDataEvent e) {
-        // TODO Auto-generated method stub
         
     }
 }

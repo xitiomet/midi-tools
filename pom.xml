@@ -332,8 +332,8 @@
                         <icon>${project.basedir}/src/main/resources/windows.ico</icon>
                         <chdir>.</chdir>
                         <jre>
-                            <path>%PATH%;%JAVA_HOME%;jre</path>
-                            <minVersion>1.8.0</minVersion>
+                            <path>./jre</path>
+                            <minVersion>11</minVersion>
                             <initialHeapSize>512</initialHeapSize>
                             <maxHeapSize>1024</maxHeapSize>
                             <opts>

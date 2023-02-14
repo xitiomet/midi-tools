@@ -424,7 +424,8 @@ public class LoggerMidiPort extends JPanel implements MidiPort, ActionListener, 
                     }
                     if (table != null)
                     {
-                        if (table.getElementCount() > 5000)
+                        int elCount = table.getElementCount();
+                        if (elCount > 2000)
                         {
                             Element el = table.getElement(0);
                             doc_html.removeElement(el);

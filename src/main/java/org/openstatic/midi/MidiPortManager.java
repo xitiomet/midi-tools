@@ -182,7 +182,6 @@ public class MidiPortManager
         
                 @Override
                 public void close() {
-                    // TODO Auto-generated method stub
                     
                 }
                 

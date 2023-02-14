@@ -16,7 +16,6 @@ public class CollectionMidiPortProvider extends ArrayList<MidiPort> implements M
     @Override
     public Collection<? extends MidiPort> getMidiPorts()
     {
-        // TODO Auto-generated method stub
         return this;
     }
 }

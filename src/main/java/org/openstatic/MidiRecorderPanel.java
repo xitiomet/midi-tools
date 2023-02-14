@@ -1,40 +1,25 @@
 package org.openstatic;
 
 import javax.imageio.ImageIO;
-import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Track;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JToggleButton;
-import javax.swing.ListSelectionModel;
-import javax.swing.ScrollPaneConstants;
 
 import org.openstatic.midi.MidiPort;
 import org.openstatic.midi.MidiPortListener;
 import org.openstatic.midi.MidiPortMapping;
 
-import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.io.File;
-import java.util.Collection;
-import java.awt.datatransfer.*;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDropEvent;
 
 public class MidiRecorderPanel extends JPanel implements ActionListener, MidiPortListener
 {

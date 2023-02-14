@@ -171,10 +171,10 @@ public class RoutePutSessionMidiPort implements MidiPort
     
     public boolean equals(MidiPort port)
     {
-        if (port instanceof MidiAPIPort)
+        if (port instanceof RoutePutSessionMidiPort)
         {
-            MidiAPIPort maport = (MidiAPIPort) port;
-            return this.deviceId.equals(maport.getDeviceId()) && this.session.equals(maport.getWebSocketSession());
+            RoutePutSessionMidiPort rps_port = (RoutePutSessionMidiPort) port;
+            return this.deviceId.equals(rps_port.getDeviceId());
         } else {
             return false;
         }

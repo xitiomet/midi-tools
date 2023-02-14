@@ -364,7 +364,6 @@ public class MidiControlsPanel extends JPanel implements ActionListener, Receive
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
         
     }
 }

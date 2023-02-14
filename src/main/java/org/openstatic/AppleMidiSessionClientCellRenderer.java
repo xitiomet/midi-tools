@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.Component;
 
 import javax.swing.BorderFactory;
-import javax.swing.Icon;
 import javax.swing.JCheckBox;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -15,7 +14,6 @@ import javax.swing.ImageIcon;
 
 import javax.swing.border.Border;
 
-import org.openstatic.midi.MidiToolsPlugin;
 import org.openstatic.midi.ports.RTPMidiPort;
 
 import io.github.leovr.rtipmidi.session.AppleMidiSessionClient;

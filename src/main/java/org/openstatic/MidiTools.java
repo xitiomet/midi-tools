@@ -475,31 +475,26 @@ public class MidiTools extends JFrame implements Runnable, ActionListener, MidiP
 
             @Override
             public void windowClosed(WindowEvent e) {
-                // TODO Auto-generated method stub
                 
             }
 
             @Override
             public void windowIconified(WindowEvent e) {
-                // TODO Auto-generated method stub
                 
             }
 
             @Override
             public void windowDeiconified(WindowEvent e) {
-                // TODO Auto-generated method stub
                 
             }
 
             @Override
             public void windowActivated(WindowEvent e) {
-                // TODO Auto-generated method stub
                 
             }
 
             @Override
             public void windowDeactivated(WindowEvent e) {
-                // TODO Auto-generated method stub
                 
             }
         });

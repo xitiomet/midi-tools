@@ -4,6 +4,7 @@ import org.openstatic.midi.*;
 
 import javax.sound.midi.*;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,10 +27,12 @@ public class JoystickMidiPort implements MidiPort, Runnable
     private int channel;
     private long txCount;
     private long rxCount;
+    private ConcurrentHashMap<Integer, Integer> ccValues;
 
     public JoystickMidiPort(Controller controller, int channel)
     {
         this.ccNames = new HashMap<Integer, String>();
+        this.ccValues = new ConcurrentHashMap<Integer, Integer>();
         this.channel = channel;
         this.txCount = 0;
         this.rxCount = 0;
@@ -60,7 +63,23 @@ public class JoystickMidiPort implements MidiPort, Runnable
         return false;
     }
 
-    
+    private synchronized boolean hasCCChanged(int cc, int value)
+    {
+        int lv = getLastWrittenCCValue(cc);
+        this.ccValues.put(cc, value);
+        return (value != lv);
+    }
+
+    private int getLastWrittenCCValue(int cc)
+    {
+        if (ccValues.containsKey(cc))
+        {
+            int v = ccValues.get(cc);
+            return v;
+        } else {
+            return -1;
+        }
+    }
 
     public void run()
     {
@@ -111,7 +130,7 @@ public class JoystickMidiPort implements MidiPort, Runnable
                                 data2 = 0;
                             }
                         } else {
-                            if (compNameLC.contains("y"))
+                            if (compNameLC.contains("y") && !MidiPortManager.isWindows())
                             {
                                 //System.err.println("Y invert");
                                 value = -(value);
@@ -125,20 +144,24 @@ public class JoystickMidiPort implements MidiPort, Runnable
                             if (data2 < 0) data2 = 0;
                         }
                         long timeStamp = this.getMicrosecondPosition();
-                        try
+                        // slow down duplication for noisy joysticks
+                        if (hasCCChanged(cc, data2))
                         {
-                            final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, this.channel-1, cc, data2);
-                            this.lastRxAt = System.currentTimeMillis();
-                            this.rxCount++;
-                            JoystickMidiPort.this.receivers.forEach((r) -> {
-                                r.send(sm, timeStamp);
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
+                            try
+                            {
+                                final ShortMessage sm = new ShortMessage(ShortMessage.CONTROL_CHANGE, this.channel-1, cc, data2);
+                                this.lastRxAt = System.currentTimeMillis();
+                                this.rxCount++;
+                                JoystickMidiPort.this.receivers.forEach((r) -> {
+                                    r.send(sm, timeStamp);
+                                });
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
                         }
                     }
-                    Thread.sleep(20);
                 }
+                Thread.sleep(20);
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }

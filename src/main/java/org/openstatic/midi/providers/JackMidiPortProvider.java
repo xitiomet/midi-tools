@@ -4,10 +4,8 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiMessage;
 import javax.sound.midi.ShortMessage;
 
 import org.jaudiolibs.jnajack.Jack;
@@ -16,8 +14,6 @@ import org.jaudiolibs.jnajack.JackException;
 import org.jaudiolibs.jnajack.JackMidi;
 import org.jaudiolibs.jnajack.JackOptions;
 import org.jaudiolibs.jnajack.JackPort;
-import org.jaudiolibs.jnajack.JackPortFlags;
-import org.jaudiolibs.jnajack.JackPortType;
 import org.jaudiolibs.jnajack.JackProcessCallback;
 import org.jaudiolibs.jnajack.JackShutdownCallback;
 import org.jaudiolibs.jnajack.JackStatus;
@@ -89,7 +85,6 @@ public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallba
 
     @Override
     public Collection<? extends MidiPort> getMidiPorts() {
-        // TODO Auto-generated method stub
         return this.localDevices.values();
     }
 
@@ -160,8 +155,8 @@ public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallba
             this.lastProcessAt = System.currentTimeMillis();
             return true;
         } catch (Exception ex) {
-            System.out.println("ERROR : " + ex);
-            ex.printStackTrace(System.err);
+            //System.out.println("ERROR : " + ex);
+            //ex.printStackTrace(System.err);
             return false;
         }
     }
@@ -178,7 +173,7 @@ public class JackMidiPortProvider implements MidiPortProvider, JackProcessCallba
                     this.lastProcessAt = System.currentTimeMillis();
                     this.connect();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
         }

@@ -27,10 +27,10 @@
       <name>local-repo</name>
       <url>file:/home/xitiomet/.m2/repository/</url>
     </repository>
-		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
-		</repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
   </repositories>
   <dependencies>
     <dependency>
@@ -97,7 +97,7 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>routeput</artifactId>
-        <version>1.2022.1209</version>
+        <version>1.2023.0924</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jaudiolibs/jnajack -->
     <dependency>
@@ -147,6 +147,7 @@
         <plugin>
             <groupId>com.googlecode.mavennatives</groupId>
             <artifactId>maven-nativedependencies-plugin</artifactId>
+            <version>0.0.7</version>
             <executions>
                 <execution>
                     <id>unpacknatives</id>
@@ -240,7 +241,7 @@
                         <!-- expand "SNAPSHOT" to what is in the "USER" env variable -->
                         <snapshotEnv>USER</snapshotEnv>
                         <controlDir>${basedir}/src/deb/control</controlDir>
-                        <deb>${project.build.directory}/${artifactId}.deb</deb>
+                        <deb>${project.build.directory}/${project.artifactId}.deb</deb>
                         <dataSet>
                             <data>
                               <src>${project.build.directory}/${project.build.finalName}.jar</src>

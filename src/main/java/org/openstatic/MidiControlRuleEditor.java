@@ -61,6 +61,7 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
     private JComboBox<String> channelSelectAVF;
     private JComboBox<String> selectRuleGroupDropdown;
     private JComboBox<MidiPortMapping> selectMappingDropdown;
+    private JLabel ccLabel;
     private JTextField ccAVF;
     private JTextField valueAVF;
     private JTextField zIndexField;
@@ -311,6 +312,58 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
                 this.ccAVF.setText("{{cc}}");
                 this.valueAVF.setText("{{value}}");                
             }
+            this.valueAVF.setEnabled(true);
+            this.ccLabel.setText("CC");
+            this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
+        } else if (i == MidiControlRule.ACTION_TRANSMIT_NOTE_ON) {
+            this.actionValueLabel.setText("MIDI Message");
+            refreshDevices();
+            StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
+            if (st.countTokens() == 4)
+            {
+                String devName = st.nextToken();
+                String chanNum = st.nextToken();
+                String ccNum = st.nextToken();
+                String val = st.nextToken();
+                this.deviceSelectAVF.setSelectedItem(devName);
+                this.channelSelectAVF.setSelectedItem(chanNum);
+                this.ccAVF.setText(ccNum);
+                this.valueAVF.setText(val);
+            } else {
+                this.deviceSelectAVF.setSelectedIndex(0);
+                this.channelSelectAVF.setSelectedIndex(0);
+                this.ccAVF.setText("{{note}}");
+                this.valueAVF.setText("{{value}}");                
+            }
+            this.valueAVF.setEnabled(true);
+            this.ccLabel.setText("NOTE#");
+            this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
+            this.canvasSelectorField.setEnabled(false);
+            this.canvasSelectorField.setSelectedItem("");
+        } else if (i == MidiControlRule.ACTION_TRANSMIT_NOTE_OFF) {
+            this.actionValueLabel.setText("MIDI Message");
+            refreshDevices();
+            StringTokenizer st = new StringTokenizer(this.actionValueField.getText(), ",");
+            if (st.countTokens() == 4)
+            {
+                String devName = st.nextToken();
+                String chanNum = st.nextToken();
+                String ccNum = st.nextToken();
+                String val = st.nextToken();
+                this.deviceSelectAVF.setSelectedItem(devName);
+                this.channelSelectAVF.setSelectedItem(chanNum);
+                this.ccAVF.setText(ccNum);
+                this.valueAVF.setText("0");
+            } else {
+                this.deviceSelectAVF.setSelectedIndex(0);
+                this.channelSelectAVF.setSelectedIndex(0);
+                this.ccAVF.setText("{{note}}");
+                this.valueAVF.setText("0");                
+            }
+            this.valueAVF.setEnabled(false);
+            this.ccLabel.setText("NOTE#");
             this.actionValuePanel.add(this.transmitMidiPanel, BorderLayout.CENTER);
             this.canvasSelectorField.setEnabled(false);
             this.canvasSelectorField.setSelectedItem("");
@@ -387,6 +440,8 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         actionList.add(MidiControlRule.ACTION_PROC);
         actionList.add(MidiControlRule.ACTION_SOUND);
         actionList.add(MidiControlRule.ACTION_TRANSMIT);
+        actionList.add(MidiControlRule.ACTION_TRANSMIT_NOTE_ON);
+        actionList.add(MidiControlRule.ACTION_TRANSMIT_NOTE_OFF);
         actionList.add(MidiControlRule.LOGGER_A_MESSAGE);
         actionList.add(MidiControlRule.LOGGER_B_MESSAGE);
         actionList.add(MidiControlRule.ACTION_ENABLE_RULE_GROUP);
@@ -593,9 +648,10 @@ public class MidiControlRuleEditor extends JDialog implements ActionListener
         transmitMidiPanel.add(this.deviceSelectAVF, gbc(2, 1, .6d));
         transmitMidiPanel.add(new JLabel("Channel", SwingConstants.LEFT), gbc(1, 2, .4d));
         transmitMidiPanel.add(this.channelSelectAVF, gbc(2, 2, .6d));
-        transmitMidiPanel.add(new JLabel("CC", SwingConstants.LEFT), gbc(1, 3, .4d));
+        this.ccLabel = new JLabel("CC", SwingConstants.LEFT);
+        transmitMidiPanel.add(this.ccLabel, gbc(1, 3, .4d));
         transmitMidiPanel.add(this.ccAVF, gbc(2, 3, .6d));
-        transmitMidiPanel.add(new JLabel("Value", SwingConstants.LEFT), gbc(1, 4, .4d));
+        transmitMidiPanel.add(new JLabel("Value/Velocity", SwingConstants.LEFT), gbc(1, 4, .4d));
         transmitMidiPanel.add(this.valueAVF, gbc(2, 4, .6d));
         
         this.modifierPanel = new JPanel(new GridLayout(2,1));

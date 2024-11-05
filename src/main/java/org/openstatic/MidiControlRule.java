@@ -45,6 +45,9 @@ public class MidiControlRule implements MidiControlListener
     public static final int ACTION_ENABLE_MAPPING = 11;
     public static final int ACTION_DISABLE_MAPPING = 12;
     public static final int ACTION_TOGGLE_MAPPING = 13;
+    public static final int ACTION_TRANSMIT_NOTE_ON = 14;
+    public static final int ACTION_TRANSMIT_NOTE_OFF = 15;
+
     
     public static final int EVENT_CHANGE = 0;
     public static final int EVENT_INCREASE = 1;
@@ -366,6 +369,65 @@ public class MidiControlRule implements MidiControlListener
                                 e.printStackTrace(System.err);
                             }
                         }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT_NOTE_ON) {
+                        StringTokenizer st = new StringTokenizer(avparsed, ",");
+                        if (st.countTokens() == 4)
+                        {
+                            try
+                            {
+                                String devName = st.nextToken();
+                                int channel = Integer.valueOf(st.nextToken()).intValue()-1;
+                                int note = Integer.valueOf(st.nextToken()).intValue();
+                                int v = Integer.valueOf(st.nextToken()).intValue();
+                                ShortMessage sm = new ShortMessage(ShortMessage.NOTE_ON, channel, note, v);
+                                if (v == 0)
+                                    sm = new ShortMessage(ShortMessage.NOTE_OFF, channel, note, v);
+                                MidiPort output = MidiPortManager.findReceivingPortByName(devName);
+                                if (output != null)
+                                {
+                                    if (output.isOpened())
+                                    {
+                                        //System.err.println("Transmitting ShortMessage " + MidiPortManager.shortMessageToString(sm) + " to " + output.getName());
+                                        output.send(sm, output.getMicrosecondPosition());
+                                        success = true;
+                                    } else {
+                                        //System.err.println("Output device is closed.." + output.getName());
+                                    }
+                                } else {
+                                    //System.err.println("Couldn't find output device " + devName);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
+                        }
+                    } else if (this.getActionType() == MidiControlRule.ACTION_TRANSMIT_NOTE_OFF) {
+                        StringTokenizer st = new StringTokenizer(avparsed, ",");
+                        if (st.countTokens() == 4)
+                        {
+                            try
+                            {
+                                String devName = st.nextToken();
+                                int channel = Integer.valueOf(st.nextToken()).intValue()-1;
+                                int note = Integer.valueOf(st.nextToken()).intValue();
+                                ShortMessage sm = new ShortMessage(ShortMessage.NOTE_OFF, channel, note, 0);
+                                MidiPort output = MidiPortManager.findReceivingPortByName(devName);
+                                if (output != null)
+                                {
+                                    if (output.isOpened())
+                                    {
+                                        //System.err.println("Transmitting ShortMessage " + MidiPortManager.shortMessageToString(sm) + " to " + output.getName());
+                                        output.send(sm, output.getMicrosecondPosition());
+                                        success = true;
+                                    } else {
+                                        //System.err.println("Output device is closed.." + output.getName());
+                                    }
+                                } else {
+                                    //System.err.println("Couldn't find output device " + devName);
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace(System.err);
+                            }
+                        }
                     } else if (this.getActionType() == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
                         MidiTools.setRuleGroupEnabled(avparsed, true);
                         success = true;
@@ -592,6 +654,10 @@ public class MidiControlRule implements MidiControlListener
             return "PLAY SOUND";
         } else if (n == MidiControlRule.ACTION_TRANSMIT) {
             return "TRANSMIT CONTROL CHANGE";
+        } else if (n == MidiControlRule.ACTION_TRANSMIT_NOTE_ON) {
+            return "TRANSMIT NOTE ON";
+        } else if (n == MidiControlRule.ACTION_TRANSMIT_NOTE_OFF) {
+            return "TRANSMIT NOTE OFF";
         } else if (n == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
             return "ENABLE RULE GROUP";
         } else if (n == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {

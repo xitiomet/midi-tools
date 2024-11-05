@@ -33,6 +33,8 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
    private ImageIcon pluginIcon;
    private ImageIcon imageIcon;
    private ImageIcon mappingIcon;
+   private ImageIcon noteIcon;
+
    
    public MidiControlRuleCellRenderer()
    {
@@ -56,6 +58,7 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
          this.imageIcon = new  ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
          this.mappingIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/cable32.png")));
+         this.noteIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/midifile32.png")));
       } catch (Exception e) {
 
       }
@@ -81,6 +84,10 @@ public class MidiControlRuleCellRenderer extends JPanel implements ListCellRende
          this.checkBox.setIcon(this.logIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_TRANSMIT) {
          this.checkBox.setIcon(this.dialIcon);
+      } else if (rule.getActionType() == MidiControlRule.ACTION_TRANSMIT_NOTE_ON) {
+         this.checkBox.setIcon(this.noteIcon);
+      } else if (rule.getActionType() == MidiControlRule.ACTION_TRANSMIT_NOTE_OFF) {
+         this.checkBox.setIcon(this.noteIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_ENABLE_RULE_GROUP) {
          this.checkBox.setIcon(this.enableIcon);
       } else if (rule.getActionType() == MidiControlRule.ACTION_DISABLE_RULE_GROUP) {

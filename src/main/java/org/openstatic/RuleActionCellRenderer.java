@@ -24,6 +24,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<I
     private ImageIcon pluginIcon;
     private ImageIcon imageIcon;
     private ImageIcon mappingIcon;
+    private ImageIcon noteIcon;
 
     public RuleActionCellRenderer()
     {
@@ -43,6 +44,7 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<I
             this.pluginIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/plug_in.png")));
             this.imageIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/image32.png")));
             this.mappingIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/cable32.png")));
+            this.noteIcon = new ImageIcon(ImageIO.read(this.getClass().getResourceAsStream("/midi-tools-res/midifile32.png")));
         } catch (Exception e) {
 
         }
@@ -62,6 +64,10 @@ public class RuleActionCellRenderer extends JPanel implements ListCellRenderer<I
             this.label.setIcon(this.speakerIcon);
         } else if ("TRANSMIT CONTROL CHANGE".equals(value)) {
             this.label.setIcon(this.dialIcon);
+        } else if ("TRANSMIT NOTE ON".equals(value)) {
+            this.label.setIcon(this.noteIcon);
+        } else if ("TRANSMIT NOTE OFF".equals(value)) {
+            this.label.setIcon(this.noteIcon);
         } else if ("ENABLE RULE GROUP".equals(value)) {
             this.label.setIcon(this.enableIcon);
         } else if ("DISABLE RULE GROUP".equals(value)) {

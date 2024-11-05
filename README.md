@@ -55,8 +55,12 @@ Simply launch the app and check off what MIDI devices you want to use. Then togg
 	- PLAY SOUND - Play a wav file (volume will adjust with value)
 	- PLUGIN - Send message/event to a plugin
 	  Action Type: you may specify a url or local path to a wav file
-	- TRANSMIT CONTROL CHANGE - Send a MIDI Message
+	- TRANSMIT CONTROL CHANGE - Send a Control Change MIDI Message
 	  Action Type: Device Name,channel#,cc#,{{value}}
+	- TRANSMIT NOTE ON - Send a NOTE ON/OFF MIDI Message
+	  Action Type: Device Name,channel#,note#,{{value}} (a value of 0 will become a note off message)
+	- TRANSMIT NOTE OFF - Send a NOTE OFF MIDI Message
+	  Action Type: Device Name,channel#,note#,{{value}}
 	- ENABLE RULE GROUP - Enable a group of rules
 	- DISABLE RULE GROUP - Disable a group of rules
 	- TOGGLE RULE GROUP - Toggle a group of rules if the value >= 64 the group is enabled otherwise its disabled.

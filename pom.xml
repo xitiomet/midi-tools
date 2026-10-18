@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.openstatic</groupId>
   <artifactId>midi-tools</artifactId>
-  <version>1.7</version>
+  <version>1.8</version>
   <packaging>jar</packaging>
   <name>Midi Control Change Tools</name>
   <url>http://openstatic.org/</url>
@@ -11,8 +11,17 @@
     <mainClass>org.openstatic.MidiTools</mainClass>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
-    <jettyVersion>9.4.30.v20200611</jettyVersion>
+    <jettyVersion>9.4.57.v20241219</jettyVersion>
     <jinputVersion>2.0.9</jinputVersion>
+    <!--
+      jmods used to build the embedded JRE for the Windows installer. The
+      Windows installer (launch4j + NSIS) lives in the "windows-installer"
+      profile, which is only active when packaging on a Windows machine, so by
+      default this points at the native Windows JDK's jmods. Override it only if
+      you want to link against a different Windows JDK (Java 11+):
+        mvn clean package -Djre.jmods.path=C:\path\to\jdk\jmods
+    -->
+    <jre.jmods.path>${java.home}/jmods</jre.jmods.path>
   </properties>
   <distributionManagement>
    <repository>
@@ -47,7 +56,7 @@
     <dependency>
         <groupId>org.json</groupId>
         <artifactId>json</artifactId>
-        <version>20160810</version>
+        <version>20250517</version>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -79,13 +88,13 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>rtp-midi-javax-sound-midi</artifactId>
-        <version>2.0.1</version>
+        <version>2.1.6</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/io.github.leovr/rtp-midi -->
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>rtp-midi-core</artifactId>
-        <version>2.0.1</version>
+        <version>2.1.6</version>
         <type>pom</type>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jmdns/jmdns -->
@@ -97,7 +106,7 @@
     <dependency>
         <groupId>org.openstatic</groupId>
         <artifactId>routeput</artifactId>
-        <version>1.2023.0924</version>
+        <version>2.1.5</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.jaudiolibs/jnajack -->
     <dependency>
@@ -161,7 +170,7 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-shade-plugin</artifactId>
-            <version>2.4.3</version>
+            <version>3.6.0</version>
             <configuration>
               <mainClass>${mainClass}</mainClass>
               <transformers>
@@ -309,89 +318,16 @@
                 </execution>
             </executions>
        </plugin>
-       <plugin>
-            <groupId>com.akathist.maven.plugins.launch4j</groupId>
-            <artifactId>launch4j-maven-plugin</artifactId>
-            <version>2.0.1</version>
-            <executions>
-                <execution>
-                    <id>l4j-gui</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>launch4j</goal>
-                    </goals>
-                    <configuration>
-                        <headerType>gui</headerType>
-                        <outfile>target/MidiTools.exe</outfile>
-                        <jar>target/${project.artifactId}-${project.version}.jar</jar>
-                        <!-- if <dontWrapJar>true</dontWrapJar> change to this conf <jar>${project.artifactId}-${project.version}.jar</jar> -->
-                        <dontWrapJar>false</dontWrapJar>
-                        <errTitle>Error in launch4j plugin</errTitle>
-                        <classPath>
-                            <mainClass>${mainClass}</mainClass>
-                        </classPath>
-                        <icon>${project.basedir}/src/main/resources/windows.ico</icon>
-                        <chdir>.</chdir>
-                        <jre>
-                            <path>./jre</path>
-                            <minVersion>11</minVersion>
-                            <initialHeapSize>512</initialHeapSize>
-                            <maxHeapSize>1024</maxHeapSize>
-                            <opts>
-                              <opt>-Djava.library.path=./natives/</opt>
-                            </opts>
-                        </jre>
-                        <splash>
-                          <file>${project.basedir}/src/main/resources/splash.bmp</file>
-                          <waitForWindow>true</waitForWindow>
-                          <timeout>60</timeout>
-                          <timeoutErr>false</timeoutErr>
-                        </splash>
-                        <versionInfo>
-                            <fileVersion>1.0.0.0</fileVersion>
-                            <txtFileVersion>1.0.0.0</txtFileVersion>
-                            <fileDescription>MidiTools</fileDescription>
-                            <copyright>Copyright (c) 2019-2022</copyright>
-                            <companyName>openstatic.org</companyName>
-                            <productVersion>1.0.0.0</productVersion>
-                            <txtProductVersion>${project.version}</txtProductVersion>
-                            <productName>MidiTools</productName>
-                            <internalName>MidiTools</internalName>
-                            <originalFilename>MidiTools.exe</originalFilename>
-                        </versionInfo>
-                    </configuration>
-                </execution>
-            </executions>
-        </plugin>
         <plugin>
-            <groupId>org.digitalmediaserver</groupId>
-            <artifactId>nsis-maven-plugin</artifactId>
-            <version>1.0.3</version>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-clean-plugin</artifactId>
             <configuration>
-                <makensisExecutable>C:\Program Files (x86)\NSIS\makensis.exe</makensisExecutable>
-                <makensisExecutableLinux>/usr/bin/makensis</makensisExecutableLinux>
-                <makensisExecutableMacOS></makensisExecutableMacOS>
-                <compression>lzma</compression>
-                <compressionIsFinal>true</compressionIsFinal>
-                <compressionDictSize>64</compressionDictSize>
-                <defines>
-                    <PROJECT_NAME_SHORT>MidiTools</PROJECT_NAME_SHORT>
-                    <PROJECT_NAME_CAMEL>${project.name.camel}</PROJECT_NAME_CAMEL>
-                </defines>
+                <filesets>
+                    <fileset>
+                        <directory>${project.basedir}/jre</directory>
+                    </fileset>
+                </filesets>
             </configuration>
-            <executions>
-                <execution>
-                    <id>build-windows-installer</id>
-                    <configuration>
-                        <scriptFile>${basedir}/src/nsis/midi-tools.nsi</scriptFile>
-                        <outputFile>MidiTools-setup.exe</outputFile>
-                    </configuration>
-                    <goals>
-                        <goal>generate-headerfile</goal>
-                        <goal>make</goal>
-                    </goals>
-                </execution>
-            </executions>
         </plugin>
         <plugin>
           <groupId>io.github.fvarrui</groupId>
@@ -452,4 +388,137 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <!-- Windows installer: only runs when packaging on a Windows machine.
+         On Windows ${java.home}/jmods is the native Windows JDK, so jlink
+         produces a correct Windows JRE for launch4j and NSIS to bundle. -->
+    <profile>
+      <id>windows-installer</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+              <execution>
+                <id>create-embeddable-jre</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <!-- jlink requires the output directory to not exist -->
+                    <delete dir="${project.basedir}/jre"/>
+                    <exec executable="${java.home}/bin/jlink" failonerror="true">
+                      <arg value="--module-path"/>
+                      <arg value="${jre.jmods.path}"/>
+                      <arg value="--add-modules"/>
+                      <arg value="java.base,java.desktop,java.logging,java.management,java.naming,java.security.jgss,java.sql,java.xml,jdk.crypto.ec"/>
+                      <arg value="--output"/>
+                      <arg value="${project.basedir}/jre"/>
+                      <arg value="--no-header-files"/>
+                      <arg value="--no-man-pages"/>
+                      <arg value="--strip-debug"/>
+                      <arg value="--compress=2"/>
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>com.akathist.maven.plugins.launch4j</groupId>
+            <artifactId>launch4j-maven-plugin</artifactId>
+            <version>2.0.1</version>
+            <executions>
+              <execution>
+                <id>l4j-gui</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>launch4j</goal>
+                </goals>
+                <configuration>
+                  <headerType>gui</headerType>
+                  <outfile>target/MidiTools.exe</outfile>
+                  <jar>target/${project.artifactId}-${project.version}.jar</jar>
+                  <!-- if <dontWrapJar>true</dontWrapJar> change to this conf <jar>${project.artifactId}-${project.version}.jar</jar> -->
+                  <dontWrapJar>false</dontWrapJar>
+                  <errTitle>Error in launch4j plugin</errTitle>
+                  <classPath>
+                    <mainClass>${mainClass}</mainClass>
+                  </classPath>
+                  <icon>${project.basedir}/src/main/resources/windows.ico</icon>
+                  <chdir>.</chdir>
+                  <jre>
+                    <path>./jre</path>
+                    <minVersion>11</minVersion>
+                    <initialHeapSize>512</initialHeapSize>
+                    <maxHeapSize>1024</maxHeapSize>
+                    <opts>
+                      <opt>-Djava.library.path=./natives/</opt>
+                    </opts>
+                  </jre>
+                  <splash>
+                    <file>${project.basedir}/src/main/resources/splash.bmp</file>
+                    <waitForWindow>true</waitForWindow>
+                    <timeout>60</timeout>
+                    <timeoutErr>false</timeoutErr>
+                  </splash>
+                  <versionInfo>
+                    <fileVersion>1.0.0.0</fileVersion>
+                    <txtFileVersion>1.0.0.0</txtFileVersion>
+                    <fileDescription>MidiTools</fileDescription>
+                    <copyright>Copyright (c) 2019-2022</copyright>
+                    <companyName>openstatic.org</companyName>
+                    <productVersion>1.0.0.0</productVersion>
+                    <txtProductVersion>${project.version}</txtProductVersion>
+                    <productName>MidiTools</productName>
+                    <internalName>MidiTools</internalName>
+                    <originalFilename>MidiTools.exe</originalFilename>
+                  </versionInfo>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.digitalmediaserver</groupId>
+            <artifactId>nsis-maven-plugin</artifactId>
+            <version>1.0.3</version>
+            <configuration>
+              <makensisExecutable>C:\Program Files (x86)\NSIS\makensis.exe</makensisExecutable>
+              <makensisExecutableLinux>/usr/bin/makensis</makensisExecutableLinux>
+              <makensisExecutableMacOS></makensisExecutableMacOS>
+              <compression>lzma</compression>
+              <compressionIsFinal>true</compressionIsFinal>
+              <compressionDictSize>64</compressionDictSize>
+              <defines>
+                <PROJECT_NAME_SHORT>MidiTools</PROJECT_NAME_SHORT>
+                <PROJECT_NAME_CAMEL>${project.name.camel}</PROJECT_NAME_CAMEL>
+              </defines>
+            </configuration>
+            <executions>
+              <execution>
+                <id>build-windows-installer</id>
+                <configuration>
+                  <scriptFile>${basedir}/src/nsis/midi-tools.nsi</scriptFile>
+                  <outputFile>MidiTools-setup.exe</outputFile>
+                </configuration>
+                <goals>
+                  <goal>generate-headerfile</goal>
+                  <goal>make</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

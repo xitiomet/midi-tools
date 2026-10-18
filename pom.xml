@@ -154,6 +154,19 @@
     </resources>
     <plugins>
         <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>templating-maven-plugin</artifactId>
+            <version>3.0.0</version>
+            <executions>
+                <execution>
+                    <id>filter-src</id>
+                    <goals>
+                        <goal>filter-sources</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
             <groupId>com.googlecode.mavennatives</groupId>
             <artifactId>maven-nativedependencies-plugin</artifactId>
             <version>0.0.7</version>
